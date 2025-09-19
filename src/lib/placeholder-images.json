@@ -1,3 +1,58 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "trader-1",
+      "description": "Profile picture for Alex 'CryptoKing' Johnson",
+      "imageUrl": "https://picsum.photos/seed/trader1/200/200",
+      "imageHint": "male portrait"
+    },
+    {
+      "id": "trader-2",
+      "description": "Profile picture for Sarah 'ForexQueen' Miller",
+      "imageUrl": "https://picsum.photos/seed/trader2/200/200",
+      "imageHint": "female portrait"
+    },
+    {
+      "id": "trader-3",
+      "description": "Profile picture for Ben 'StockSensei' Carter",
+      "imageUrl": "https://picsum.photos/seed/trader3/200/200",
+      "imageHint": "male portrait"
+    },
+    {
+      "id": "trader-4",
+      "description": "Profile picture for 'OptionsOracle'",
+      "imageUrl": "https://picsum.photos/seed/trader4/200/200",
+      "imageHint": "person thinking"
+    },
+    {
+      "id": "alert-ss-1",
+      "description": "Screenshot for BTC/USD chart analysis",
+      "imageUrl": "https://picsum.photos/seed/ss1/800/600",
+      "imageHint": "stock chart"
+    },
+    {
+      "id": "alert-ss-2",
+      "description": "Screenshot for EUR/JPY trade setup",
+      "imageUrl": "https://picsum.photos/seed/ss2/800/600",
+      "imageHint": "forex chart"
+    },
+    {
+      "id": "alert-ss-3",
+      "description": "Screenshot of AAPL stock movement",
+      "imageUrl": "https://picsum.photos/seed/ss3/800/600",
+      "imageHint": "stock chart"
+    },
+    {
+      "id": "alert-ss-4",
+      "description": "Screenshot for SPY options chain",
+      "imageUrl": "https://picsum.photos/seed/ss4/800/600",
+      "imageHint": "options chain"
+    },
+     {
+      "id": "alert-ss-5",
+      "description": "Screenshot of ETH breakout pattern",
+      "imageUrl": "https://picsum.photos/seed/ss5/800/600",
+      "imageHint": "crypto chart"
+    }
+  ]
 }

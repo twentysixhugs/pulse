@@ -1,0 +1,111 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import {
+  AlertPost,
+  Category,
+  Trader,
+  User,
+  Report,
+  alerts as initialAlerts,
+  categories as initialCategories,
+  traders as initialTraders,
+  users as initialUsers,
+  reports as initialReports,
+} from '@/lib/data';
+import { LegalModal } from '@/components/user/legal-modal';
+import { SubscriptionGate } from '@/components/user/subscription-gate';
+import { AlertCard } from '@/components/user/alert-card';
+import { CategoryView } from '@/components/user/category-view';
+import { RatingView } from '@/components/user/rating-view';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { BarChart, Flame, Layers } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+
+export default function HomePage() {
+  const [isClient, setIsClient] = useState(false);
+  const [hasAgreed, setHasAgreed] = useState(false);
+  const [currentUser] = useState<User>(initialUsers[0]);
+  const [alerts, setAlerts] = useState<AlertPost[]>(initialAlerts);
+  const [traders, setTraders] = useState<Trader[]>(initialTraders);
+  const [reports, setReports] = useState<Report[]>(initialReports);
+
+  useEffect(() => {
+    setIsClient(true);
+    const agreed = localStorage.getItem('teletrader-legal-agreed') === 'true';
+    setHasAgreed(agreed);
+  }, []);
+
+  const handleAgree = () => {
+    localStorage.setItem('teletrader-legal-agreed', 'true');
+    setHasAgreed(true);
+  };
+  
+  const handleUpdateAlert = (updatedAlert: AlertPost) => {
+    setAlerts(currentAlerts => currentAlerts.map(a => a.id === updatedAlert.id ? updatedAlert : a));
+  };
+  
+  const handleReport = (newReport: Omit<Report, 'id' | 'status'>) => {
+    const reportWithId: Report = {
+      ...newReport,
+      id: `report-${Date.now()}`,
+      status: 'pending'
+    };
+    setReports(currentReports => [...currentReports, reportWithId]);
+  };
+
+  const activeTraders = traders.filter(t => t.status === 'active');
+  const activeAlerts = alerts
+    .filter(a => activeTraders.some(t => t.id === a.traderId))
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+
+  if (!isClient) {
+    return <div className="container mx-auto max-w-2xl py-8 space-y-4">
+        <Skeleton className="h-10 w-1/3" />
+        <Skeleton className="h-96 w-full" />
+        <Skeleton className="h-96 w-full" />
+    </div>;
+  }
+
+  return (
+    <div className="container mx-auto max-w-3xl py-8">
+      <LegalModal isOpen={!hasAgreed} onAccept={handleAgree} />
+      {hasAgreed && (
+        <SubscriptionGate isSubscribed={currentUser.subscriptionStatus === 'active'}>
+          <Tabs defaultValue="alerts" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="alerts"><Flame className="mr-2 h-4 w-4" /> All Alerts</TabsTrigger>
+              <TabsTrigger value="categories"><Layers className="mr-2 h-4 w-4" /> Categories</TabsTrigger>
+              <TabsTrigger value="rating"><BarChart className="mr-2 h-4 w-4" /> Rating</TabsTrigger>
+            </TabsList>
+            <TabsContent value="alerts" className="mt-6">
+              <div className="space-y-4">
+                {activeAlerts.map((alert) => {
+                  const trader = traders.find((t) => t.id === alert.traderId);
+                  if (!trader) return null;
+                  return (
+                    <AlertCard
+                      key={alert.id}
+                      alert={alert}
+                      trader={trader}
+                      currentUser={currentUser}
+                      onUpdateAlert={handleUpdateAlert}
+                      onReport={handleReport}
+                    />
+                  );
+                })}
+              </div>
+            </TabsContent>
+            <TabsContent value="categories" className="mt-6">
+              <CategoryView categories={initialCategories} traders={traders} />
+            </TabsContent>
+            <TabsContent value="rating" className="mt-6">
+              <RatingView traders={traders} />
+            </TabsContent>
+          </Tabs>
+        </SubscriptionGate>
+      )}
+    </div>
+  );
+}
