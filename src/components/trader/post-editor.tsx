@@ -20,7 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Paperclip } from 'lucide-react';
 
 const formSchema = z.object({
-  text: z.string().min(10, 'Post must be at least 10 characters.'),
+  text: z.string().min(10, 'Пост должен содержать не менее 10 символов.'),
   screenshot: z.any().optional(),
 });
 
@@ -50,8 +50,8 @@ export function PostEditor({ traderId, postToEdit, onSave }: PostEditorProps) {
     };
     onSave(newPostData);
     toast({
-      title: postToEdit ? 'Post Updated' : 'Post Created',
-      description: 'Your alert has been successfully saved.',
+      title: postToEdit ? 'Пост обновлен' : 'Пост создан',
+      description: 'Ваше оповещение было успешно сохранено.',
     });
     if (!postToEdit) {
       form.reset({ text: '' });
@@ -62,7 +62,7 @@ export function PostEditor({ traderId, postToEdit, onSave }: PostEditorProps) {
     <Card>
       <CardHeader>
         <CardTitle className="font-headline">
-          {postToEdit ? 'Edit Alert' : 'Create New Alert'}
+          {postToEdit ? 'Редактировать оповещение' : 'Создать новое оповещение'}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -73,10 +73,10 @@ export function PostEditor({ traderId, postToEdit, onSave }: PostEditorProps) {
               name="text"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Alert Content</FormLabel>
+                  <FormLabel>Содержание оповещения</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="e.g. BTC looking bullish, watching for a break above..."
+                      placeholder="например, BTC выглядит бычьим, жду прорыва выше..."
                       rows={5}
                       {...field}
                     />
@@ -90,7 +90,7 @@ export function PostEditor({ traderId, postToEdit, onSave }: PostEditorProps) {
               name="screenshot"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Screenshot</FormLabel>
+                  <FormLabel>Скриншот</FormLabel>
                   <FormControl>
                     <div className="relative">
                       <Input type="file" className="pl-10"/>
@@ -101,7 +101,7 @@ export function PostEditor({ traderId, postToEdit, onSave }: PostEditorProps) {
                 </FormItem>
               )}
             />
-            <Button type="submit">{postToEdit ? 'Save Changes' : 'Post Alert'}</Button>
+            <Button type="submit">{postToEdit ? 'Сохранить изменения' : 'Опубликовать оповещение'}</Button>
           </form>
         </Form>
       </CardContent>

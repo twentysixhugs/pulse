@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { Inter, Space_Grotesk, Source_Code_Pro } from 'next/font/google';
 
 const inter = Inter({
-  subsets: ['latin'],
+  subsets: ['latin', 'cyrillic'],
   variable: '--font-inter',
 });
 
@@ -21,7 +21,7 @@ const sourceCodePro = Source_Code_Pro({
 
 export const metadata: Metadata = {
   title: 'TeleTrader Hub',
-  description: 'The central hub for trading alerts and community ratings.',
+  description: 'Центральный узел для торговых оповещений и рейтингов сообщества.',
 };
 
 export default function RootLayout({
@@ -30,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="ru" className="dark">
       <body className={cn('font-body antialiased min-h-screen bg-background', inter.variable, spaceGrotesk.variable, sourceCodePro.variable)}>
         {children}
         <Toaster />

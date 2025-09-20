@@ -48,12 +48,12 @@ export function TraderProfileView({
     let newRep = { ...trader.reputation };
 
     if (userRepAction === type) {
-      //撤銷
+      //撤銷 -> Отменить
       type === 'pos' ? newRep.positive-- : newRep.negative--;
       setUserRepAction(null);
-      toast({ title: 'Reputation removed.' });
+      toast({ title: 'Репутация удалена.' });
     } else if (userRepAction) {
-      // 切換
+      // 切換 -> Переключить
       if (type === 'pos') {
         newRep.positive++;
         newRep.negative--;
@@ -62,12 +62,12 @@ export function TraderProfileView({
         newRep.negative++;
       }
       setUserRepAction(type);
-      toast({ title: `Reputation changed to ${type === 'pos' ? '+Rep' : '-Rep'}.` });
+      toast({ title: `Репутация изменена на ${type === 'pos' ? '+Rep' : '-Rep'}.` });
     } else {
-      // 首次
+      // 首次 -> Впервые
       type === 'pos' ? newRep.positive++ : newRep.negative++;
       setUserRepAction(type);
-      toast({ title: `You gave ${type === 'pos' ? '+Rep' : '-Rep'}.` });
+      toast({ title: `Вы поставили ${type === 'pos' ? '+Rep' : '-Rep'}.` });
     }
 
     onUpdateTraderRep(trader.id, newRep);
@@ -97,11 +97,11 @@ export function TraderProfileView({
                     : 'bg-red-500/20 text-red-400 border-red-500/30'
                 }`}
               >
-                {trader.status === 'active' ? 'Active' : 'Inactive'}
+                {trader.status === 'active' ? 'Активен' : 'Неактивен'}
               </Badge>
             </div>
             <div className="mt-4 flex items-center gap-4">
-              <Badge variant="outline">{category?.name || 'Uncategorized'}</Badge>
+              <Badge variant="outline">{category?.name || 'Без категории'}</Badge>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1 text-green-500">
                   <ThumbsUp className="h-4 w-4" />
@@ -128,7 +128,7 @@ export function TraderProfileView({
       </Card>
 
       <div>
-        <h2 className="text-2xl font-headline font-bold mb-4">Post History</h2>
+        <h2 className="text-2xl font-headline font-bold mb-4">История постов</h2>
         {alerts.length > 0 ? (
           <div className="space-y-4">
             {alerts.map((alert) => {
@@ -148,7 +148,7 @@ export function TraderProfileView({
           </div>
         ) : (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">This trader has not posted any alerts yet.</p>
+            <p className="text-muted-foreground">Этот трейдер еще не оставлял постов.</p>
           </div>
         )}
       </div>

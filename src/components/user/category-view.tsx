@@ -24,7 +24,7 @@ export function CategoryView({ categories, traders }: CategoryViewProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-headline">Browse by Category</CardTitle>
+        <CardTitle className="font-headline">Просмотр по категориям</CardTitle>
       </CardHeader>
       <CardContent>
         <Accordion type="multiple" className="w-full">
@@ -68,7 +68,7 @@ export function CategoryView({ categories, traders }: CategoryViewProps) {
                       ))
                     ) : (
                       <p className="p-3 text-muted-foreground">
-                        No active traders in this category.
+                        В этой категории нет активных трейдеров.
                       </p>
                     )}
                   </div>

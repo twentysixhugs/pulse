@@ -30,15 +30,15 @@ export function RatingView({ traders }: RatingViewProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-headline">Trader Leaderboard</CardTitle>
+        <CardTitle className="font-headline">Таблица лидеров трейдеров</CardTitle>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-12 text-center">Rank</TableHead>
-              <TableHead>Trader</TableHead>
-              <TableHead className="text-center">Score</TableHead>
+              <TableHead className="w-12 text-center">Ранг</TableHead>
+              <TableHead>Трейдер</TableHead>
+              <TableHead className="text-center">Счет</TableHead>
               <TableHead className="text-center text-green-500">
                 <ArrowUp className="inline-block h-4 w-4" />
               </TableHead>

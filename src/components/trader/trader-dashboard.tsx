@@ -31,6 +31,8 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
   } from '@/components/ui/alert-dialog';
+import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
 
 export function TraderDashboard() {
   // In a real app, this would be the logged-in trader
@@ -44,8 +46,8 @@ export function TraderDashboard() {
     const newStatus = isActive ? 'active' : 'inactive';
     setCurrentTrader({ ...currentTrader, status: newStatus });
     toast({
-      title: 'Status Updated',
-      description: `Your status is now ${newStatus}.`,
+      title: 'Статус обновлен',
+      description: `Ваш статус теперь ${newStatus === 'active' ? 'активен' : 'неактивен'}.`,
     });
   };
   
@@ -68,7 +70,7 @@ export function TraderDashboard() {
 
   const deletePost = (postId: string) => {
     setAlerts(alerts.filter(a => a.id !== postId));
-    toast({ variant: 'destructive', title: 'Post Deleted' });
+    toast({ variant: 'destructive', title: 'Пост удален' });
   }
 
   const traderAlerts = alerts.filter(a => a.traderId === currentTrader.id)
@@ -79,13 +81,13 @@ export function TraderDashboard() {
       <div className="lg:col-span-2 space-y-8">
         <PostEditor traderId={currentTrader.id} onSave={handleSavePost} postToEdit={editingPost} />
         <div>
-            <h2 className="text-2xl font-headline font-bold mb-4">Your Posts</h2>
+            <h2 className="text-2xl font-headline font-bold mb-4">Ваши посты</h2>
             <div className="space-y-4">
                 {traderAlerts.map(alert => (
                     <Card key={alert.id}>
                         <CardHeader className="flex flex-row justify-between items-start">
                            <div>
-                             <p className="text-sm text-muted-foreground">{new Date(alert.timestamp).toLocaleString()}</p>
+                             <p className="text-sm text-muted-foreground">{format(new Date(alert.timestamp), 'd MMMM yyyy, HH:mm', { locale: ru })}</p>
                              <p className="mt-2">{alert.text}</p>
                            </div>
                            <AlertDialog>
@@ -95,26 +97,26 @@ export function TraderDashboard() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuItem onClick={() => setEditingPost(alert)}>
-                                        <Edit className="mr-2 h-4 w-4" /> Edit
+                                        <Edit className="mr-2 h-4 w-4" /> Редактировать
                                     </DropdownMenuItem>
                                     <AlertDialogTrigger asChild>
                                         <DropdownMenuItem className="text-destructive focus:text-destructive">
-                                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                            <Trash2 className="mr-2 h-4 w-4" /> Удалить
                                         </DropdownMenuItem>
                                     </AlertDialogTrigger>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                              <AlertDialogContent>
                                 <AlertDialogHeader>
-                                    <AlertDialogTitle>Delete Post?</AlertDialogTitle>
+                                    <AlertDialogTitle>Удалить пост?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                    This will permanently delete your post. This action cannot be undone.
+                                    Это действие навсегда удалит ваш пост. Это действие нельзя отменить.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogCancel>Отмена</AlertDialogCancel>
                                     <AlertDialogAction onClick={() => deletePost(alert.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                        Delete
+                                        Удалить
                                     </AlertDialogAction>
                                 </AlertDialogFooter>
                                 </AlertDialogContent>
@@ -128,9 +130,9 @@ export function TraderDashboard() {
       <div className="lg:col-span-1 space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle className="font-headline">Your Status</CardTitle>
+            <CardTitle className="font-headline">Ваш статус</CardTitle>
             <CardDescription>
-              Set your profile to active to be visible to users.
+              Установите свой профиль в активное состояние, чтобы он был виден пользователям.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -141,7 +143,7 @@ export function TraderDashboard() {
                 onCheckedChange={handleStatusChange}
               />
               <Label htmlFor="trader-status" className={currentTrader.status === 'active' ? 'text-primary' : ''}>
-                {currentTrader.status === 'active' ? 'Active' : 'Inactive'}
+                {currentTrader.status === 'active' ? 'Активен' : 'Неактивен'}
               </Label>
             </div>
           </CardContent>

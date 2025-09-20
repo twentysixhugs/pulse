@@ -46,6 +46,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { ImageModal } from './image-modal';
 import { formatDistanceToNow } from 'date-fns';
+import { ru } from 'date-fns/locale';
 
 type AlertCardProps = {
   alert: AlertPost;
@@ -105,8 +106,8 @@ export function AlertCard({
     onUpdateAlert({ ...alert, comments: [...alert.comments, newComment] });
     setCommentText('');
     toast({
-      title: 'Comment posted',
-      description: 'Your comment has been added to the alert.',
+      title: 'Комментарий опубликован',
+      description: 'Ваш комментарий был добавлен к предупреждению.',
     });
   };
 
@@ -114,8 +115,8 @@ export function AlertCard({
     if (!reason.trim()) {
       toast({
         variant: 'destructive',
-        title: 'Report failed',
-        description: 'Please provide a reason for the report.',
+        title: 'Не удалось отправить жалобу',
+        description: 'Пожалуйста, укажите причину жалобы.',
       });
       return;
     }
@@ -125,8 +126,8 @@ export function AlertCard({
       reason,
     });
     toast({
-      title: 'Post Reported',
-      description: 'Thank you for your feedback. Admins will review this post.',
+      title: 'На пост отправлена жалоба',
+      description: 'Спасибо за ваш отзыв. Администраторы рассмотрят этот пост.',
     });
   };
 
@@ -151,7 +152,7 @@ export function AlertCard({
               <div>
                 <Link href={`/traders/${trader.id}`} className="font-bold hover:underline">{trader.name}</Link>
                 <p className="text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(alert.timestamp), { addSuffix: true })}
+                  {formatDistanceToNow(new Date(alert.timestamp), { addSuffix: true, locale: ru })}
                 </p>
               </div>
               <ReportDialog onConfirm={handleReport} />
@@ -166,7 +167,7 @@ export function AlertCard({
           >
             <Image
               src={alert.screenshotUrl}
-              alt="Alert screenshot"
+              alt="Скриншот предупреждения"
               fill
               className="object-cover transition-transform duration-300 hover:scale-105"
               data-ai-hint={alert.screenshotHint}
@@ -215,7 +216,7 @@ export function AlertCard({
             className="text-muted-foreground"
             onClick={() => window.open(alert.screenshotUrl, '_blank')}
           >
-            Open image in browser
+            Открыть изображение в браузере
           </Button>
         </CardFooter>
       </Card>
@@ -224,7 +225,7 @@ export function AlertCard({
         onClose={() => setImageModalOpen(false)}
         imageUrl={alert.screenshotUrl}
         imageHint={alert.screenshotHint}
-        title={`Screenshot from ${trader.name}`}
+        title={`Скриншот от ${trader.name}`}
       />
     </>
   );
@@ -241,11 +242,11 @@ function CommentDialog({ alert, trader, currentUser, commentText, setCommentText
             </DialogTrigger>
             <DialogContent className="max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>Comments</DialogTitle>
+                    <DialogTitle>Комментарии</DialogTitle>
                 </DialogHeader>
                 <div className="max-h-[400px] overflow-y-auto pr-4 space-y-4 my-4">
                     {alert.comments.length === 0 ? (
-                        <p className="text-muted-foreground text-center">No comments yet.</p>
+                        <p className="text-muted-foreground text-center">Комментариев пока нет.</p>
                     ) : (
                         alert.comments.map((comment: CommentType) => (
                             <div key={comment.id} className="flex gap-3">
@@ -255,7 +256,7 @@ function CommentDialog({ alert, trader, currentUser, commentText, setCommentText
                                 <div>
                                     <p className="text-sm font-semibold">{comment.userName}</p>
                                     <p className="text-sm text-muted-foreground">{comment.text}</p>
-                                    <p className="text-xs text-muted-foreground/70">{formatDistanceToNow(new Date(comment.timestamp), { addSuffix: true })}</p>
+                                    <p className="text-xs text-muted-foreground/70">{formatDistanceToNow(new Date(comment.timestamp), { addSuffix: true, locale: ru })}</p>
                                 </div>
                             </div>
                         ))
@@ -263,12 +264,12 @@ function CommentDialog({ alert, trader, currentUser, commentText, setCommentText
                 </div>
                 <DialogFooter className="flex-col sm:flex-row gap-2">
                     <Input
-                        placeholder="Add a comment..."
+                        placeholder="Добавьте комментарий..."
                         value={commentText}
                         onChange={(e) => setCommentText(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && onAddComment()}
                     />
-                    <Button onClick={onAddComment}>Post</Button>
+                    <Button onClick={onAddComment}>Опубликовать</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -297,7 +298,7 @@ function ReportDialog({ onConfirm }: { onConfirm: (reason: string) => void }) {
           <DialogTrigger asChild>
             <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
               <ShieldAlert className="mr-2 h-4 w-4" />
-              <span>Report Post</span>
+              <span>Пожаловаться на пост</span>
             </DropdownMenuItem>
           </DialogTrigger>
         </DropdownMenuContent>
@@ -305,18 +306,18 @@ function ReportDialog({ onConfirm }: { onConfirm: (reason: string) => void }) {
 
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Report Post</DialogTitle>
+          <DialogTitle>Пожаловаться на пост</DialogTitle>
         </DialogHeader>
         <div className="py-4">
           <Textarea
-            placeholder="Please provide a reason for reporting this post..."
+            placeholder="Пожалуйста, укажите причину жалобы на этот пост..."
             value={reason}
             onChange={(e) => setReason(e.target.value)}
           />
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button variant="destructive" onClick={handleConfirm}>Submit Report</Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>Отмена</Button>
+          <Button variant="destructive" onClick={handleConfirm}>Отправить жалобу</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

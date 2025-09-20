@@ -16,7 +16,7 @@ export function TraderLayout({ children }: { children: React.ReactNode }) {
             </Button>
             <Logo />
             <span className="text-sm font-medium text-muted-foreground">/</span>
-            <h1 className="text-lg font-headline font-semibold">Trader Dashboard</h1>
+            <h1 className="text-lg font-headline font-semibold">Панель трейдера</h1>
           </div>
         </div>
       </header>

@@ -10,15 +10,15 @@ export default function AdminPage() {
             <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="users">
                     <Users className="mr-2 h-4 w-4" />
-                    Users
+                    Пользователи
                 </TabsTrigger>
                 <TabsTrigger value="traders">
                     <GanttChartSquare className="mr-2 h-4 w-4" />
-                    Traders
+                    Трейдеры
                 </TabsTrigger>
                 <TabsTrigger value="complaints">
                     <ShieldAlert className="mr-2 h-4 w-4" />
-                    Complaints
+                    Жалобы
                 </TabsTrigger>
             </TabsList>
             <TabsContent value="users" className="mt-6">

@@ -42,8 +42,8 @@ export function TraderManagement() {
         if (trader.id === traderId) {
           const newStatus = trader.status === 'active' ? 'inactive' : 'active';
           toast({
-            title: `Trader ${newStatus === 'active' ? 'Activated' : 'Deactivated'}`,
-            description: `${trader.name} has been ${newStatus}.`,
+            title: `Трейдер ${newStatus === 'active' ? 'активирован' : 'деактивирован'}`,
+            description: `${trader.name} был(а) ${newStatus === 'active' ? 'активирован(а)' : 'деактивирован(а)'}.`,
           });
           return { ...trader, status: newStatus };
         }
@@ -57,8 +57,8 @@ export function TraderManagement() {
       const trader = currentTraders.find(t => t.id === traderId);
       toast({
         variant: 'destructive',
-        title: 'Trader Deleted',
-        description: `${trader?.name} has been permanently deleted.`
+        title: 'Трейдер удален',
+        description: `${trader?.name} был(а) навсегда удален(а).`
       })
       return currentTraders.filter(t => t.id !== traderId)
     });
@@ -66,16 +66,16 @@ export function TraderManagement() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-headline font-bold">Manage Traders</h2>
+      <h2 className="text-2xl font-headline font-bold">Управление трейдерами</h2>
       <div className="rounded-lg border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Telegram ID</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>Имя</TableHead>
+              <TableHead>Категория</TableHead>
+              <TableHead>ID в Telegram</TableHead>
+              <TableHead>Статус</TableHead>
+              <TableHead className="text-right">Действия</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -93,7 +93,7 @@ export function TraderManagement() {
                         : 'bg-red-500/20 text-red-400 border-red-500/30'
                     }
                   >
-                    {trader.status}
+                    {trader.status === 'active' ? 'активен' : 'неактивен'}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
@@ -106,12 +106,12 @@ export function TraderManagement() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => toggleTraderStatus(trader.id)}>
-                            {trader.status === 'active' ? 'Deactivate' : 'Activate'}
+                            {trader.status === 'active' ? 'Деактивировать' : 'Активировать'}
                         </DropdownMenuItem>
-                        <DropdownMenuItem disabled>Edit Posts</DropdownMenuItem>
+                        <DropdownMenuItem disabled>Редактировать посты</DropdownMenuItem>
                          <AlertDialogTrigger asChild>
                             <DropdownMenuItem className="text-destructive focus:text-destructive">
-                                Delete Trader
+                                Удалить трейдера
                             </DropdownMenuItem>
                          </AlertDialogTrigger>
                       </DropdownMenuContent>
@@ -119,18 +119,18 @@ export function TraderManagement() {
 
                      <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Trader?</AlertDialogTitle>
+                        <AlertDialogTitle>Удалить трейдера?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete {trader.name} and all associated data.
+                          Это действие нельзя отменить. Это приведет к необратимому удалению {trader.name} и всех связанных данных.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>Отмена</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => deleteTrader(trader.id)}
                           className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
                         >
-                          Confirm Deletion
+                          Подтвердить удаление
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>

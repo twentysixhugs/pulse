@@ -35,8 +35,8 @@ export function UserManagement() {
         if (user.id === userId) {
           const newStatus = !user.isBanned;
           toast({
-            title: `User ${newStatus ? 'Banned' : 'Unbanned'}`,
-            description: `${user.name} has been ${newStatus ? 'banned' : 'unbanned'}.`,
+            title: `Пользователь ${newStatus ? 'забанен' : 'разбанен'}`,
+            description: `${user.name} был(а) ${newStatus ? 'забанен(а)' : 'разбанен(а)'}.`,
           });
           return { ...user, isBanned: newStatus };
         }
@@ -47,16 +47,16 @@ export function UserManagement() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-headline font-bold">Manage Users</h2>
+      <h2 className="text-2xl font-headline font-bold">Управление пользователями</h2>
       <div className="rounded-lg border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Telegram ID</TableHead>
-              <TableHead>Subscription</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>Имя</TableHead>
+              <TableHead>ID в Telegram</TableHead>
+              <TableHead>Подписка</TableHead>
+              <TableHead>Статус</TableHead>
+              <TableHead className="text-right">Действия</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -73,12 +73,12 @@ export function UserManagement() {
                         : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
                     }
                   >
-                    {user.subscriptionStatus}
+                    {user.subscriptionStatus === 'active' ? 'активна' : 'неактивна'}
                   </Badge>
                 </TableCell>
                 <TableCell>
                   <Badge variant={user.isBanned ? 'destructive' : 'outline'}>
-                    {user.isBanned ? 'Banned' : 'Active'}
+                    {user.isBanned ? 'Забанен' : 'Активен'}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
@@ -88,23 +88,23 @@ export function UserManagement() {
                         variant={user.isBanned ? 'secondary' : 'destructive'}
                         size="sm"
                       >
-                        {user.isBanned ? 'Unban' : 'Ban'}
+                        {user.isBanned ? 'Разбанить' : 'Забанить'}
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This action will {user.isBanned ? 'unban' : 'ban'} the user {user.name}.
+                          Это действие {user.isBanned ? 'разбанит' : 'забанит'} пользователя {user.name}.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>Отмена</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => toggleBanStatus(user.id)}
                           className={user.isBanned ? '' : 'bg-destructive text-destructive-foreground hover:bg-destructive/90'}
                         >
-                          Confirm
+                          Подтвердить
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>

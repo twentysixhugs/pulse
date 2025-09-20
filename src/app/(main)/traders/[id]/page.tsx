@@ -33,7 +33,7 @@ export default function TraderProfilePage({ params }: { params: { id: string } }
   
   const handleReport = (newReport: Omit<Report, 'id' | 'status'>) => {
     // In a real app this would be a server action
-    console.log("Report submitted:", newReport);
+    console.log("Жалоба отправлена:", newReport);
   };
 
   if (!trader) {
@@ -50,7 +50,7 @@ export default function TraderProfilePage({ params }: { params: { id: string } }
       <Button variant="ghost" asChild className="mb-4">
         <Link href="/">
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Feed
+          Назад к ленте
         </Link>
       </Button>
       {trader ? (

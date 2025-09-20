@@ -34,8 +34,8 @@ export function ComplaintManagement() {
       currentReports.map((report) => {
         if (report.id === reportId) {
           toast({
-            title: 'Report Resolved',
-            description: 'The complaint has been marked as resolved.',
+            title: 'Жалоба разрешена',
+            description: 'Жалоба была отмечена как разрешенная.',
           });
           return { ...report, status: 'resolved' };
         }
@@ -48,7 +48,7 @@ export function ComplaintManagement() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-headline font-bold">Complaint Queue</h2>
+      <h2 className="text-2xl font-headline font-bold">Очередь жалоб</h2>
       {pendingReports.length > 0 ? (
         <div className="space-y-6">
           {pendingReports.map((report) => {
@@ -63,28 +63,28 @@ export function ComplaintManagement() {
                 <CardHeader className="bg-muted/50 p-4">
                   <div className="flex justify-between items-center">
                     <div>
-                        <CardTitle className="text-lg">Reported Post</CardTitle>
+                        <CardTitle className="text-lg">Пост, на который пожаловались</CardTitle>
                         <CardDescription>
-                            Reported by: {reporter?.name || 'Unknown User'}
+                            Жалоба от: {reporter?.name || 'Неизвестный пользователь'}
                         </CardDescription>
                     </div>
                      <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button size="sm">Resolve</Button>
+                            <Button size="sm">Разрешить</Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                         <AlertDialogHeader>
-                            <AlertDialogTitle>Resolve Complaint?</AlertDialogTitle>
+                            <AlertDialogTitle>Разрешить жалобу?</AlertDialogTitle>
                             <AlertDialogDescription>
-                            Marking this complaint as resolved will remove it from the queue. This action cannot be undone.
+                            Отметка этой жалобы как разрешенной удалит ее из очереди. Это действие нельзя будет отменить.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogCancel>Отмена</AlertDialogCancel>
                             <AlertDialogAction
                             onClick={() => resolveReport(report.id)}
                             >
-                            Mark as Resolved
+                            Отметить как разрешенную
                             </AlertDialogAction>
                         </AlertDialogFooter>
                         </AlertDialogContent>
@@ -93,7 +93,7 @@ export function ComplaintManagement() {
                 </CardHeader>
                 <CardContent className="p-4 space-y-4">
                     <div>
-                        <h4 className="font-semibold text-sm mb-1">Reason for report:</h4>
+                        <h4 className="font-semibold text-sm mb-1">Причина жалобы:</h4>
                         <p className="text-muted-foreground text-sm border-l-2 border-primary pl-3">{report.reason}</p>
                     </div>
                   <AlertCard
@@ -110,7 +110,7 @@ export function ComplaintManagement() {
         </div>
       ) : (
         <div className="text-center py-16 border-dashed border-2 rounded-lg">
-          <p className="text-muted-foreground">The complaint queue is empty.</p>
+          <p className="text-muted-foreground">Очередь жалоб пуста.</p>
         </div>
       )}
     </div>

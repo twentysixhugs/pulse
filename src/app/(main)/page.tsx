@@ -76,9 +76,9 @@ export default function HomePage() {
         <SubscriptionGate isSubscribed={currentUser.subscriptionStatus === 'active'}>
           <Tabs defaultValue="alerts" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="alerts"><Flame className="mr-2 h-4 w-4" /> All Alerts</TabsTrigger>
-              <TabsTrigger value="categories"><Layers className="mr-2 h-4 w-4" /> Categories</TabsTrigger>
-              <TabsTrigger value="rating"><BarChart className="mr-2 h-4 w-4" /> Rating</TabsTrigger>
+              <TabsTrigger value="alerts"><Flame className="mr-2 h-4 w-4" /> Все оповещения</TabsTrigger>
+              <TabsTrigger value="categories"><Layers className="mr-2 h-4 w-4" /> Категории</TabsTrigger>
+              <TabsTrigger value="rating"><BarChart className="mr-2 h-4 w-4" /> Рейтинг</TabsTrigger>
             </TabsList>
             <TabsContent value="alerts" className="mt-6">
               <div className="space-y-4">

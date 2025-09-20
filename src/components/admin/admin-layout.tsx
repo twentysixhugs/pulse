@@ -16,7 +16,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             </Button>
             <Logo />
             <span className="text-sm font-medium text-muted-foreground">/</span>
-            <h1 className="text-lg font-headline font-semibold">Admin Panel</h1>
+            <h1 className="text-lg font-headline font-semibold">Панель администратора</h1>
           </div>
         </div>
       </header>
