@@ -40,6 +40,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -213,9 +214,9 @@ export function AlertCard({
            <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => window.open(alert.screenshotUrl, '_blank')}
+                asChild
             >
-                Открыть изображение в браузере
+                <a href={alert.screenshotUrl} target="_blank" rel="noopener noreferrer">Открыть изображение в браузере</a>
             </Button>
         </CardFooter>
       </Card>
@@ -224,6 +225,7 @@ export function AlertCard({
         onClose={() => setImageModalOpen(false)}
         imageUrl={alert.screenshotUrl}
         imageHint={alert.screenshotHint}
+        alertId={alert.id}
         title={`Скриншот от ${trader.name}`}
       />
     </>

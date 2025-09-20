@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import Image from 'next/image';
+import { Button } from '../ui/button';
 
 type ImageModalProps = {
   isOpen: boolean;
@@ -15,9 +16,10 @@ type ImageModalProps = {
   imageUrl: string;
   imageHint: string;
   title?: string;
+  alertId: string;
 };
 
-export function ImageModal({ isOpen, onClose, imageUrl, imageHint, title = "Screenshot" }: ImageModalProps) {
+export function ImageModal({ isOpen, onClose, imageUrl, imageHint, title = "Screenshot", alertId }: ImageModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl p-2">
