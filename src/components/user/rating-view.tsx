@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -30,7 +31,7 @@ export function RatingView({ traders }: RatingViewProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-headline">Таблица лидеров трейдеров</CardTitle>
+        <CardTitle className="font-headline">Рейтинг трейдеров</CardTitle>
       </CardHeader>
       <CardContent>
         <Table>
