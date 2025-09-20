@@ -29,7 +29,7 @@ export function SubscriptionGate({ isSubscribed, children }: SubscriptionGatePro
         </CardHeader>
         <CardContent>
           <p className="mb-4 text-muted-foreground">
-            Чтобы получить доступ к TeleTrader Hub, убедитесь, что у вас есть активная подписка и вы являетесь участником нашего частного Telegram-канала.
+            Чтобы получить доступ к PulseScalp, убедитесь, что у вас есть активная подписка и вы являетесь участником нашего частного Telegram-канала.
           </p>
           <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
             <Link href="https://t.me/fashopet983jrt292rk01jf9h3f8j" target="_blank" rel="noopener noreferrer">

@@ -33,12 +33,12 @@ export default function HomePage() {
 
   useEffect(() => {
     setIsClient(true);
-    const agreed = localStorage.getItem('teletrader-legal-agreed') === 'true';
+    const agreed = localStorage.getItem('pulsescalp-legal-agreed') === 'true';
     setHasAgreed(agreed);
   }, []);
 
   const handleAgree = () => {
-    localStorage.setItem('teletrader-legal-agreed', 'true');
+    localStorage.setItem('pulsescalp-legal-agreed', 'true');
     setHasAgreed(true);
   };
   

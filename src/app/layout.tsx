@@ -20,8 +20,8 @@ const sourceCodePro = Source_Code_Pro({
 });
 
 export const metadata: Metadata = {
-  title: 'TeleTrader Hub',
-  description: 'Центральный узел для торговых оповещений и рейтингов сообщества.',
+  title: 'PulseScalp',
+  description: 'Платформа для торговых оповещений и рейтингов сообщества.',
 };
 
 export default function RootLayout({
