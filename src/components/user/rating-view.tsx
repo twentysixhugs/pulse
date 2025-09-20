@@ -56,19 +56,20 @@ export function RatingView({ traders }: RatingViewProps) {
                     {index + 1}
                   </TableCell>
                   <TableCell>
-                    <Link href={`/traders/${trader.id}`} passHref>
-                        <a className="flex items-center gap-3 group">
-                            <Avatar>
-                                <AvatarImage src={trader.profilePicUrl} alt={trader.name} data-ai-hint={trader.profilePicHint}/>
-                                <AvatarFallback>
-                                {trader.name.charAt(0)}
-                                </AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <p className="font-semibold group-hover:underline group-hover:text-primary">{trader.name}</p>
-                                <p className="text-sm text-muted-foreground">{trader.specialization}</p>
-                            </div>
-                        </a>
+                    <Link
+                      href={`/traders/${trader.id}`}
+                      className="flex items-center gap-3 group"
+                    >
+                      <Avatar>
+                          <AvatarImage src={trader.profilePicUrl} alt={trader.name} data-ai-hint={trader.profilePicHint}/>
+                          <AvatarFallback>
+                          {trader.name.charAt(0)}
+                          </AvatarFallback>
+                      </Avatar>
+                      <div>
+                          <p className="font-semibold group-hover:underline group-hover:text-primary">{trader.name}</p>
+                          <p className="text-sm text-muted-foreground">{trader.specialization}</p>
+                      </div>
                     </Link>
                   </TableCell>
                   <TableCell className="text-center font-bold text-lg">

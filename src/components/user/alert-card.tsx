@@ -134,26 +134,22 @@ export function AlertCard({
     <>
       <Card className="w-full overflow-hidden">
         <CardHeader className="flex flex-row items-start gap-4 p-4">
-          <Link href={`/traders/${trader.id}`} legacyBehavior>
-            <a className="cursor-pointer">
-              <Avatar>
-                <AvatarImage
-                  src={trader.profilePicUrl}
-                  alt={trader.name}
-                  data-ai-hint={trader.profilePicHint}
-                />
-                <AvatarFallback>
-                  {trader.name.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-            </a>
+          <Link href={`/traders/${trader.id}`} className="cursor-pointer">
+            <Avatar>
+              <AvatarImage
+                src={trader.profilePicUrl}
+                alt={trader.name}
+                data-ai-hint={trader.profilePicHint}
+              />
+              <AvatarFallback>
+                {trader.name.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
           </Link>
           <div className="flex-1">
             <div className="flex items-center justify-between">
               <div>
-                <Link href={`/traders/${trader.id}`} legacyBehavior>
-                  <a className="font-bold hover:underline">{trader.name}</a>
-                </Link>
+                <Link href={`/traders/${trader.id}`} className="font-bold hover:underline">{trader.name}</Link>
                 <p className="text-xs text-muted-foreground">
                   {formatDistanceToNow(new Date(alert.timestamp), { addSuffix: true })}
                 </p>

@@ -44,24 +44,26 @@ export function CategoryView({ categories, traders }: CategoryViewProps) {
                   <div className="flex flex-col gap-2 pt-2">
                     {tradersInCategory.length > 0 ? (
                       tradersInCategory.map((trader) => (
-                        <Link href={`/traders/${trader.id}`} key={trader.id} passHref>
-                          <a className="flex items-center justify-between rounded-md p-3 hover:bg-muted/50 transition-colors">
-                            <div className="flex items-center gap-3">
-                              <Avatar>
-                                <AvatarImage src={trader.profilePicUrl} alt={trader.name} data-ai-hint={trader.profilePicHint}/>
-                                <AvatarFallback>
-                                  {trader.name.charAt(0)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <p className="font-semibold">{trader.name}</p>
-                                <p className="text-sm text-muted-foreground">
-                                  {trader.specialization}
-                                </p>
-                              </div>
+                        <Link
+                          href={`/traders/${trader.id}`}
+                          key={trader.id}
+                          className="flex items-center justify-between rounded-md p-3 hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarImage src={trader.profilePicUrl} alt={trader.name} data-ai-hint={trader.profilePicHint}/>
+                              <AvatarFallback>
+                                {trader.name.charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-semibold">{trader.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {trader.specialization}
+                              </p>
                             </div>
-                            <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                          </a>
+                          </div>
+                          <ChevronRight className="h-5 w-5 text-muted-foreground" />
                         </Link>
                       ))
                     ) : (
