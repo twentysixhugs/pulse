@@ -27,7 +27,7 @@ export function CategoryView({ categories, traders }: CategoryViewProps) {
         <CardTitle className="font-headline">Browse by Category</CardTitle>
       </CardHeader>
       <CardContent>
-        <Accordion type="single" collapsible className="w-full">
+        <Accordion type="multiple" className="w-full">
           {categories.map((category) => {
             const tradersInCategory = activeTraders.filter(
               (trader) => trader.category === category.id
