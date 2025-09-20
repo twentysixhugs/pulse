@@ -27,7 +27,6 @@ import {
   ShieldAlert,
   ZoomIn,
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -211,13 +210,6 @@ export function AlertCard({
               onAddComment={handleAddComment}
             />
           </div>
-           <Button
-                variant="secondary"
-                size="sm"
-                asChild
-            >
-                <a href={alert.screenshotUrl} target="_blank" rel="noopener noreferrer">Открыть изображение в браузере</a>
-            </Button>
         </CardFooter>
       </Card>
       <ImageModal
