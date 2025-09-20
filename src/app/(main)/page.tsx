@@ -62,7 +62,7 @@ export default function HomePage() {
 
 
   if (!isClient) {
-    return <div className="container mx-auto max-w-2xl py-8 space-y-4">
+    return <div className="container mx-auto max-w-2xl py-8 space-y-4 px-4">
         <Skeleton className="h-10 w-1/3" />
         <Skeleton className="h-96 w-full" />
         <Skeleton className="h-96 w-full" />
@@ -70,7 +70,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="container mx-auto max-w-3xl py-8">
+    <div className="container mx-auto max-w-3xl py-8 px-4">
       <LegalModal isOpen={!hasAgreed} onAccept={handleAgree} />
       {hasAgreed && (
         <SubscriptionGate isSubscribed={currentUser.subscriptionStatus === 'active'}>
@@ -78,7 +78,7 @@ export default function HomePage() {
             <TabsList className="flex flex-wrap h-auto">
               <TabsTrigger value="alerts" className="flex-1">
                 <Flame className="h-4 w-4 mr-2" />
-                Все оповещения
+                Все алерты
               </TabsTrigger>
               <TabsTrigger value="categories" className="flex-1">
                 <Layers className="h-4 w-4 mr-2" />

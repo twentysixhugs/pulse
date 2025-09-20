@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -7,6 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import Image from 'next/image';
+import { Button } from '../ui/button';
 
 type ImageModalProps = {
   isOpen: boolean;
@@ -31,6 +33,15 @@ export function ImageModal({ isOpen, onClose, imageUrl, imageHint, title = "Scre
                 data-ai-hint={imageHint}
                 className="object-contain rounded-md"
             />
+        </div>
+        <div className="absolute bottom-4 right-4">
+            <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => window.open(imageUrl, '_blank')}
+            >
+                Открыть изображение в браузере
+            </Button>
         </div>
       </DialogContent>
     </Dialog>

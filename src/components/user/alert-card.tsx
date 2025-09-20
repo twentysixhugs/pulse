@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -210,14 +211,6 @@ export function AlertCard({
               onAddComment={handleAddComment}
             />
           </div>
-          <Button
-            variant="link"
-            size="sm"
-            className="text-muted-foreground"
-            onClick={() => window.open(alert.screenshotUrl, '_blank')}
-          >
-            Открыть изображение в браузере
-          </Button>
         </CardFooter>
       </Card>
       <ImageModal
