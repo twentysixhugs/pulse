@@ -75,18 +75,18 @@ export default function HomePage() {
       {hasAgreed && (
         <SubscriptionGate isSubscribed={currentUser.subscriptionStatus === 'active'}>
           <Tabs defaultValue="alerts" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="alerts">
-                <Flame className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">Все оповещения</span>
+            <TabsList className="flex flex-wrap h-auto">
+              <TabsTrigger value="alerts" className="flex-1">
+                <Flame className="h-4 w-4 mr-2" />
+                Все оповещения
               </TabsTrigger>
-              <TabsTrigger value="categories">
-                <Layers className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">Категории</span>
+              <TabsTrigger value="categories" className="flex-1">
+                <Layers className="h-4 w-4 mr-2" />
+                Категории
               </TabsTrigger>
-              <TabsTrigger value="rating">
-                <BarChart className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">Рейтинг</span>
+              <TabsTrigger value="rating" className="flex-1">
+                <BarChart className="h-4 w-4 mr-2" />
+                Рейтинг
               </TabsTrigger>
             </TabsList>
             <TabsContent value="alerts" className="mt-6">
