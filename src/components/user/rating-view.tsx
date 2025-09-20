@@ -41,12 +41,6 @@ export function RatingView({ traders, categories }: RatingViewProps) {
               <TableHead className="w-12 text-center">Место</TableHead>
               <TableHead>Трейдер</TableHead>
               <TableHead className="text-center">Счет</TableHead>
-              <TableHead className="text-center text-green-500">
-                <ArrowUp className="inline-block h-4 w-4" />
-              </TableHead>
-              <TableHead className="text-center text-red-500">
-                <ArrowDown className="inline-block h-4 w-4" />
-              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -77,12 +71,6 @@ export function RatingView({ traders, categories }: RatingViewProps) {
                   </TableCell>
                   <TableCell className="text-center font-bold text-lg">
                     {score}
-                  </TableCell>
-                  <TableCell className="text-center text-green-500 font-medium">
-                    {trader.reputation.positive}
-                  </TableCell>
-                  <TableCell className="text-center text-red-500 font-medium">
-                    {trader.reputation.negative}
                   </TableCell>
                 </TableRow>
               );
