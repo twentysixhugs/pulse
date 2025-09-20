@@ -39,7 +39,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -136,7 +135,7 @@ export function AlertCard({
     <>
       <Card className="w-full overflow-hidden">
         <CardHeader className="flex flex-row items-start gap-4 p-4">
-          <Link href={`/traders/${trader.id}`} className="cursor-pointer">
+          <Link href={`/traders/${trader.id}`}>
             <Avatar>
               <AvatarImage
                 src={trader.profilePicUrl}
@@ -211,6 +210,13 @@ export function AlertCard({
               onAddComment={handleAddComment}
             />
           </div>
+           <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => window.open(alert.screenshotUrl, '_blank')}
+            >
+                Открыть изображение в браузере
+            </Button>
         </CardFooter>
       </Card>
       <ImageModal
