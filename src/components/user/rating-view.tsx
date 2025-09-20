@@ -10,16 +10,17 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trader } from '@/lib/data';
+import { Category, Trader } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import Link from 'next/link';
 
 type RatingViewProps = {
   traders: Trader[];
+  categories: Category[];
 };
 
-export function RatingView({ traders }: RatingViewProps) {
+export function RatingView({ traders, categories }: RatingViewProps) {
   const sortedTraders = [...traders]
     .filter(t => t.status === 'active')
     .sort((a, b) => {
@@ -31,13 +32,13 @@ export function RatingView({ traders }: RatingViewProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-headline">Рейтинг трейдеров</CardTitle>
+        <CardTitle className="font-headline">Топ трейдеров</CardTitle>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-12 text-center">Ранг</TableHead>
+              <TableHead className="w-12 text-center">Место</TableHead>
               <TableHead>Трейдер</TableHead>
               <TableHead className="text-center">Счет</TableHead>
               <TableHead className="text-center text-green-500">
@@ -51,6 +52,7 @@ export function RatingView({ traders }: RatingViewProps) {
           <TableBody>
             {sortedTraders.map((trader, index) => {
               const score = trader.reputation.positive - trader.reputation.negative;
+              const category = categories.find(c => c.id === trader.category);
               return (
                 <TableRow key={trader.id}>
                   <TableCell className="text-center font-bold text-lg">
@@ -69,7 +71,7 @@ export function RatingView({ traders }: RatingViewProps) {
                       </Avatar>
                       <div>
                           <p className="font-semibold group-hover:underline group-hover:text-primary">{trader.name}</p>
-                          <p className="text-sm text-muted-foreground">{trader.specialization}</p>
+                          <p className="text-sm text-muted-foreground">{category?.name || 'Без категории'}</p>
                       </div>
                     </Link>
                   </TableCell>

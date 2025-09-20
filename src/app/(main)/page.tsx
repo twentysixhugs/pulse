@@ -22,6 +22,8 @@ import { RatingView } from '@/components/user/rating-view';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Flame, Layers } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { ExternalLink } from 'lucide-react';
 
 export default function HomePage() {
   const [isClient, setIsClient] = useState(false);
@@ -111,7 +113,7 @@ export default function HomePage() {
               <CategoryView categories={initialCategories} traders={traders} />
             </TabsContent>
             <TabsContent value="rating" className="mt-6">
-              <RatingView traders={traders} />
+              <RatingView traders={traders} categories={initialCategories} />
             </TabsContent>
           </Tabs>
         </SubscriptionGate>
