@@ -11,7 +11,8 @@ import {
   Report,
   toggleAlertLike,
   toggleAlertDislike,
-  addCommentToAlert
+  addCommentToAlert,
+  db
 } from '@/lib/firestore';
 import {
   Card,
@@ -29,6 +30,7 @@ import {
   ShieldAlert,
   ZoomIn,
   Loader2,
+  Send,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -93,9 +95,9 @@ export function AlertCard({
     
     try {
       if (type === 'like') {
-        await toggleAlertLike(alert.id, currentUser.id, hasLiked);
+        await toggleAlertLike(alert.id, currentUser.id);
       } else {
-        await toggleAlertDislike(alert.id, currentUser.id, hasDisliked);
+        await toggleAlertDislike(alert.id, currentUser.id);
       }
     } catch (error) {
       console.error("Failed to update reaction:", error);
@@ -274,7 +276,7 @@ function CommentDialog({ alert, currentUser, commentText, setCommentText, onAddC
                         <p className="text-muted-foreground text-center">Комментариев пока нет.</p>
                     ) : (
                         alert.comments.map((comment: CommentType) => (
-                            <div key={comment.id} className="flex gap-3">
+                            <div key={comment.id} className="flex gap-3 items-start">
                                 <Avatar className="h-8 w-8">
                                     <AvatarFallback>{comment.userName.charAt(0)}</AvatarFallback>
                                 </Avatar>
@@ -287,18 +289,21 @@ function CommentDialog({ alert, currentUser, commentText, setCommentText, onAddC
                         ))
                     )}
                 </div>
-                <DialogFooter className="flex-col sm:flex-row gap-2">
-                    <Input
-                        placeholder="Добавьте комментарий..."
-                        value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && onAddComment()}
-                        disabled={!currentUser || isSubmitting}
-                    />
-                    <Button onClick={onAddComment} disabled={!currentUser || !commentText.trim() || isSubmitting}>
-                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {isSubmitting ? 'Публикация...' : 'Опубликовать'}
-                    </Button>
+                <DialogFooter>
+                    <div className="flex items-center w-full space-x-2">
+                        <Input
+                            placeholder="Добавьте комментарий..."
+                            value={commentText}
+                            onChange={(e) => setCommentText(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && onAddComment()}
+                            disabled={!currentUser || isSubmitting}
+                            className="text-sm"
+                        />
+                        <Button onClick={onAddComment} disabled={!currentUser || !commentText.trim() || isSubmitting} size="icon" className="shrink-0">
+                            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                            <span className="sr-only">Отправить</span>
+                        </Button>
+                    </div>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -352,5 +357,3 @@ function ReportDialog({ onConfirm, disabled }: { onConfirm: (reason: string) => 
     </Dialog>
   );
 }
-
-    
