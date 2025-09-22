@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { AuthContext, AuthUser } from '@/hooks/use-auth';
-import { DUMMY_USERS, DUMMY_TRADERS, DUMMY_ADMINS } from '@/lib/dummy-auth';
+import { ALL_DUMMY_USERS } from '@/lib/dummy-auth';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut as firebaseSignOut, User as FirebaseUser, signInAnonymously } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -16,55 +16,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const handleUser = useCallback(async (firebaseUser: FirebaseUser | null) => {
-    if (firebaseUser) {
-      if (firebaseUser.isAnonymous) {
-         // This is a dummy user for the login page
-        setUser(null);
-        setLoading(false);
-        return;
-      }
-      
-      const docRef = doc(db, "users", firebaseUser.uid);
-      const docSnap = await getDoc(docRef);
-
-      if (docSnap.exists()) {
-        const userData = docSnap.data();
-        const authUser: AuthUser = {
-          uid: firebaseUser.uid,
-          role: userData.role || 'user',
-          name: userData.name || 'Anonymous'
-        };
-        setUser(authUser);
-      } else {
-        // This case should ideally not happen if database is seeded correctly
-         setUser(null);
-      }
-    } else {
-      setUser(null);
+  useEffect(() => {
+    const storedUser = localStorage.getItem('authUser');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
     }
     setLoading(false);
   }, []);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, handleUser);
-    return () => unsubscribe();
-  }, [handleUser]);
 
   const login = async (credentials: any) => {
     const { email, password } = credentials;
-    try {
-        await signInWithEmailAndPassword(auth, email, password);
-        // onAuthStateChanged will handle setting the user
-    } catch (error) {
-        console.error("Login failed:", error);
-        throw new Error("Invalid credentials");
+    const userToLogin = ALL_DUMMY_USERS.find(
+      (u) => u.email === email && u.password === password
+    );
+
+    if (userToLogin) {
+      const authUser: AuthUser = {
+        uid: userToLogin.uid,
+        role: userToLogin.role as 'user' | 'admin' | 'trader',
+        name: userToLogin.name
+      };
+      setUser(authUser);
+      localStorage.setItem('authUser', JSON.stringify(authUser));
+    } else {
+      throw new Error('Invalid credentials');
     }
   };
 
   const logout = async () => {
-    await firebaseSignOut(auth);
     setUser(null);
+    localStorage.removeItem('authUser');
     router.push('/login');
   };
 
@@ -82,15 +64,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (isAuthPage) {
             router.push('/');
         } else {
-            const rolePath = user.role;
-            const currentArea = pathname.split('/')[1] || 'user';
+            const role = user.role;
             
             let expectedArea = 'main';
-            if (rolePath === 'admin') expectedArea = 'admin';
-            if (rolePath === 'trader') expectedArea = 'trader';
-            if (rolePath === 'user') expectedArea = 'main';
+            if (role === 'admin') expectedArea = 'admin';
+            if (role === 'trader') expectedArea = 'trader';
 
-            const actualArea = pathname === '/' ? 'main' : currentArea;
+            const currentArea = pathname.split('/')[1];
+            const actualArea = currentArea === '' || currentArea === 'profile' || currentArea === 'traders' ? 'main' : currentArea;
 
             if (expectedArea !== actualArea) {
                 console.warn(`Redirecting user with role '${user.role}' from '${pathname}' to '/${expectedArea === 'main' ? '' : expectedArea}'.`);
@@ -107,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logout,
   };
   
-  if (loading) {
+  if (loading && pathname !== '/login') {
     return <div className="w-screen h-screen flex items-center justify-center bg-background">Loading...</div>;
   }
 
