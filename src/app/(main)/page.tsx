@@ -122,6 +122,7 @@ export default function HomePage() {
                       currentUser={currentUser}
                       onUpdateAlert={handleUpdateAlert}
                       onReport={handleReport}
+                      db={db}
                     />
                   ))}
               </div>
