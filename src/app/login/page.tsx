@@ -98,9 +98,6 @@ export default function LoginPage() {
               </Button>
           </form>
         </CardContent>
-        <CardFooter className="text-center text-xs text-muted-foreground">
-           <p>user@example.com / password<br/>trader@example.com / password<br/>admin@example.com / password</p>
-        </CardFooter>
       </Card>
     </div>
   );
