@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { Inter, Space_Grotesk, Source_Code_Pro } from 'next/font/google';
 import { AuthProvider } from '@/components/auth/auth-provider';
+import { firebaseConfig } from '@/lib/firebase';
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -34,6 +35,13 @@ export default function RootLayout({
   return (
     <html lang="ru" className="dark">
       <body className={cn('font-body antialiased min-h-screen bg-background', inter.variable, spaceGrotesk.variable, sourceCodePro.variable)}>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.firebaseConfig = ${JSON.stringify(firebaseConfig)};
+            `,
+          }}
+        />
         <AuthProvider>
           {children}
         </AuthProvider>
