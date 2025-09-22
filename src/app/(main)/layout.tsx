@@ -1,16 +1,10 @@
 
 'use client';
-import { useState, useEffect } from 'react';
 import { Logo } from "@/components/common/logo";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { User, LogOut, Database, AlertCircle } from "lucide-react";
+import { User, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { seedDatabase } from '@/lib/seed-db';
-import { useToast } from '@/hooks/use-toast';
-import { db } from '@/lib/firebase';
-import { collection, getDocs, query, limit } from 'firebase/firestore';
-
 
 export default function MainLayout({
   children,
@@ -18,54 +12,6 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   const { user, logout } = useAuth();
-  const [showSeedButton, setShowSeedButton] = useState(false);
-  const [isSeeding, setIsSeeding] = useState(false);
-  const { toast } = useToast();
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    // This ensures that any logic depending on client-side state
-    // runs only after the component has mounted on the client.
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    async function checkDb() {
-      // isDbSeeded logic is now directly here
-      const q = query(collection(db, 'users'), limit(1));
-      const snapshot = await getDocs(q);
-      const seeded = !snapshot.empty;
-      setShowSeedButton(!seeded);
-    }
-    
-    // This check ensures this code only runs on the client, after hydration
-    if (isClient) {
-      checkDb();
-    }
-  }, [isClient]);
-
-  const handleSeed = async () => {
-    setIsSeeding(true);
-    try {
-      await seedDatabase(db);
-      toast({
-        title: "Database Seeded",
-        description: "The database has been populated with initial data.",
-      });
-      setShowSeedButton(false);
-      // force reload to show new data
-      window.location.reload(); 
-    } catch (error) {
-      console.error("Failed to seed database:", error);
-      toast({
-        variant: "destructive",
-        title: "Seeding Failed",
-        description: "There was an error populating the database.",
-      });
-    } finally {
-      setIsSeeding(false);
-    }
-  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -75,21 +21,6 @@ export default function MainLayout({
             <Logo />
           </Link>
           <div className="flex items-center gap-2">
-            {isClient && showSeedButton && (
-              <div className="flex items-center gap-2 border-r pr-2 mr-2">
-                 <AlertCircle className="h-5 w-5 text-destructive" />
-                 <span className="text-sm text-muted-foreground hidden sm:inline">No Data Found</span>
-                <Button
-                  onClick={handleSeed}
-                  disabled={isSeeding}
-                  variant="destructive"
-                  size="sm"
-                >
-                  <Database className="h-4 w-4 mr-2" />
-                  {isSeeding ? "Seeding..." : "Seed Database"}
-                </Button>
-              </div>
-            )}
             <nav className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground hidden sm:inline">
                 {user?.name}
