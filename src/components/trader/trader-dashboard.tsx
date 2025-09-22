@@ -1,12 +1,16 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Trader,
   AlertPost,
-  traders as initialTraders,
-  alerts as initialAlerts,
-} from '@/lib/data';
+  getTraders,
+  getAlerts,
+  createAlert,
+  updateAlertText,
+  deleteAlert
+} from '@/lib/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -33,17 +37,42 @@ import {
   } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import { useAuth } from '@/hooks/use-auth';
+import { Skeleton } from '../ui/skeleton';
 
 export function TraderDashboard() {
-  // In a real app, this would be the logged-in trader
-  const [currentTrader, setCurrentTrader] = useState<Trader>(initialTraders[0]);
-  const [alerts, setAlerts] = useState<AlertPost[]>(initialAlerts);
+  const { user: authUser } = useAuth();
+  const [currentTrader, setCurrentTrader] = useState<Trader | undefined>();
+  const [alerts, setAlerts] = useState<AlertPost[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editingPost, setEditingPost] = useState<AlertPost | undefined>(undefined);
   
   const { toast } = useToast();
 
+  useEffect(() => {
+    async function fetchData() {
+        if (authUser) {
+            setLoading(true);
+            try {
+                const [tradersData, alertsData] = await Promise.all([getTraders(), getAlerts()]);
+                const trader = tradersData.find(t => t.id === authUser.uid);
+                setCurrentTrader(trader);
+                setAlerts(alertsData);
+            } catch (error) {
+                console.error("Failed to load trader dashboard:", error);
+                toast({ variant: 'destructive', title: "Error", description: "Could not load dashboard data."});
+            } finally {
+                setLoading(false);
+            }
+        }
+    }
+    fetchData();
+  }, [authUser, toast]);
+
   const handleStatusChange = (isActive: boolean) => {
+    if (!currentTrader) return;
     const newStatus = isActive ? 'active' : 'inactive';
+    // In a real app, this would be a call to Firestore to update the trader's status
     setCurrentTrader({ ...currentTrader, status: newStatus });
     toast({
       title: 'Статус обновлен',
@@ -51,30 +80,39 @@ export function TraderDashboard() {
     });
   };
   
-  const handleSavePost = (postData: Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'> & {id?: string}) => {
-    if (postData.id) { // Editing
-      setAlerts(alerts.map(a => a.id === postData.id ? {...a, text: postData.text} : a));
+  const handleSavePost = async (postData: Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'> & {id?: string}) => {
+    if (postData.id && editingPost) { // Editing
+      await updateAlertText(postData.id, postData.text);
+      setAlerts(alerts.map(a => a.id === postData.id ? {...a, text: postData.text, screenshotUrl: postData.screenshotUrl || a.screenshotUrl } : a));
       setEditingPost(undefined);
     } else { // Creating
-      const newPost: AlertPost = {
-        ...postData,
-        id: `alert-${Date.now()}`,
-        timestamp: new Date().toISOString(),
-        likes: [],
-        dislikes: [],
-        comments: [],
-      };
+      const newPost = await createAlert(postData);
       setAlerts([newPost, ...alerts]);
     }
   };
 
-  const deletePost = (postId: string) => {
+  const handleDeletePost = async (postId: string) => {
+    await deleteAlert(postId);
     setAlerts(alerts.filter(a => a.id !== postId));
     toast({ variant: 'destructive', title: 'Пост удален' });
   }
 
+  if (loading || !currentTrader) {
+      return (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-8">
+                <Skeleton className="h-96 w-full" />
+                <Skeleton className="h-48 w-full" />
+            </div>
+            <div className="lg:col-span-1">
+                <Skeleton className="h-48 w-full" />
+            </div>
+        </div>
+      );
+  }
+
   const traderAlerts = alerts.filter(a => a.traderId === currentTrader.id)
-    .sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    .sort((a,b) => new Date(b.timestamp as string).getTime() - new Date(a.timestamp as string).getTime());
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -87,7 +125,7 @@ export function TraderDashboard() {
                     <Card key={alert.id}>
                         <CardHeader className="flex flex-row justify-between items-start">
                            <div>
-                             <p className="text-sm text-muted-foreground">{format(new Date(alert.timestamp), 'd MMMM yyyy, HH:mm', { locale: ru })}</p>
+                             <p className="text-sm text-muted-foreground">{format(new Date(alert.timestamp as string), 'd MMMM yyyy, HH:mm', { locale: ru })}</p>
                              <p className="mt-2">{alert.text}</p>
                            </div>
                            <AlertDialog>
@@ -115,7 +153,7 @@ export function TraderDashboard() {
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                     <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => deletePost(alert.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    <AlertDialogAction onClick={() => handleDeletePost(alert.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                                         Удалить
                                     </AlertDialogAction>
                                 </AlertDialogFooter>

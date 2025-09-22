@@ -10,7 +10,10 @@ import {
   User,
   Comment as CommentType,
   Report,
-} from '@/lib/data';
+  toggleAlertLike,
+  toggleAlertDislike,
+  addCommentToAlert
+} from '@/lib/firestore';
 import {
   Card,
   CardContent,
@@ -70,32 +73,28 @@ export function AlertCard({
   const hasLiked = alert.likes.includes(currentUser.id);
   const hasDisliked = alert.dislikes.includes(currentUser.id);
 
-  const handleLike = () => {
+  const handleLike = async () => {
+    await toggleAlertLike(alert.id, currentUser.id, hasLiked);
+    // Optimistic update
     const newLikes = hasLiked
       ? alert.likes.filter((id) => id !== currentUser.id)
       : [...alert.likes, currentUser.id];
     const newDislikes = alert.dislikes.filter((id) => id !== currentUser.id);
-    onUpdateAlert({
-      ...alert,
-      likes: newLikes,
-      dislikes: newDislikes,
-    });
+    onUpdateAlert({ ...alert, likes: newLikes, dislikes: newDislikes });
   };
 
-  const handleDislike = () => {
+  const handleDislike = async () => {
+    await toggleAlertDislike(alert.id, currentUser.id, hasDisliked);
+    // Optimistic update
     const newDislikes = hasDisliked
       ? alert.dislikes.filter((id) => id !== currentUser.id)
       : [...alert.dislikes, currentUser.id];
     const newLikes = alert.likes.filter((id) => id !== currentUser.id);
-    onUpdateAlert({
-      ...alert,
-      likes: newLikes,
-      dislikes: newDislikes,
-    });
+    onUpdateAlert({ ...alert, likes: newLikes, dislikes: newDislikes });
   };
 
-  const handleAddComment = () => {
-    if (!commentText.trim()) return;
+  const handleAddComment = async () => {
+    if (!commentText.trim() || !currentUser) return;
     const newComment: CommentType = {
       id: `comment-${Date.now()}`,
       userId: currentUser.id,
@@ -103,6 +102,9 @@ export function AlertCard({
       text: commentText,
       timestamp: new Date().toISOString(),
     };
+    
+    await addCommentToAlert(alert.id, newComment);
+    
     onUpdateAlert({ ...alert, comments: [...alert.comments, newComment] });
     setCommentText('');
     toast({
@@ -152,7 +154,7 @@ export function AlertCard({
               <div>
                 <Link href={`/traders/${trader.id}`} className="font-bold hover:underline">{trader.name}</Link>
                 <p className="text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(alert.timestamp), { addSuffix: true, locale: ru })}
+                  {formatDistanceToNow(new Date(alert.timestamp as string), { addSuffix: true, locale: ru })}
                 </p>
               </div>
               <ReportDialog onConfirm={handleReport} />
@@ -186,6 +188,7 @@ export function AlertCard({
               className={`flex items-center gap-2 ${
                 hasLiked ? 'text-primary' : 'text-muted-foreground'
               }`}
+              disabled={!currentUser}
             >
               <ThumbsUp className="h-4 w-4" />
               <span>{alert.likes.length}</span>
@@ -197,6 +200,7 @@ export function AlertCard({
               className={`flex items-center gap-2 ${
                 hasDisliked ? 'text-destructive' : 'text-muted-foreground'
               }`}
+              disabled={!currentUser}
             >
               <ThumbsDown className="h-4 w-4" />
               <span>{alert.dislikes.length}</span>
@@ -216,7 +220,7 @@ export function AlertCard({
         isOpen={isImageModalOpen}
         onClose={() => setImageModalOpen(false)}
         imageUrl={alert.screenshotUrl}
-        imageHint={alert.screenshotHint}
+        imageHint={alert.screenshotHint || 'stock chart'}
         alertId={alert.id}
         title={`Скриншот от ${trader.name}`}
       />
@@ -228,7 +232,7 @@ function CommentDialog({ alert, trader, currentUser, commentText, setCommentText
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="flex items-center gap-2 text-muted-foreground">
+                <Button variant="ghost" size="sm" className="flex items-center gap-2 text-muted-foreground" disabled={!currentUser}>
                     <MessageSquare className="h-4 w-4" />
                     <span>{alert.comments.length}</span>
                 </Button>
@@ -261,8 +265,9 @@ function CommentDialog({ alert, trader, currentUser, commentText, setCommentText
                         value={commentText}
                         onChange={(e) => setCommentText(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && onAddComment()}
+                        disabled={!currentUser}
                     />
-                    <Button onClick={onAddComment}>Опубликовать</Button>
+                    <Button onClick={onAddComment} disabled={!currentUser}>Опубликовать</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

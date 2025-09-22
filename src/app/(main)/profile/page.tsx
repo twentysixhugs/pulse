@@ -2,24 +2,32 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { User, users as initialUsers } from '@/lib/data';
+import { User, getUsers } from '@/lib/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function ProfilePage() {
+  const { user: authUser } = useAuth();
   const [currentUser, setCurrentUser] = useState<User | undefined>(undefined);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // In a real app, you would fetch the current user's data
-    setCurrentUser(initialUsers[0]);
-    setLoading(false);
-  }, []);
+    async function fetchUser() {
+      if (authUser) {
+        setLoading(true);
+        const users = await getUsers();
+        const foundUser = users.find(u => u.id === authUser.uid);
+        setCurrentUser(foundUser);
+        setLoading(false);
+      }
+    }
+    fetchUser();
+  }, [authUser]);
 
   return (
     <div className="container mx-auto max-w-2xl py-8 px-4">

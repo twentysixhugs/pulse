@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -9,7 +10,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Category, Trader } from '@/lib/data';
+import { Category, Trader } from '@/lib/firestore';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 

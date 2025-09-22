@@ -1,6 +1,6 @@
+
 'use client';
 
-import { useState } from 'react';
 import {
   AlertPost,
   Category,
@@ -8,7 +8,7 @@ import {
   User,
   Reputation,
   Report,
-} from '@/lib/data';
+} from '@/lib/firestore';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -23,8 +23,9 @@ type TraderProfileViewProps = {
   alerts: AlertPost[];
   allTraders: Trader[];
   currentUser: User;
+  userRepAction: 'pos' | 'neg' | null;
   onUpdateAlert: (updatedAlert: AlertPost) => void;
-  onUpdateTraderRep: (traderId: string, newRep: Reputation) => void;
+  onUpdateTraderRep: (traderId: string, type: 'pos' | 'neg') => void;
   onReport: (report: Omit<Report, 'id' | 'status'>) => void;
 };
 
@@ -34,43 +35,23 @@ export function TraderProfileView({
   alerts,
   allTraders,
   currentUser,
+  userRepAction,
   onUpdateAlert,
   onUpdateTraderRep,
   onReport,
 }: TraderProfileViewProps) {
   const { toast } = useToast();
-  // In a real app, this would come from a database query
-  const [userRepAction, setUserRepAction] = useState<'pos' | 'neg' | null>(
-    null
-  );
 
   const handleRep = (type: 'pos' | 'neg') => {
-    let newRep = { ...trader.reputation };
+    onUpdateTraderRep(trader.id, type);
 
     if (userRepAction === type) {
-      //撤銷 -> Отменить
-      type === 'pos' ? newRep.positive-- : newRep.negative--;
-      setUserRepAction(null);
-      toast({ title: 'Репутация удалена.' });
+        toast({ title: 'Репутация удалена.' });
     } else if (userRepAction) {
-      // 切換 -> Переключить
-      if (type === 'pos') {
-        newRep.positive++;
-        newRep.negative--;
-      } else {
-        newRep.positive--;
-        newRep.negative++;
-      }
-      setUserRepAction(type);
-      toast({ title: `Репутация изменена на ${type === 'pos' ? '+Rep' : '-Rep'}.` });
+        toast({ title: `Репутация изменена на ${type === 'pos' ? '+Rep' : '-Rep'}.` });
     } else {
-      // 首次 -> Впервые
-      type === 'pos' ? newRep.positive++ : newRep.negative++;
-      setUserRepAction(type);
-      toast({ title: `Вы поставили ${type === 'pos' ? '+Rep' : '-Rep'}.` });
+        toast({ title: `Вы поставили ${type === 'pos' ? '+Rep' : '-Rep'}.` });
     }
-
-    onUpdateTraderRep(trader.id, newRep);
   };
 
   return (

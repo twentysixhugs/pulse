@@ -10,39 +10,69 @@ import { RatingView } from '@/components/user/rating-view';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Flame, Layers } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
-import { ExternalLink } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-
-// TODO: Replace with firestore data
 import {
   AlertPost,
   Category,
   Trader,
   User,
   Report,
-  alerts as initialAlerts,
-  categories as initialCategories,
-  traders as initialTraders,
-  users as initialUsers,
-  reports as initialReports,
-} from '@/lib/data';
+  getAlerts,
+  getCategories,
+  getTraders,
+  getUsers,
+  getReports,
+  toggleAlertLike,
+  toggleAlertDislike,
+  addCommentToAlert,
+  createReport,
+} from '@/lib/firestore';
 
 
 export default function HomePage() {
   const { user } = useAuth();
   const [isClient, setIsClient] = useState(false);
   const [hasAgreed, setHasAgreed] = useState(false);
-  const [currentUser] = useState<User>(initialUsers[0]);
-  const [alerts, setAlerts] = useState<AlertPost[]>(initialAlerts);
-  const [traders, setTraders] = useState<Trader[]>(initialTraders);
-  const [reports, setReports] = useState<Report[]>(initialReports);
+  
+  const [currentUser, setCurrentUser] = useState<User | undefined>();
+  const [alerts, setAlerts] = useState<AlertPost[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [traders, setTraders] = useState<Trader[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setIsClient(true);
     const agreed = localStorage.getItem('pulsescalp-legal-agreed') === 'true';
     setHasAgreed(agreed);
-  }, []);
+    
+    async function fetchData() {
+        if (user) {
+            try {
+                const [usersData, alertsData, tradersData, categoriesData, reportsData] = await Promise.all([
+                    getUsers(),
+                    getAlerts(),
+                    getTraders(),
+                    getCategories(),
+                    getReports(),
+                ]);
+                const foundUser = usersData.find(u => u.id === user.uid);
+                setCurrentUser(foundUser);
+                setAlerts(alertsData);
+                setTraders(tradersData);
+                setCategories(categoriesData);
+                setReports(reportsData);
+            } catch (error) {
+                console.error("Failed to fetch data:", error);
+                // Optionally, set an error state to show a message to the user
+            } finally {
+                setLoading(false);
+            }
+        }
+    }
+
+    fetchData();
+  }, [user]);
 
   const handleAgree = () => {
     localStorage.setItem('pulsescalp-legal-agreed', 'true');
@@ -53,22 +83,19 @@ export default function HomePage() {
     setAlerts(currentAlerts => currentAlerts.map(a => a.id === updatedAlert.id ? updatedAlert : a));
   };
   
-  const handleReport = (newReport: Omit<Report, 'id' | 'status'>) => {
-    const reportWithId: Report = {
-      ...newReport,
-      id: `report-${Date.now()}`,
-      status: 'pending'
-    };
-    setReports(currentReports => [...currentReports, reportWithId]);
+  const handleReport = async (newReport: Omit<Report, 'id' | 'status'>) => {
+    await createReport(newReport);
+    // Optimistically add to local state or refetch
+    setReports(currentReports => [...currentReports, { ...newReport, id: `temp-${Date.now()}`, status: 'pending' }]);
   };
 
   const activeTraders = traders.filter(t => t.status === 'active');
   const activeAlerts = alerts
     .filter(a => activeTraders.some(t => t.id === a.traderId))
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    .sort((a, b) => new Date(b.timestamp as string).getTime() - new Date(a.timestamp as string).getTime());
 
 
-  if (!isClient) {
+  if (!isClient || loading) {
     return <div className="container mx-auto max-w-2xl py-8 space-y-4 px-4">
         <Skeleton className="h-10 w-1/3" />
         <Skeleton className="h-96 w-full" />
@@ -76,13 +103,12 @@ export default function HomePage() {
     </div>;
   }
 
-  // TODO: currentUser.subscriptionStatus should come from firestore
-  const isSubscribed = true;
+  const isSubscribed = currentUser?.subscriptionStatus === 'active';
 
   return (
     <div className="container mx-auto max-w-3xl py-8 px-4">
       <LegalModal isOpen={!hasAgreed} onAccept={handleAgree} />
-      {hasAgreed && (
+      {hasAgreed && currentUser && (
         <SubscriptionGate isSubscribed={isSubscribed}>
           <Tabs defaultValue="alerts" className="w-full">
             <TabsList className="flex flex-wrap h-auto">
@@ -118,10 +144,10 @@ export default function HomePage() {
               </div>
             </TabsContent>
             <TabsContent value="categories" className="mt-6">
-              <CategoryView categories={initialCategories} traders={traders} />
+              <CategoryView categories={categories} traders={traders} />
             </TabsContent>
             <TabsContent value="rating" className="mt-6">
-              <RatingView traders={traders} categories={initialCategories} />
+              <RatingView traders={traders} categories={categories} />
             </TabsContent>
           </Tabs>
         </SubscriptionGate>
