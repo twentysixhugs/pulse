@@ -153,17 +153,12 @@ export async function toggleAlertDislike(alertId: string, userId: string, hasDis
 }
 
 
-export async function addCommentToAlert(alertId: string, comment: Omit<Comment, 'id' | 'timestamp'>) {
+export async function addCommentToAlert(alertId: string, comment: Comment) {
   const alertRef = doc(db, 'alerts', alertId);
-  const newComment = {
-      ...comment,
-      id: `comment-${Date.now()}`,
-      timestamp: new Date().toISOString()
-  }
   await updateDoc(alertRef, {
-    comments: arrayUnion(newComment),
+    comments: arrayUnion(comment),
   });
-  return newComment;
+  return comment;
 }
 
 export async function createReport(report: Omit<Report, 'id' | 'status'>): Promise<Report> {
@@ -210,7 +205,9 @@ export async function createAlert(post: Omit<AlertPost, 'id' | 'timestamp' | 'li
         comments: [],
     };
     const docRef = await addDoc(alertsCol, newPost);
-    return { ...newPost, id: docRef.id, timestamp: newPost.timestamp.toDate().toISOString() };
+    const docSnap = await getDoc(docRef);
+    const data = docSnap.data();
+    return { ...newPost, id: docRef.id, timestamp: (data?.timestamp as Timestamp).toDate().toISOString() };
 }
 
 export async function updateAlertText(alertId: string, newText: string) {

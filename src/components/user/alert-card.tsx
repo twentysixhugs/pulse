@@ -70,10 +70,11 @@ export function AlertCard({
   const [isImageModalOpen, setImageModalOpen] = useState(false);
   const [commentText, setCommentText] = useState('');
 
-  const hasLiked = alert.likes.includes(currentUser.id);
-  const hasDisliked = alert.dislikes.includes(currentUser.id);
+  const hasLiked = currentUser && alert.likes.includes(currentUser.id);
+  const hasDisliked = currentUser && alert.dislikes.includes(currentUser.id);
 
   const handleLike = async () => {
+    if (!currentUser) return;
     await toggleAlertLike(alert.id, currentUser.id, hasLiked);
     // Optimistic update
     const newLikes = hasLiked
@@ -84,6 +85,7 @@ export function AlertCard({
   };
 
   const handleDislike = async () => {
+    if (!currentUser) return;
     await toggleAlertDislike(alert.id, currentUser.id, hasDisliked);
     // Optimistic update
     const newDislikes = hasDisliked
@@ -114,6 +116,7 @@ export function AlertCard({
   };
 
   const handleReport = (reason: string) => {
+    if (!currentUser) return;
     if (!reason.trim()) {
       toast({
         variant: 'destructive',
@@ -157,7 +160,7 @@ export function AlertCard({
                   {formatDistanceToNow(new Date(alert.timestamp as string), { addSuffix: true, locale: ru })}
                 </p>
               </div>
-              <ReportDialog onConfirm={handleReport} />
+              <ReportDialog onConfirm={handleReport} disabled={!currentUser} />
             </div>
           </div>
         </CardHeader>
@@ -267,14 +270,14 @@ function CommentDialog({ alert, trader, currentUser, commentText, setCommentText
                         onKeyPress={(e) => e.key === 'Enter' && onAddComment()}
                         disabled={!currentUser}
                     />
-                    <Button onClick={onAddComment} disabled={!currentUser}>Опубликовать</Button>
+                    <Button onClick={onAddComment} disabled={!currentUser || !commentText.trim()}>Опубликовать</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
     )
 }
 
-function ReportDialog({ onConfirm }: { onConfirm: (reason: string) => void }) {
+function ReportDialog({ onConfirm, disabled }: { onConfirm: (reason: string) => void, disabled: boolean }) {
   const [reason, setReason] = useState('');
   const [open, setOpen] = useState(false);
 
@@ -288,13 +291,13 @@ function ReportDialog({ onConfirm }: { onConfirm: (reason: string) => void }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Button variant="ghost" size="icon" className="h-8 w-8" disabled={disabled}>
             <MoreVertical className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DialogTrigger asChild>
-            <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+            <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10" disabled={disabled}>
               <ShieldAlert className="mr-2 h-4 w-4" />
               <span>Пожаловаться на пост</span>
             </DropdownMenuItem>
@@ -315,7 +318,7 @@ function ReportDialog({ onConfirm }: { onConfirm: (reason: string) => void }) {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Отмена</Button>
-          <Button variant="destructive" onClick={handleConfirm}>Отправить жалобу</Button>
+          <Button variant="destructive" onClick={handleConfirm} disabled={!reason.trim()}>Отправить жалобу</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

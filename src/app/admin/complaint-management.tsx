@@ -84,7 +84,7 @@ export function ComplaintManagement() {
   };
 
   const pendingReports = reports.filter((r) => r.status === 'pending');
-  const currentUser = users.find(u => u.id === adminUser?.uid);
+  const currentUser = adminUser ? users.find(u => u.id === adminUser.uid) : undefined;
 
   if (loading) {
       return (

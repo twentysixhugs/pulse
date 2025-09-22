@@ -46,28 +46,25 @@ export function UserManagement() {
         }
     }
     fetchData();
-  }, []);
+  }, [toast]);
 
   const toggleBanStatus = async (userId: string, isBanned: boolean) => {
-    const newStatus = !isBanned;
-    const action = newStatus ? banUser : unbanUser;
+    const action = isBanned ? unbanUser : banUser;
+    const newBanStatus = !isBanned;
 
     try {
         await action(userId);
         setUsers((currentUsers) =>
-          currentUsers.map((user) => {
-            if (user.id === userId) {
-              return { ...user, isBanned: newStatus };
-            }
-            return user;
-          })
+            currentUsers.map((user) =>
+            user.id === userId ? { ...user, isBanned: newBanStatus } : user
+            )
         );
         toast({
-            title: `Пользователь ${newStatus ? 'забанен' : 'разбанен'}`,
+            title: `Пользователь ${newBanStatus ? 'забанен' : 'разбанен'}.`,
         });
-    } catch(err) {
+    } catch (err) {
         console.error(err);
-        toast({ variant: 'destructive', title: 'Ошибка', description: `Не удалось ${newStatus ? 'забанить' : 'разбанить'} пользователя.` });
+        toast({ variant: 'destructive', title: "Ошибка", description: "Не удалось изменить статус бана." });
     }
   };
   
@@ -122,6 +119,7 @@ export function UserManagement() {
                       <Button
                         variant={user.isBanned ? 'secondary' : 'destructive'}
                         size="sm"
+                        disabled={user.id === 'admin-1'}
                       >
                         {user.isBanned ? 'Разбанить' : 'Забанить'}
                       </Button>

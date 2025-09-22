@@ -1,11 +1,14 @@
 
 'use client';
-
+import { useState, useEffect } from 'react';
 import { Logo } from "@/components/common/logo";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { User, LogOut } from "lucide-react";
+import { User, LogOut, Database, AlertCircle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { seedDatabase, isDbSeeded } from '@/lib/seed-db';
+import { useToast } from '@/hooks/use-toast';
+
 
 export default function MainLayout({
   children,
@@ -13,6 +16,40 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   const { user, logout } = useAuth();
+  const [showSeedButton, setShowSeedButton] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    async function checkDb() {
+      const seeded = await isDbSeeded();
+      setShowSeedButton(!seeded);
+    }
+    checkDb();
+  }, []);
+
+  const handleSeed = async () => {
+    setIsSeeding(true);
+    try {
+      await seedDatabase();
+      toast({
+        title: "Database Seeded",
+        description: "The database has been populated with initial data.",
+      });
+      setShowSeedButton(false);
+      // force reload to show new data
+      window.location.reload(); 
+    } catch (error) {
+      console.error("Failed to seed database:", error);
+      toast({
+        variant: "destructive",
+        title: "Seeding Failed",
+        description: "There was an error populating the database.",
+      });
+    } finally {
+      setIsSeeding(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -21,19 +58,36 @@ export default function MainLayout({
           <Link href="/">
             <Logo />
           </Link>
-          <nav className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground hidden sm:inline">
-              {user?.name}
-            </span>
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/profile">
-                <User className="h-5 w-5" />
-              </Link>
-            </Button>
-            <Button variant="ghost" size="icon" onClick={logout}>
-              <LogOut className="h-5 w-5" />
-            </Button>
-          </nav>
+          <div className="flex items-center gap-2">
+            {showSeedButton && (
+              <div className="flex items-center gap-2 border-r pr-2 mr-2">
+                 <AlertCircle className="h-5 w-5 text-destructive" />
+                 <span className="text-sm text-muted-foreground hidden sm:inline">No Data Found</span>
+                <Button
+                  onClick={handleSeed}
+                  disabled={isSeeding}
+                  variant="destructive"
+                  size="sm"
+                >
+                  <Database className="h-4 w-4 mr-2" />
+                  {isSeeding ? "Seeding..." : "Seed Database"}
+                </Button>
+              </div>
+            )}
+            <nav className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground hidden sm:inline">
+                {user?.name}
+              </span>
+              <Button variant="ghost" size="icon" asChild>
+                <Link href="/profile">
+                  <User className="h-5 w-5" />
+                </Link>
+              </Button>
+              <Button variant="ghost" size="icon" onClick={logout}>
+                <LogOut className="h-5 w-5" />
+              </Button>
+            </nav>
+          </div>
         </div>
       </header>
       <main className="flex-1">{children}</main>

@@ -10,12 +10,13 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/common/logo';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -34,6 +35,27 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  if (user) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-background px-4">
+             <Card className="w-full max-w-sm text-center">
+                 <CardHeader>
+                     <div className="flex justify-center mb-4">
+                        <Logo />
+                    </div>
+                    <CardTitle className="font-headline text-2xl">Вы уже вошли</CardTitle>
+                     <CardDescription>Вы успешно аутентифицированы.</CardDescription>
+                 </CardHeader>
+                 <CardContent>
+                     <Button asChild className="w-full">
+                         <Link href="/">Перейти к ленте</Link>
+                     </Button>
+                 </CardContent>
+             </Card>
+        </div>
+      )
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -83,4 +105,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

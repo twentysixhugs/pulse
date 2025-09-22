@@ -9,7 +9,9 @@ import {
   getAlerts,
   createAlert,
   updateAlertText,
-  deleteAlert
+  deleteAlert,
+  activateTrader,
+  deactivateTrader,
 } from '@/lib/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -76,15 +78,22 @@ export function TraderDashboard() {
     fetchData();
   }, [authUser, toast]);
 
-  const handleStatusChange = (isActive: boolean) => {
+  const handleStatusChange = async (isActive: boolean) => {
     if (!currentTrader) return;
     const newStatus = isActive ? 'active' : 'inactive';
-    // In a real app, this would be a call to Firestore to update the trader's status
-    setCurrentTrader({ ...currentTrader, status: newStatus });
-    toast({
-      title: 'Статус обновлен',
-      description: `Ваш статус теперь ${newStatus === 'active' ? 'активен' : 'неактивен'}.`,
-    });
+    const action = isActive ? activateTrader : deactivateTrader;
+
+    try {
+      await action(currentTrader.id);
+      setCurrentTrader({ ...currentTrader, status: newStatus });
+      toast({
+        title: 'Статус обновлен',
+        description: `Ваш статус теперь ${newStatus === 'active' ? 'активен' : 'неактивен'}.`,
+      });
+    } catch (error) {
+      console.error("Failed to update status", error);
+      toast({ variant: 'destructive', title: "Ошибка", description: "Не удалось обновить статус."});
+    }
   };
   
   const handleSavePost = async (postData: Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'> & {id?: string}) => {
