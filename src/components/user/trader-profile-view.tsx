@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { ThumbsUp, ThumbsDown, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AlertCard } from './alert-card';
+import { useAuth } from '@/hooks/use-auth';
 
 type TraderProfileViewProps = {
   trader: Trader;
@@ -38,6 +39,7 @@ export function TraderProfileView({
   onReport,
 }: TraderProfileViewProps) {
   const { toast } = useToast();
+  const { db } = useAuth();
 
   const handleRep = (type: 'pos' | 'neg') => {
     onUpdateTraderRep(trader.id, type);
@@ -50,6 +52,10 @@ export function TraderProfileView({
         toast({ title: `Вы поставили ${type === 'pos' ? '+Rep' : '-Rep'}.` });
     }
   };
+
+  if (!db) {
+    return null; // Or a loading state
+  }
 
   return (
     <div className="space-y-6">
@@ -116,6 +122,7 @@ export function TraderProfileView({
                   currentUser={currentUser}
                   onUpdateAlert={onUpdateAlert}
                   onReport={onReport}
+                  db={db}
                 />
             ))}
           </div>
@@ -128,5 +135,3 @@ export function TraderProfileView({
     </div>
   );
 }
-
-    

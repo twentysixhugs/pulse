@@ -76,7 +76,7 @@ export function AlertCard({
 
   const handleLike = async () => {
     if (!currentUser || !db) return;
-    await toggleAlertLike(db, alert.id, currentUser.id, hasLiked);
+    await toggleAlertLike(db, alert.id, currentUser.id);
     // Optimistic update
     const newLikes = hasLiked
       ? alert.likes.filter((id) => id !== currentUser.id)
@@ -87,7 +87,7 @@ export function AlertCard({
 
   const handleDislike = async () => {
     if (!currentUser || !db) return;
-    await toggleAlertDislike(db, alert.id, currentUser.id, hasDisliked);
+    await toggleAlertDislike(db, alert.id, currentUser.id);
     // Optimistic update
     const newDislikes = hasDisliked
       ? alert.dislikes.filter((id) => id !== currentUser.id)
