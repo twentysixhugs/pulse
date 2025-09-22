@@ -7,6 +7,7 @@ import {
   writeBatch,
   getDocs,
   Timestamp,
+  doc,
 } from 'firebase/firestore';
 
 export async function isDbSeeded() {
@@ -26,8 +27,8 @@ export async function seedDatabase() {
     { id: 'cat-options', name: 'Опционы' },
   ];
   categories.forEach((category) => {
-    const docRef = collection(db, 'categories');
-    batch.set(doc(docRef, category.id), { name: category.name });
+    const categoriesCollection = collection(db, 'categories');
+    batch.set(doc(categoriesCollection, category.id), { name: category.name });
   });
 
   // --- USERS ---
@@ -69,8 +70,8 @@ export async function seedDatabase() {
     },
   ];
   users.forEach((user) => {
-    const docRef = collection(db, 'users');
-    batch.set(doc(docRef, user.id), {
+    const usersCollection = collection(db, 'users');
+    batch.set(doc(usersCollection, user.id), {
       name: user.name,
       telegramId: user.telegramId,
       isBanned: user.isBanned,
@@ -115,8 +116,8 @@ export async function seedDatabase() {
     },
   ];
   traders.forEach((trader) => {
-    const docRef = collection(db, 'traders');
-    batch.set(doc(docRef, trader.id), {
+    const tradersCollection = collection(db, 'traders');
+    batch.set(doc(tradersCollection, trader.id), {
       name: trader.name,
       telegramId: trader.telegramId,
       specialization: trader.specialization,
@@ -177,8 +178,8 @@ export async function seedDatabase() {
     },
   ];
   alerts.forEach((alert) => {
-    const docRef = collection(db, 'alerts');
-    batch.set(doc(docRef, alert.id), {
+    const alertsCollection = collection(db, 'alerts');
+    batch.set(doc(alertsCollection, alert.id), {
       traderId: alert.traderId,
       text: alert.text,
       screenshotUrl: alert.screenshotUrl,
@@ -201,8 +202,8 @@ export async function seedDatabase() {
     },
   ];
   reports.forEach((report) => {
-    const docRef = collection(db, 'reports');
-    batch.set(doc(docRef, report.id), {
+    const reportsCollection = collection(db, 'reports');
+    batch.set(doc(reportsCollection, report.id), {
       alertId: report.alertId,
       reporterId: report.reporterId,
       reason: report.reason,
