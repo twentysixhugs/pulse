@@ -59,7 +59,7 @@ export default function TraderProfilePage() {
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()) : [];
 
   return (
-    <div className="container mx-auto max-w-3xl py-8">
+    <div className="container mx-auto max-w-3xl py-8 px-4">
       <Button variant="ghost" asChild className="mb-4">
         <Link href="/">
           <ArrowLeft className="mr-2 h-4 w-4" />
