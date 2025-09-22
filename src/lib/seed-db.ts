@@ -10,12 +10,6 @@ import {
   Firestore,
 } from 'firebase/firestore';
 
-export async function isDbSeeded(db: Firestore) {
-  const q = query(collection(db, 'users'), limit(1));
-  const snapshot = await getDocs(q);
-  return !snapshot.empty;
-}
-
 export async function seedDatabase(db: Firestore) {
   const batch = writeBatch(db);
 

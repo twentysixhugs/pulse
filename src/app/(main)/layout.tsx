@@ -6,9 +6,10 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { User, LogOut, Database, AlertCircle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { seedDatabase, isDbSeeded } from '@/lib/seed-db';
+import { seedDatabase } from '@/lib/seed-db';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
+import { collection, getDocs, query, limit } from 'firebase/firestore';
 
 
 export default function MainLayout({
@@ -23,12 +24,14 @@ export default function MainLayout({
 
   useEffect(() => {
     async function checkDb() {
-      // This now runs only on the client-side after mount
-      const seeded = await isDbSeeded(db);
+      // isDbSeeded logic is now directly here
+      const q = query(collection(db, 'users'), limit(1));
+      const snapshot = await getDocs(q);
+      const seeded = !snapshot.empty;
       setShowSeedButton(!seeded);
     }
-    // The check is performed inside useEffect to ensure it only runs on the client,
-    // after the Firebase connection has been established.
+    
+    // This check ensures this code only runs on the client, after hydration
     if (typeof window !== 'undefined') {
       checkDb();
     }
