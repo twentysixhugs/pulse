@@ -2,6 +2,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { LegalModal } from '@/components/user/legal-modal';
+import { SubscriptionGate } from '@/components/user/subscription-gate';
+import { AlertCard } from '@/components/user/alert-card';
+import { CategoryView } from '@/components/user/category-view';
+import { RatingView } from '@/components/user/rating-view';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { BarChart, Flame, Layers } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { ExternalLink } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
+
+// TODO: Replace with firestore data
 import {
   AlertPost,
   Category,
@@ -14,18 +27,10 @@ import {
   users as initialUsers,
   reports as initialReports,
 } from '@/lib/data';
-import { LegalModal } from '@/components/user/legal-modal';
-import { SubscriptionGate } from '@/components/user/subscription-gate';
-import { AlertCard } from '@/components/user/alert-card';
-import { CategoryView } from '@/components/user/category-view';
-import { RatingView } from '@/components/user/rating-view';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart, Flame, Layers } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
-import { ExternalLink } from 'lucide-react';
+
 
 export default function HomePage() {
+  const { user } = useAuth();
   const [isClient, setIsClient] = useState(false);
   const [hasAgreed, setHasAgreed] = useState(false);
   const [currentUser] = useState<User>(initialUsers[0]);
@@ -71,11 +76,14 @@ export default function HomePage() {
     </div>;
   }
 
+  // TODO: currentUser.subscriptionStatus should come from firestore
+  const isSubscribed = true;
+
   return (
     <div className="container mx-auto max-w-3xl py-8 px-4">
       <LegalModal isOpen={!hasAgreed} onAccept={handleAgree} />
       {hasAgreed && (
-        <SubscriptionGate isSubscribed={currentUser.subscriptionStatus === 'active'}>
+        <SubscriptionGate isSubscribed={isSubscribed}>
           <Tabs defaultValue="alerts" className="w-full">
             <TabsList className="flex flex-wrap h-auto">
               <TabsTrigger value="alerts" className="flex-1">

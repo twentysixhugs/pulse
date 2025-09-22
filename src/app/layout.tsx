@@ -1,8 +1,10 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { Inter, Space_Grotesk, Source_Code_Pro } from 'next/font/google';
+import { AuthProvider } from '@/components/auth/auth-provider';
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -32,7 +34,9 @@ export default function RootLayout({
   return (
     <html lang="ru" className="dark">
       <body className={cn('font-body antialiased min-h-screen bg-background', inter.variable, spaceGrotesk.variable, sourceCodePro.variable)}>
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
         <Toaster />
       </body>
     </html>
