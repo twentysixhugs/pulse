@@ -8,7 +8,7 @@ import { AlertCard } from '@/components/user/alert-card';
 import { CategoryView } from '@/components/user/category-view';
 import { RatingView } from '@/components/user/rating-view';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart, Flame, Layers, Database, AlertCircle } from 'lucide-react';
+import { BarChart, Flame, Layers, AlertCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import {
@@ -32,7 +32,6 @@ export default function HomePage() {
   const [currentUser, setCurrentUser] = useState<User | undefined>();
   const [alerts, setAlerts] = useState<AlertPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isDbEmpty, setIsDbEmpty] = useState<boolean | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -46,20 +45,12 @@ export default function HomePage() {
         if (user) {
             setLoading(true);
             try {
-                // Efficiently check if the DB is empty by querying for just one document.
-                const userCheckQuery = query(collection(db, 'users'), limit(1));
-                const userCheckSnapshot = await getDocs(userCheckQuery);
-                const dbIsEmpty = userCheckSnapshot.empty;
-                setIsDbEmpty(dbIsEmpty);
-
-                if (!dbIsEmpty) {
-                  const [currentUserData, alertsData] = await Promise.all([
-                      getUser(user.uid),
-                      getAlerts(),
-                  ]);
-                  setCurrentUser(currentUserData);
-                  setAlerts(alertsData);
-                }
+              const [currentUserData, alertsData] = await Promise.all([
+                  getUser(user.uid),
+                  getAlerts(),
+              ]);
+              setCurrentUser(currentUserData);
+              setAlerts(alertsData);
             } catch (error) {
                 console.error("Failed to fetch page data:", error);
                 toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось загрузить данные.'})
@@ -84,28 +75,20 @@ export default function HomePage() {
   const handleReport = async (newReport: Omit<Report, 'id' | 'status'>) => {
     await createReport(db, newReport);
     // Don't need to optimistically add, admin panel will see it
+    toast({
+        title: 'Жалоба отправлена',
+        description: 'Спасибо, мы рассмотрим вашу жалобу.',
+    });
   };
 
   const activeAlerts = alerts.sort((a, b) => new Date(b.timestamp as string).getTime() - new Date(a.timestamp as string).getTime());
 
-  if (!isClient || loading) {
+  if (!isClient || loading || !currentUser) {
     return <div className="container mx-auto max-w-2xl py-8 space-y-4 px-4">
         <Skeleton className="h-10 w-1/3" />
         <Skeleton className="h-96 w-full" />
         <Skeleton className="h-96 w-full" />
     </div>;
-  }
-  
-  if(isDbEmpty) {
-    return (
-      <div className="container mx-auto max-w-2xl py-8 px-4 flex items-center justify-center min-h-[60vh]">
-        <div className="text-center p-8 border-2 border-dashed rounded-lg">
-           <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-           <h2 className="text-2xl font-bold mb-2">Данные не найдены</h2>
-           <p className="text-muted-foreground mb-6">База данных пуста. Пожалуйста, импортируйте файл `seed.json` в Firestore, чтобы заполнить ее.</p>
-        </div>
-      </div>
-    );
   }
 
   const isSubscribed = currentUser?.subscriptionStatus === 'active';
@@ -113,7 +96,7 @@ export default function HomePage() {
   return (
     <div className="container mx-auto max-w-3xl py-8 px-4">
       <LegalModal isOpen={!hasAgreed} onAccept={handleAgree} />
-      {hasAgreed && currentUser && (
+      {hasAgreed && (
         <SubscriptionGate isSubscribed={isSubscribed}>
           <Tabs defaultValue="alerts" className="w-full">
             <TabsList className="flex flex-wrap h-auto">
