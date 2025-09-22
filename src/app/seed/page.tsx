@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { seedDatabase } from '@/lib/seed-db';
-import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -18,6 +17,8 @@ export default function SeedPage() {
   const handleSeed = async () => {
     setIsSeeding(true);
     try {
+      // Import db here to avoid premature initialization issues
+      const { db } = await import('@/lib/firebase');
       const result = await seedDatabase(db);
       toast({
         title: 'Заполнение базы данных',
