@@ -1,7 +1,8 @@
+
 import { Logo } from "@/components/common/logo";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { User, Cog, GanttChartSquare } from "lucide-react";
+import { User, Cog } from "lucide-react";
 
 export default function MainLayout({
   children,
@@ -16,6 +17,11 @@ export default function MainLayout({
             <Logo />
           </Link>
           <nav className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" asChild>
+              <Link href="/trader">
+                <Cog className="h-5 w-5" />
+              </Link>
+            </Button>
             <Button variant="ghost" size="icon" asChild>
               <Link href="/profile">
                 <User className="h-5 w-5" />
