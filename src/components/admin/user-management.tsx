@@ -1,7 +1,8 @@
+
 'use client';
 
-import { useState } from 'react';
-import { User, users as initialUsers } from '@/lib/data';
+import { useState, useEffect } from 'react';
+import { User, getUsers, banUser, unbanUser } from '@/lib/firestore';
 import {
   Table,
   TableBody,
@@ -24,26 +25,60 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Skeleton } from '../ui/skeleton';
 
 export function UserManagement() {
-  const [users, setUsers] = useState<User[]>(initialUsers);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const toggleBanStatus = (userId: string) => {
-    setUsers((currentUsers) =>
-      currentUsers.map((user) => {
-        if (user.id === userId) {
-          const newStatus = !user.isBanned;
-          toast({
-            title: `Пользователь ${newStatus ? 'забанен' : 'разбанен'}`,
-            description: `${user.name} был(а) ${newStatus ? 'забанен(а)' : 'разбанен(а)'}.`,
-          });
-          return { ...user, isBanned: newStatus };
+  useEffect(() => {
+    async function fetchData() {
+        setLoading(true);
+        try {
+            const usersData = await getUsers();
+            setUsers(usersData);
+        } catch (error) {
+            console.error("Failed to fetch users:", error);
+            toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось загрузить пользователей.' });
+        } finally {
+            setLoading(false);
         }
-        return user;
-      })
-    );
+    }
+    fetchData();
+  }, []);
+
+  const toggleBanStatus = async (userId: string, isBanned: boolean) => {
+    const newStatus = !isBanned;
+    const action = newStatus ? banUser : unbanUser;
+
+    try {
+        await action(userId);
+        setUsers((currentUsers) =>
+          currentUsers.map((user) => {
+            if (user.id === userId) {
+              return { ...user, isBanned: newStatus };
+            }
+            return user;
+          })
+        );
+        toast({
+            title: `Пользователь ${newStatus ? 'забанен' : 'разбанен'}`,
+        });
+    } catch(err) {
+        console.error(err);
+        toast({ variant: 'destructive', title: 'Ошибка', description: `Не удалось ${newStatus ? 'забанить' : 'разбанить'} пользователя.` });
+    }
   };
+  
+  if (loading) {
+      return (
+          <div className="space-y-4">
+              <Skeleton className="h-8 w-1/3 mb-4" />
+              <Skeleton className="h-48 w-full" />
+          </div>
+      )
+  }
 
   return (
     <div className="space-y-4">
@@ -101,7 +136,7 @@ export function UserManagement() {
                       <AlertDialogFooter>
                         <AlertDialogCancel>Отмена</AlertDialogCancel>
                         <AlertDialogAction
-                          onClick={() => toggleBanStatus(user.id)}
+                          onClick={() => toggleBanStatus(user.id, user.isBanned)}
                           className={user.isBanned ? '' : 'bg-destructive text-destructive-foreground hover:bg-destructive/90'}
                         >
                           Подтвердить

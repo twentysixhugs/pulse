@@ -46,27 +46,26 @@ export function UserManagement() {
         }
     }
     fetchData();
-  }, []);
+  }, [toast]);
 
-  const toggleBanStatus = (userId: string) => {
-    setUsers((currentUsers) =>
-      currentUsers.map((user) => {
-        if (user.id === userId) {
-          const newStatus = !user.isBanned;
+  const toggleBanStatus = async (userId: string, isBanned: boolean) => {
+    const action = isBanned ? unbanUser : banUser;
+    const newBanStatus = !isBanned;
 
-        //   const action = newStatus ? banUser(userId) : unbanUser(userId);
-        //   action.then(() => {
-            toast({
-                title: `Пользователь ${newStatus ? 'забанен' : 'разбанен'}`,
-                description: `${user.name} был(а) ${newStatus ? 'забанен(а)' : 'разбанен(а)'}.`,
-            });
-        //   }).catch(err => console.error(err));
-          
-          return { ...user, isBanned: newStatus };
-        }
-        return user;
-      })
-    );
+    try {
+        await action(userId);
+        setUsers((currentUsers) =>
+            currentUsers.map((user) =>
+            user.id === userId ? { ...user, isBanned: newBanStatus } : user
+            )
+        );
+        toast({
+            title: `Пользователь ${newBanStatus ? 'забанен' : 'разбанен'}.`,
+        });
+    } catch (err) {
+        console.error(err);
+        toast({ variant: 'destructive', title: "Ошибка", description: "Не удалось изменить статус бана." });
+    }
   };
   
   if (loading) {
@@ -134,7 +133,7 @@ export function UserManagement() {
                       <AlertDialogFooter>
                         <AlertDialogCancel>Отмена</AlertDialogCancel>
                         <AlertDialogAction
-                          onClick={() => toggleBanStatus(user.id)}
+                          onClick={() => toggleBanStatus(user.id, user.isBanned)}
                           className={user.isBanned ? '' : 'bg-destructive text-destructive-foreground hover:bg-destructive/90'}
                         >
                           Подтвердить

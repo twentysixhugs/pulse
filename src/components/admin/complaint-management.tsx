@@ -1,13 +1,18 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Report,
-  reports as initialReports,
-  alerts as initialAlerts,
-  traders as initialTraders,
-  users as initialUsers,
-} from '@/lib/data';
+  AlertPost,
+  Trader,
+  User,
+  getReports,
+  getAlerts,
+  getTraders,
+  getUsers,
+  resolveReport as resolveReportInDb
+} from '@/lib/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -24,37 +29,76 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
   } from '@/components/ui/alert-dialog';
+import { Skeleton } from '../ui/skeleton';
 
 export function ComplaintManagement() {
-  const [reports, setReports] = useState<Report[]>(initialReports);
+  const [reports, setReports] = useState<Report[]>([]);
+  const [alerts, setAlerts] = useState<AlertPost[]>([]);
+  const [traders, setTraders] = useState<Trader[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const resolveReport = (reportId: string) => {
-    setReports((currentReports) =>
-      currentReports.map((report) => {
-        if (report.id === reportId) {
-          toast({
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      try {
+        const [reportsData, alertsData, tradersData, usersData] = await Promise.all([
+          getReports(),
+          getAlerts(),
+          getTraders(),
+          getUsers()
+        ]);
+        setReports(reportsData);
+        setAlerts(alertsData);
+        setTraders(tradersData);
+        setUsers(usersData);
+      } catch (error) {
+        console.error("Failed to fetch complaint data:", error);
+        toast({ variant: 'destructive', title: "Ошибка", description: "Не удалось загрузить данные жалоб."})
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  const resolveReport = async (reportId: string) => {
+    try {
+        await resolveReportInDb(reportId);
+        setReports((currentReports) => currentReports.filter((report) => report.id !== reportId));
+        toast({
             title: 'Жалоба разрешена',
             description: 'Жалоба была отмечена как разрешенная.',
-          });
-          return { ...report, status: 'resolved' };
-        }
-        return report;
-      })
-    );
+        });
+    } catch (error) {
+        console.error("Failed to resolve report:", error);
+        toast({ variant: 'destructive', title: "Ошибка", description: "Не удалось разрешить жалобу."});
+    }
   };
 
   const pendingReports = reports.filter((r) => r.status === 'pending');
+  const adminAsUser: User | undefined = users.find(u => u.id === 'admin-1');
+
+  if (loading) {
+      return (
+        <div className="space-y-4">
+            <Skeleton className="h-8 w-1/3 mb-4" />
+            <Skeleton className="h-64 w-full" />
+            <Skeleton className="h-64 w-full" />
+        </div>
+      )
+  }
 
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-headline font-bold">Очередь жалоб</h2>
-      {pendingReports.length > 0 ? (
+      {pendingReports.length > 0 && adminAsUser ? (
         <div className="space-y-6">
           {pendingReports.map((report) => {
-            const alert = initialAlerts.find((a) => a.id === report.alertId);
-            const trader = alert ? initialTraders.find((t) => t.id === alert.traderId) : undefined;
-            const reporter = initialUsers.find(u => u.id === report.reporterId);
+            const alert = alerts.find((a) => a.id === report.alertId);
+            const trader = alert ? traders.find((t) => t.id === alert.traderId) : undefined;
+            const reporter = users.find(u => u.id === report.reporterId);
 
             if (!alert || !trader) return null;
 
@@ -99,7 +143,7 @@ export function ComplaintManagement() {
                   <AlertCard
                     alert={alert}
                     trader={trader}
-                    currentUser={initialUsers[0]}
+                    currentUser={adminAsUser}
                     onUpdateAlert={() => {}}
                     onReport={() => {}}
                   />

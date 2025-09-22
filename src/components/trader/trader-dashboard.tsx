@@ -57,7 +57,14 @@ export function TraderDashboard() {
                 const [tradersData, alertsData] = await Promise.all([getTraders(), getAlerts()]);
                 const trader = tradersData.find(t => t.id === authUser.uid);
                 setCurrentTrader(trader);
-                setAlerts(alertsData);
+
+                if (trader) {
+                    const traderAlerts = alertsData
+                        .filter(a => a.traderId === trader.id)
+                        .sort((a,b) => new Date(b.timestamp as string).getTime() - new Date(a.timestamp as string).getTime());
+                    setAlerts(traderAlerts);
+                }
+
             } catch (error) {
                 console.error("Failed to load trader dashboard:", error);
                 toast({ variant: 'destructive', title: "Error", description: "Could not load dashboard data."});
@@ -86,8 +93,10 @@ export function TraderDashboard() {
       setAlerts(alerts.map(a => a.id === postData.id ? {...a, text: postData.text, screenshotUrl: postData.screenshotUrl || a.screenshotUrl } : a));
       setEditingPost(undefined);
     } else { // Creating
-      const newPost = await createAlert(postData);
-      setAlerts([newPost, ...alerts]);
+      if (currentTrader) {
+        const newPost = await createAlert({...postData, traderId: currentTrader.id });
+        setAlerts([newPost, ...alerts]);
+      }
     }
   };
 
@@ -111,9 +120,6 @@ export function TraderDashboard() {
       );
   }
 
-  const traderAlerts = alerts.filter(a => a.traderId === currentTrader.id)
-    .sort((a,b) => new Date(b.timestamp as string).getTime() - new Date(a.timestamp as string).getTime());
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div className="lg:col-span-2 space-y-8">
@@ -121,7 +127,7 @@ export function TraderDashboard() {
         <div>
             <h2 className="text-2xl font-headline font-bold mb-4">Ваши посты</h2>
             <div className="space-y-4">
-                {traderAlerts.map(alert => (
+                {alerts.map(alert => (
                     <Card key={alert.id}>
                         <CardHeader className="flex flex-row justify-between items-start">
                            <div>

@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Trader, getTraders, activateTrader, deactivateTrader } from '@/lib/firestore';
+import { Trader, Category, getTraders, activateTrader, deactivateTrader, getCategories } from '@/lib/firestore';
 import {
   Table,
   TableBody,
@@ -36,6 +36,7 @@ import { Skeleton } from '../ui/skeleton';
 
 export function TraderManagement() {
   const [traders, setTraders] = useState<Trader[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -43,50 +44,48 @@ export function TraderManagement() {
     async function fetchData() {
       setLoading(true);
       try {
-        const tradersData = await getTraders();
+        const [tradersData, categoriesData] = await Promise.all([getTraders(), getCategories()]);
         setTraders(tradersData);
+        setCategories(categoriesData);
       } catch (error) {
-        console.error("Failed to fetch traders:", error);
-        toast({ variant: 'destructive', title: "Ошибка", description: "Не удалось загрузить трейдеров." });
+        console.error("Failed to fetch data:", error);
+        toast({ variant: 'destructive', title: "Ошибка", description: "Не удалось загрузить трейдеров или категории." });
       } finally {
         setLoading(false);
       }
     }
     fetchData();
-  }, []);
+  }, [toast]);
 
-  const toggleTraderStatus = (traderId: string) => {
-    setTraders((currentTraders) =>
-      currentTraders.map((trader) => {
-        if (trader.id === traderId) {
-          const newStatus = trader.status === 'active' ? 'inactive' : 'active';
-          
-          // const action = newStatus === 'active' ? activateTrader(traderId) : deactivateTrader(traderId);
-          // action.then(() => {
-            toast({
-              title: `Трейдер ${newStatus === 'active' ? 'активирован' : 'деактивирован'}`,
-              description: `${trader.name} был(а) ${newStatus === 'active' ? 'активирован(а)' : 'деактивирован(а)'}.`,
-            });
-          // }).catch(err => console.error(err));
-
-          return { ...trader, status: newStatus };
-        }
-        return trader;
-      })
-    );
+  const toggleTraderStatus = async (traderId: string, currentStatus: 'active' | 'inactive') => {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    const action = newStatus === 'active' ? activateTrader : deactivateTrader;
+    
+    try {
+        await action(traderId);
+        setTraders((currentTraders) =>
+            currentTraders.map((trader) =>
+            trader.id === traderId ? { ...trader, status: newStatus } : trader
+            )
+        );
+        toast({
+            title: `Трейдер ${newStatus === 'active' ? 'активирован' : 'деактивирован'}`,
+        });
+    } catch (err) {
+        console.error(err);
+        toast({ variant: 'destructive', title: "Ошибка", description: "Не удалось изменить статус трейдера." });
+    }
   };
   
   const deleteTrader = (traderId: string) => {
+    // This is a placeholder. In a real app, you would have a `deleteTrader` function in firestore.ts
     const trader = traders.find(t => t.id === traderId);
-    // Optimistic update
     setTraders((currentTraders) => currentTraders.filter(t => t.id !== traderId));
     toast({
       variant: 'destructive',
-      title: 'Трейдер удален',
+      title: 'Трейдер удален (симуляция)',
       description: `${trader?.name} был(а) навсегда удален(а).`
     })
-    // In a real app, you would call a Firestore function to delete the trader document
-    // and all related data (e.g., their alerts).
   }
   
   if (loading) {
@@ -113,10 +112,12 @@ export function TraderManagement() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {traders.map((trader) => (
+            {traders.map((trader) => {
+              const category = categories.find(c => c.id === trader.category);
+              return (
               <TableRow key={trader.id}>
                 <TableCell className="font-medium">{trader.name}</TableCell>
-                <TableCell>{trader.specialization}</TableCell>
+                <TableCell>{category?.name || trader.category}</TableCell>
                 <TableCell>{trader.telegramId}</TableCell>
                 <TableCell>
                   <Badge
@@ -139,7 +140,7 @@ export function TraderManagement() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => toggleTraderStatus(trader.id)}>
+                        <DropdownMenuItem onClick={() => toggleTraderStatus(trader.id, trader.status)}>
                             {trader.status === 'active' ? 'Деактивировать' : 'Активировать'}
                         </DropdownMenuItem>
                         <DropdownMenuItem disabled>Редактировать посты</DropdownMenuItem>
@@ -171,7 +172,7 @@ export function TraderManagement() {
                   </AlertDialog>
                 </TableCell>
               </TableRow>
-            ))}
+            )})}
           </TableBody>
         </Table>
       </div>

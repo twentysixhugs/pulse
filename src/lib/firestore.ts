@@ -16,7 +16,9 @@ import {
   deleteDoc,
   query,
   orderBy,
-  limit
+  limit,
+  getDoc,
+  setDoc,
 } from 'firebase/firestore';
 
 
@@ -36,7 +38,6 @@ export interface User {
   telegramId: string;
   isBanned: boolean;
   subscriptionStatus: SubscriptionStatus;
-  // Firestore specific fields if any, can be added here
 }
 
 export interface Reputation {
@@ -127,31 +128,15 @@ export async function getReports(): Promise<Report[]> {
 
 // Functions to update data
 
-export async function updateAlertLikes(alertId: string, userId: string, type: 'like' | 'dislike') {
-  const alertRef = doc(db, 'alerts', alertId);
-
-  if (type === 'like') {
-    await updateDoc(alertRef, {
-      likes: arrayUnion(userId),
-      dislikes: arrayRemove(userId),
-    });
-  } else { // dislike
-    await updateDoc(alertRef, {
-      likes: arrayRemove(userId),
-      dislikes: arrayUnion(userId),
-    });
-  }
-}
-
 export async function toggleAlertLike(alertId: string, userId: string, hasLiked: boolean) {
     const alertRef = doc(db, 'alerts', alertId);
     if (hasLiked) {
         await updateDoc(alertRef, { likes: arrayRemove(userId) });
     } else {
-        await updateDoc(alertRef, { 
-            likes: arrayUnion(userId),
-            dislikes: arrayRemove(userId) // Ensure user is not in dislikes
-        });
+        const batch = writeBatch(db);
+        batch.update(alertRef, { likes: arrayUnion(userId) });
+        batch.update(alertRef, { dislikes: arrayRemove(userId) });
+        await batch.commit();
     }
 }
 
@@ -160,27 +145,35 @@ export async function toggleAlertDislike(alertId: string, userId: string, hasDis
     if (hasDisliked) {
         await updateDoc(alertRef, { dislikes: arrayRemove(userId) });
     } else {
-        await updateDoc(alertRef, { 
-            dislikes: arrayUnion(userId),
-            likes: arrayRemove(userId) // Ensure user is not in likes
-        });
+        const batch = writeBatch(db);
+        batch.update(alertRef, { dislikes: arrayUnion(userId) });
+        batch.update(alertRef, { likes: arrayRemove(userId) });
+        await batch.commit();
     }
 }
 
 
-export async function addCommentToAlert(alertId: string, comment: Comment) {
+export async function addCommentToAlert(alertId: string, comment: Omit<Comment, 'id' | 'timestamp'>) {
   const alertRef = doc(db, 'alerts', alertId);
+  const newComment = {
+      ...comment,
+      id: `comment-${Date.now()}`,
+      timestamp: new Date().toISOString()
+  }
   await updateDoc(alertRef, {
-    comments: arrayUnion(comment),
+    comments: arrayUnion(newComment),
   });
+  return newComment;
 }
 
-export async function createReport(report: Omit<Report, 'id' | 'status'>) {
+export async function createReport(report: Omit<Report, 'id' | 'status'>): Promise<Report> {
     const reportsCol = collection(db, 'reports');
-    await addDoc(reportsCol, {
+    const newReport = {
         ...report,
-        status: 'pending'
-    });
+        status: 'pending' as ReportStatus
+    }
+    const docRef = await addDoc(reportsCol, newReport);
+    return { ...newReport, id: docRef.id };
 }
 
 
@@ -207,7 +200,7 @@ export async function updateTraderReputation(traderId: string, type: 'pos' | 'ne
 }
 
 
-export async function createAlert(post: Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'>) {
+export async function createAlert(post: Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'>): Promise<AlertPost> {
     const alertsCol = collection(db, 'alerts');
     const newPost = {
         ...post,
@@ -230,9 +223,23 @@ export async function deleteAlert(alertId: string) {
     await deleteDoc(alertRef);
 }
 
-// TODO: User management functions
-export async function banUser(userId: string) {}
-export async function unbanUser(userId: string) {}
-export async function activateTrader(traderId: string) {}
-export async function deactivateTrader(traderId: string) {}
-export async function resolveReport(reportId: string) {}
+export async function banUser(userId: string) {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, { isBanned: true });
+}
+export async function unbanUser(userId: string) {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, { isBanned: false });
+}
+export async function activateTrader(traderId: string) {
+    const traderRef = doc(db, 'traders', traderId);
+    await updateDoc(traderRef, { status: 'active' });
+}
+export async function deactivateTrader(traderId: string) {
+    const traderRef = doc(db, 'traders', traderId);
+    await updateDoc(traderRef, { status: 'inactive' });
+}
+export async function resolveReport(reportId: string) {
+    const reportRef = doc(db, 'reports', reportId);
+    await updateDoc(reportRef, { status: 'resolved' });
+}

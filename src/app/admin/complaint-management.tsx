@@ -30,6 +30,7 @@ import {
     AlertDialogTrigger,
   } from '@/components/ui/alert-dialog';
 import { Skeleton } from '../ui/skeleton';
+import { useAuth } from '@/hooks/use-auth';
 
 export function ComplaintManagement() {
   const [reports, setReports] = useState<Report[]>([]);
@@ -38,6 +39,7 @@ export function ComplaintManagement() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user: adminUser } = useAuth();
 
   useEffect(() => {
     async function fetchData() {
@@ -61,14 +63,14 @@ export function ComplaintManagement() {
       }
     }
     fetchData();
-  }, []);
+  }, [toast]);
 
   const resolveReport = async (reportId: string) => {
     // Optimistic update
     setReports((currentReports) => currentReports.filter((report) => report.id !== reportId));
     
     try {
-        // await resolveReportInDb(reportId); // This function needs to be implemented in firestore.ts
+        await resolveReportInDb(reportId);
         toast({
             title: 'Жалоба разрешена',
             description: 'Жалоба была отмечена как разрешенная.',
@@ -82,7 +84,7 @@ export function ComplaintManagement() {
   };
 
   const pendingReports = reports.filter((r) => r.status === 'pending');
-  const adminUser = users.find(u => u.id === 'admin-1'); // Dummy user for AlertCard
+  const currentUser = users.find(u => u.id === adminUser?.uid);
 
   if (loading) {
       return (
@@ -97,7 +99,7 @@ export function ComplaintManagement() {
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-headline font-bold">Очередь жалоб</h2>
-      {pendingReports.length > 0 && adminUser ? (
+      {pendingReports.length > 0 && currentUser ? (
         <div className="space-y-6">
           {pendingReports.map((report) => {
             const alert = alerts.find((a) => a.id === report.alertId);
@@ -147,7 +149,7 @@ export function ComplaintManagement() {
                   <AlertCard
                     alert={alert}
                     trader={trader}
-                    currentUser={adminUser}
+                    currentUser={currentUser}
                     onUpdateAlert={() => {}}
                     onReport={() => {}}
                   />

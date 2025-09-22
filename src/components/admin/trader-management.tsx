@@ -1,7 +1,8 @@
+
 'use client';
 
-import { useState } from 'react';
-import { Trader, traders as initialTraders } from '@/lib/data';
+import { useState, useEffect } from 'react';
+import { Trader, getTraders, activateTrader, deactivateTrader } from '@/lib/firestore';
 import {
   Table,
   TableBody,
@@ -31,37 +32,68 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Skeleton } from '../ui/skeleton';
 
 export function TraderManagement() {
-  const [traders, setTraders] = useState<Trader[]>(initialTraders);
+  const [traders, setTraders] = useState<Trader[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const toggleTraderStatus = (traderId: string) => {
-    setTraders((currentTraders) =>
-      currentTraders.map((trader) => {
-        if (trader.id === traderId) {
-          const newStatus = trader.status === 'active' ? 'inactive' : 'active';
-          toast({
-            title: `Трейдер ${newStatus === 'active' ? 'активирован' : 'деактивирован'}`,
-            description: `${trader.name} был(а) ${newStatus === 'active' ? 'активирован(а)' : 'деактивирован(а)'}.`,
-          });
-          return { ...trader, status: newStatus };
-        }
-        return trader;
-      })
-    );
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      try {
+        const tradersData = await getTraders();
+        setTraders(tradersData);
+      } catch (error) {
+        console.error("Failed to fetch traders:", error);
+        toast({ variant: 'destructive', title: "Ошибка", description: "Не удалось загрузить трейдеров." });
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  const toggleTraderStatus = async (traderId: string, currentStatus: Trader['status']) => {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    const action = newStatus === 'active' ? activateTrader : deactivateTrader;
+    
+    try {
+        await action(traderId);
+        setTraders((current) => current.map(t => t.id === traderId ? {...t, status: newStatus} : t));
+        toast({
+          title: `Трейдер ${newStatus === 'active' ? 'активирован' : 'деактивирован'}`,
+        });
+    } catch(e) {
+        toast({
+          variant: 'destructive',
+          title: 'Ошибка',
+          description: `Не удалось ${newStatus === 'active' ? 'активировать' : 'деактивировать'} трейдера.`,
+        });
+    }
   };
   
   const deleteTrader = (traderId: string) => {
-    setTraders((currentTraders) => {
-      const trader = currentTraders.find(t => t.id === traderId);
-      toast({
-        variant: 'destructive',
-        title: 'Трейдер удален',
-        description: `${trader?.name} был(а) навсегда удален(а).`
-      })
-      return currentTraders.filter(t => t.id !== traderId)
-    });
+    const trader = traders.find(t => t.id === traderId);
+    // Optimistic update
+    setTraders((currentTraders) => currentTraders.filter(t => t.id !== traderId));
+    toast({
+      variant: 'destructive',
+      title: 'Трейдер удален (симуляция)',
+      description: `${trader?.name} был(а) навсегда удален(а).`
+    })
+    // In a real app, you would call a Firestore function to delete the trader document
+    // and all related data (e.g., their alerts).
+  }
+  
+  if (loading) {
+    return (
+        <div className="space-y-4">
+            <Skeleton className="h-8 w-1/3 mb-4" />
+            <Skeleton className="h-48 w-full" />
+        </div>
+    )
   }
 
   return (
@@ -105,7 +137,7 @@ export function TraderManagement() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => toggleTraderStatus(trader.id)}>
+                        <DropdownMenuItem onClick={() => toggleTraderStatus(trader.id, trader.status)}>
                             {trader.status === 'active' ? 'Деактивировать' : 'Активировать'}
                         </DropdownMenuItem>
                         <DropdownMenuItem disabled>Редактировать посты</DropdownMenuItem>

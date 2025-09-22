@@ -39,6 +39,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
       setUser(authUser);
       localStorage.setItem('authUser', JSON.stringify(authUser));
+      
+      const role = authUser.role;
+      let targetPath = '/';
+      if (role === 'admin') targetPath = '/admin';
+      if (role === 'trader') targetPath = '/trader';
+      router.push(targetPath);
+
     } else {
       throw new Error('Invalid credentials');
     }
@@ -57,28 +64,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (!user && !isAuthPage) {
       router.push('/login');
-      return;
     }
-
-    if (user) {
-        if (isAuthPage) {
-            router.push('/');
-        } else {
-            const role = user.role;
-            
-            let expectedArea = 'main';
-            if (role === 'admin') expectedArea = 'admin';
-            if (role === 'trader') expectedArea = 'trader';
-
-            const currentArea = pathname.split('/')[1];
-            const actualArea = currentArea === '' || currentArea === 'profile' || currentArea === 'traders' ? 'main' : currentArea;
-
-            if (expectedArea !== actualArea) {
-                console.warn(`Redirecting user with role '${user.role}' from '${pathname}' to '/${expectedArea === 'main' ? '' : expectedArea}'.`);
-                router.push(`/${expectedArea === 'main' ? '' : expectedArea}`);
-            }
-        }
-    }
+    
   }, [user, loading, pathname, router]);
 
   const value = {
