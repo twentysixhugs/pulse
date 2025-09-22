@@ -23,6 +23,7 @@ import {
   createReport,
   getUser,
 } from '@/lib/firestore';
+import { db } from '@/lib/firebase';
 
 
 export default function HomePage() {
@@ -79,7 +80,7 @@ export default function HomePage() {
   };
   
   const handleReport = async (newReport: Omit<Report, 'id' | 'status'>) => {
-    await createReport(newReport);
+    await createReport(db, newReport);
     // Don't need to optimistically add, admin panel will see it
   };
 

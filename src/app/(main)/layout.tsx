@@ -8,6 +8,7 @@ import { User, LogOut, Database, AlertCircle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { seedDatabase, isDbSeeded } from '@/lib/seed-db';
 import { useToast } from '@/hooks/use-toast';
+import { db } from '@/lib/firebase';
 
 
 export default function MainLayout({
@@ -22,16 +23,19 @@ export default function MainLayout({
 
   useEffect(() => {
     async function checkDb() {
+      // This now runs only on the client-side after mount
       const seeded = await isDbSeeded();
       setShowSeedButton(!seeded);
     }
-    checkDb();
+    if (typeof window !== 'undefined') {
+      checkDb();
+    }
   }, []);
 
   const handleSeed = async () => {
     setIsSeeding(true);
     try {
-      await seedDatabase();
+      await seedDatabase(db);
       toast({
         title: "Database Seeded",
         description: "The database has been populated with initial data.",

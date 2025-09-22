@@ -1,8 +1,4 @@
 
-// This is a temporary file to seed the database.
-// In a real production app, you would use a dedicated script or admin interface for this.
-'use client';
-import { db } from '@/lib/firebase';
 import {
   collection,
   writeBatch,
@@ -11,7 +7,9 @@ import {
   doc,
   query,
   limit,
+  Firestore,
 } from 'firebase/firestore';
+import { db } from './firebase';
 
 export async function isDbSeeded() {
   const q = query(collection(db, 'users'), limit(1));
@@ -19,7 +17,7 @@ export async function isDbSeeded() {
   return !snapshot.empty;
 }
 
-export async function seedDatabase() {
+export async function seedDatabase(db: Firestore) {
   const batch = writeBatch(db);
 
   // --- CATEGORIES ---

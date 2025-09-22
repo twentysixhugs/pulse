@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { ThumbsUp, ThumbsDown, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AlertCard } from './alert-card';
+import { db } from '@/lib/firebase';
 
 type TraderProfileViewProps = {
   trader: Trader;

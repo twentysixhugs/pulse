@@ -41,6 +41,7 @@ import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '../ui/skeleton';
+import { db } from '@/lib/firebase';
 
 export function TraderDashboard() {
   const { user: authUser } = useAuth();
@@ -80,7 +81,7 @@ export function TraderDashboard() {
     const action = isActive ? activateTrader : deactivateTrader;
 
     try {
-      await action(currentTrader.id);
+      await action(db, currentTrader.id);
       setCurrentTrader({ ...currentTrader, status: newStatus });
       toast({
         title: 'Статус обновлен',
@@ -94,19 +95,19 @@ export function TraderDashboard() {
   
   const handleSavePost = async (postData: Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'> & {id?: string}) => {
     if (postData.id && editingPost) { // Editing
-      await updateAlertText(postData.id, postData.text);
+      await updateAlertText(db, postData.id, postData.text);
       setAlerts(alerts.map(a => a.id === postData.id ? {...a, text: postData.text, screenshotUrl: postData.screenshotUrl || a.screenshotUrl } : a));
       setEditingPost(undefined);
     } else { // Creating
       if (currentTrader) {
-        const newPost = await createAlert({...postData, traderId: currentTrader.id });
+        const newPost = await createAlert(db, {...postData, traderId: currentTrader.id });
         setAlerts([newPost, ...alerts]);
       }
     }
   };
 
   const handleDeletePost = async (postId: string) => {
-    await deleteAlert(postId);
+    await deleteAlert(db, postId);
     setAlerts(alerts.filter(a => a.id !== postId));
     toast({ variant: 'destructive', title: 'Пост удален' });
   }

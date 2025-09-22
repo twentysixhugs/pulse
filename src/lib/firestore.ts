@@ -1,7 +1,4 @@
 
-'use client';
-
-import { db } from '@/lib/firebase';
 import {
   collection,
   getDocs,
@@ -20,7 +17,9 @@ import {
   getDoc,
   setDoc,
   where,
+  Firestore,
 } from 'firebase/firestore';
+import { db } from './firebase';
 
 
 // Data type definitions
@@ -179,7 +178,7 @@ export async function getAllReports(): Promise<Report[]> {
 
 // --- Functions to update data ---
 
-export async function toggleAlertLike(alertId: string, userId: string, hasLiked: boolean) {
+export async function toggleAlertLike(db: Firestore, alertId: string, userId: string, hasLiked: boolean) {
     const alertRef = doc(db, 'alerts', alertId);
     if (hasLiked) {
         await updateDoc(alertRef, { likes: arrayRemove(userId) });
@@ -191,7 +190,7 @@ export async function toggleAlertLike(alertId: string, userId: string, hasLiked:
     }
 }
 
-export async function toggleAlertDislike(alertId: string, userId: string, hasDisliked: boolean) {
+export async function toggleAlertDislike(db: Firestore, alertId: string, userId: string, hasDisliked: boolean) {
     const alertRef = doc(db, 'alerts', alertId);
     if (hasDisliked) {
         await updateDoc(alertRef, { dislikes: arrayRemove(userId) });
@@ -204,7 +203,7 @@ export async function toggleAlertDislike(alertId: string, userId: string, hasDis
 }
 
 
-export async function addCommentToAlert(alertId: string, comment: Comment) {
+export async function addCommentToAlert(db: Firestore, alertId: string, comment: Comment) {
   const alertRef = doc(db, 'alerts', alertId);
   await updateDoc(alertRef, {
     comments: arrayUnion(comment),
@@ -212,7 +211,7 @@ export async function addCommentToAlert(alertId: string, comment: Comment) {
   return comment;
 }
 
-export async function createReport(report: Omit<Report, 'id' | 'status'>): Promise<Report> {
+export async function createReport(db: Firestore, report: Omit<Report, 'id' | 'status'>): Promise<Report> {
     const reportsCol = collection(db, 'reports');
     const newReport = {
         ...report,
@@ -223,7 +222,7 @@ export async function createReport(report: Omit<Report, 'id' | 'status'>): Promi
 }
 
 
-export async function updateTraderReputation(traderId: string, userId: string, type: 'pos' | 'neg') {
+export async function updateTraderReputation(db: Firestore, traderId: string, userId: string, type: 'pos' | 'neg') {
     const traderRef = doc(db, 'traders', traderId);
     const userRepRef = doc(db, 'users', userId, 'traderReputation', traderId);
     
@@ -265,7 +264,7 @@ export async function getUserTraderReputation(userId: string, traderId: string) 
     return null;
 }
 
-export async function createAlert(post: Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'>): Promise<AlertPost> {
+export async function createAlert(db: Firestore, post: Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'>): Promise<AlertPost> {
     const alertsCol = collection(db, 'alerts');
     const newPost = {
         ...post,
@@ -280,33 +279,33 @@ export async function createAlert(post: Omit<AlertPost, 'id' | 'timestamp' | 'li
     return { ...newPost, id: docRef.id, timestamp: (data?.timestamp as Timestamp).toDate().toISOString() };
 }
 
-export async function updateAlertText(alertId: string, newText: string) {
+export async function updateAlertText(db: Firestore, alertId: string, newText: string) {
     const alertRef = doc(db, 'alerts', alertId);
     await updateDoc(alertRef, { text: newText });
 }
 
-export async function deleteAlert(alertId: string) {
+export async function deleteAlert(db: Firestore, alertId: string) {
     const alertRef = doc(db, 'alerts', alertId);
     await deleteDoc(alertRef);
 }
 
-export async function banUser(userId: string) {
+export async function banUser(db: Firestore, userId: string) {
     const userRef = doc(db, 'users', userId);
     await updateDoc(userRef, { isBanned: true });
 }
-export async function unbanUser(userId: string) {
+export async function unbanUser(db: Firestore, userId: string) {
     const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, { isBanned: false });
+await updateDoc(userRef, { isBanned: false });
 }
-export async function activateTrader(traderId: string) {
+export async function activateTrader(db: Firestore, traderId: string) {
     const traderRef = doc(db, 'traders', traderId);
     await updateDoc(traderRef, { status: 'active' });
 }
-export async function deactivateTrader(traderId: string) {
+export async function deactivateTrader(db: Firestore, traderId: string) {
     const traderRef = doc(db, 'traders', traderId);
     await updateDoc(traderRef, { status: 'inactive' });
 }
-export async function resolveReport(reportId: string) {
+export async function resolveReport(db: Firestore, reportId: string) {
     const reportRef = doc(db, 'reports', reportId);
     await updateDoc(reportRef, { status: 'resolved' });
 }
