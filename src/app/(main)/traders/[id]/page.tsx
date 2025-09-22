@@ -23,6 +23,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
+import { db } from '@/lib/firebase';
 
 export default function TraderProfilePage() {
   const params = useParams();
@@ -98,7 +99,7 @@ export default function TraderProfilePage() {
   };
   
   const handleReport = async (newReport: Omit<Report, 'id' | 'status'>) => {
-    await createReport(newReport);
+    await createReport(db, newReport);
     console.log("Жалоба отправлена:", newReport);
   };
 
@@ -133,5 +134,3 @@ export default function TraderProfilePage() {
     </div>
   );
 }
-
-    

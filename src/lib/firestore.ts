@@ -211,7 +211,7 @@ export async function addCommentToAlert(alertId: string, comment: Comment) {
   return comment;
 }
 
-export async function createReport(report: Omit<Report, 'id' | 'status'>): Promise<Report> {
+export async function createReport(db: Firestore, report: Omit<Report, 'id' | 'status'>): Promise<Report> {
     const reportsCol = collection(db, 'reports');
     const newReport = {
         ...report,
@@ -289,25 +289,23 @@ export async function deleteAlert(alertId: string) {
     await deleteDoc(alertRef);
 }
 
-export async function banUser(userId: string) {
+export async function banUser(db: Firestore, userId: string) {
     const userRef = doc(db, 'users', userId);
     await updateDoc(userRef, { isBanned: true });
 }
-export async function unbanUser(userId: string) {
+export async function unbanUser(db: Firestore, userId: string) {
     const userRef = doc(db, 'users', userId);
 await updateDoc(userRef, { isBanned: false });
 }
-export async function activateTrader(traderId: string) {
+export async function activateTrader(db: Firestore, traderId: string) {
     const traderRef = doc(db, 'traders', traderId);
     await updateDoc(traderRef, { status: 'active' });
 }
-export async function deactivateTrader(traderId: string) {
+export async function deactivateTrader(db: Firestore, traderId: string) {
     const traderRef = doc(db, 'traders', traderId);
     await updateDoc(traderRef, { status: 'inactive' });
 }
-export async function resolveReport(reportId: string) {
+export async function resolveReport(db: Firestore, reportId: string) {
     const reportRef = doc(db, 'reports', reportId);
     await updateDoc(reportRef, { status: 'resolved' });
 }
-
-    

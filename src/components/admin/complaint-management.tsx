@@ -31,6 +31,7 @@ import {
   } from '@/components/ui/alert-dialog';
 import { Skeleton } from '../ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
+import { db } from '@/lib/firebase';
 
 export function ComplaintManagement() {
   const [reports, setReports] = useState<Report[]>([]);
@@ -70,7 +71,7 @@ export function ComplaintManagement() {
     setReports((currentReports) => currentReports.filter((report) => report.id !== reportId));
     
     try {
-        await resolveReport(reportId);
+        await resolveReport(db, reportId);
         toast({
             title: 'Жалоба разрешена',
             description: 'Жалоба была отмечена как разрешенная.',
@@ -164,5 +165,3 @@ export function ComplaintManagement() {
     </div>
   );
 }
-
-    

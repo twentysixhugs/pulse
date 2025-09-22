@@ -26,6 +26,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Skeleton } from '../ui/skeleton';
+import { db } from '@/lib/firebase';
 
 export function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
@@ -53,7 +54,7 @@ export function UserManagement() {
     const newBanStatus = !isBanned;
 
     try {
-        await action(userId);
+        await action(db, userId);
         setUsers((currentUsers) =>
             currentUsers.map((user) =>
             user.id === userId ? { ...user, isBanned: newBanStatus } : user
@@ -150,5 +151,3 @@ export function UserManagement() {
     </div>
   );
 }
-
-    

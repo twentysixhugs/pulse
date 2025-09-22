@@ -33,6 +33,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '../ui/skeleton';
+import { db } from '@/lib/firebase';
 
 export function TraderManagement() {
   const [traders, setTraders] = useState<Trader[]>([]);
@@ -62,7 +63,7 @@ export function TraderManagement() {
     const action = newStatus === 'active' ? activateTrader : deactivateTrader;
     
     try {
-        await action(traderId);
+        await action(db, traderId);
         setTraders((currentTraders) =>
             currentTraders.map((trader) =>
             trader.id === traderId ? { ...trader, status: newStatus } : trader
@@ -179,5 +180,3 @@ export function TraderManagement() {
     </div>
   );
 }
-
-    
