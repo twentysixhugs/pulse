@@ -1,18 +1,20 @@
 
 'use client';
 
+import { useState } from 'react';
 import {
   AlertPost,
   Category,
   Trader,
   User,
   Report,
+  updateTraderReputation
 } from '@/lib/firestore';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ThumbsUp, ThumbsDown, Check } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Check, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AlertCard } from './alert-card';
 
@@ -23,7 +25,7 @@ type TraderProfileViewProps = {
   currentUser: User;
   userRepAction: 'pos' | 'neg' | null;
   onUpdateAlert: (updatedAlert: AlertPost) => void;
-  onUpdateTraderRep: (traderId: string, type: 'pos' | 'neg') => void;
+  onUpdateTraderRep: (updatedTrader: Trader, newRepAction: 'pos' | 'neg' | null) => void;
   onReport: (report: Omit<Report, 'id' | 'status'>) => void;
 };
 
@@ -38,16 +40,55 @@ export function TraderProfileView({
   onReport,
 }: TraderProfileViewProps) {
   const { toast } = useToast();
+  const [isSubmittingRep, setIsSubmittingRep] = useState(false);
 
-  const handleRep = (type: 'pos' | 'neg') => {
-    onUpdateTraderRep(trader.id, type);
+  const handleRep = async (type: 'pos' | 'neg') => {
+    if (isSubmittingRep) return;
+    setIsSubmittingRep(true);
 
-    if (userRepAction === type) {
-        toast({ title: 'Репутация удалена.' });
-    } else if (userRepAction) {
-        toast({ title: `Репутация изменена на ${type === 'pos' ? '+Rep' : '-Rep'}.` });
-    } else {
-        toast({ title: `Вы поставили ${type === 'pos' ? '+Rep' : '-Rep'}.` });
+    const originalTraderState = { ...trader, reputation: { ...trader.reputation }};
+    const originalRepAction = userRepAction;
+
+    // Optimistic update
+    const isUndoing = originalRepAction === type;
+    const isSwitching = originalRepAction && originalRepAction !== type;
+    
+    let optimisticTrader = { ...trader, reputation: { ...trader.reputation }};
+    let optimisticRepAction: 'pos' | 'neg' | null = type;
+
+    if (isUndoing) {
+        optimisticRepAction = null;
+        if (type === 'pos') optimisticTrader.reputation.positive--;
+        else optimisticTrader.reputation.negative--;
+    } else if (isSwitching) {
+        if (type === 'pos') {
+            optimisticTrader.reputation.positive++;
+            optimisticTrader.reputation.negative--;
+        } else {
+            optimisticTrader.reputation.positive--;
+            optimisticTrader.reputation.negative++;
+        }
+    } else { // New action
+        if (type === 'pos') optimisticTrader.reputation.positive++;
+        else optimisticTrader.reputation.negative++;
+    }
+
+    onUpdateTraderRep(optimisticTrader, optimisticRepAction);
+
+    try {
+        await updateTraderReputation(trader.id, currentUser.id, type);
+         if (isUndoing) {
+            toast({ title: 'Репутация удалена.' });
+        } else {
+            toast({ title: `Вы поставили ${type === 'pos' ? '+Rep' : '-Rep'}.` });
+        }
+    } catch (error) {
+        console.error("Failed to update reputation:", error);
+        toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось обновить репутацию.'});
+        // Revert on failure
+        onUpdateTraderRep(originalTraderState, originalRepAction);
+    } finally {
+        setIsSubmittingRep(false);
     }
   };
 
@@ -94,12 +135,12 @@ export function TraderProfileView({
           </div>
         </CardHeader>
         <CardContent className="p-6 pt-0 flex flex-col sm:flex-row gap-2">
-            <Button onClick={() => handleRep('pos')} variant={userRepAction === 'pos' ? "default" : "outline"} className="w-full sm:w-auto">
-                {userRepAction === 'pos' && <Check className="mr-2 h-4 w-4" />}
+            <Button onClick={() => handleRep('pos')} variant={userRepAction === 'pos' ? "default" : "outline"} className="w-full sm:w-auto" disabled={isSubmittingRep}>
+                {isSubmittingRep && userRepAction !== 'neg' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (userRepAction === 'pos' && <Check className="mr-2 h-4 w-4" />)}
                 +Rep
             </Button>
-             <Button onClick={() => handleRep('neg')} variant={userRepAction === 'neg' ? "destructive" : "outline"} className="w-full sm:w-auto">
-                {userRepAction === 'neg' && <Check className="mr-2 h-4 w-4" />}
+             <Button onClick={() => handleRep('neg')} variant={userRepAction === 'neg' ? "destructive" : "outline"} className="w-full sm:w-auto" disabled={isSubmittingRep}>
+                {isSubmittingRep && userRepAction !== 'pos' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (userRepAction === 'neg' && <Check className="mr-2 h-4 w-4" />)}
                 -Rep
             </Button>
         </CardContent>
@@ -128,3 +169,5 @@ export function TraderProfileView({
     </div>
   );
 }
+
+    

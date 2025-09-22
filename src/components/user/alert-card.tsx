@@ -28,6 +28,7 @@ import {
   MoreVertical,
   ShieldAlert,
   ZoomIn,
+  Loader2,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -66,50 +67,77 @@ export function AlertCard({
   const { toast } = useToast();
   const [isImageModalOpen, setImageModalOpen] = useState(false);
   const [commentText, setCommentText] = useState('');
+  const [isSubmittingReaction, setIsSubmittingReaction] = useState(false);
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
   const hasLiked = currentUser && alert.likes.includes(currentUser.id);
   const hasDisliked = currentUser && alert.dislikes.includes(currentUser.id);
 
-  const handleLike = async () => {
-    if (!currentUser) return;
-    await toggleAlertLike(alert.id, currentUser.id, hasLiked);
-    // Optimistic update
-    const newLikes = hasLiked
-      ? alert.likes.filter((id) => id !== currentUser.id)
-      : [...alert.likes, currentUser.id];
-    const newDislikes = alert.dislikes.filter((id) => id !== currentUser.id);
-    onUpdateAlert({ ...alert, likes: newLikes, dislikes: newDislikes });
-  };
+  const handleReaction = async (type: 'like' | 'dislike') => {
+    if (!currentUser || isSubmittingReaction) return;
 
-  const handleDislike = async () => {
-    if (!currentUser) return;
-    await toggleAlertDislike(alert.id, currentUser.id, hasDisliked);
+    setIsSubmittingReaction(true);
+
+    const originalAlertState = { ...alert, likes: [...alert.likes], dislikes: [...alert.dislikes] };
+
     // Optimistic update
-    const newDislikes = hasDisliked
-      ? alert.dislikes.filter((id) => id !== currentUser.id)
-      : [...alert.dislikes, currentUser.id];
-    const newLikes = alert.likes.filter((id) => id !== currentUser.id);
+    let newLikes: string[], newDislikes: string[];
+    if (type === 'like') {
+      newLikes = hasLiked ? alert.likes.filter((id) => id !== currentUser.id) : [...alert.likes, currentUser.id];
+      newDislikes = alert.dislikes.filter((id) => id !== currentUser.id);
+    } else { // dislike
+      newDislikes = hasDisliked ? alert.dislikes.filter((id) => id !== currentUser.id) : [...alert.dislikes, currentUser.id];
+      newLikes = alert.likes.filter((id) => id !== currentUser.id);
+    }
     onUpdateAlert({ ...alert, likes: newLikes, dislikes: newDislikes });
+    
+    try {
+      if (type === 'like') {
+        await toggleAlertLike(alert.id, currentUser.id, hasLiked);
+      } else {
+        await toggleAlertDislike(alert.id, currentUser.id, hasDisliked);
+      }
+    } catch (error) {
+      console.error("Failed to update reaction:", error);
+      toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось обновить реакцию.'});
+      // Revert UI on failure
+      onUpdateAlert(originalAlertState);
+    } finally {
+      setIsSubmittingReaction(false);
+    }
   };
 
   const handleAddComment = async () => {
-    if (!commentText.trim() || !currentUser) return;
+    if (!commentText.trim() || !currentUser || isSubmittingComment) return;
+    
+    setIsSubmittingComment(true);
+
+    const optimisticCommentId = `optimistic-${Date.now()}`;
     const newComment: CommentType = {
-      id: `comment-${Date.now()}`,
+      id: optimisticCommentId,
       userId: currentUser.id,
       userName: currentUser.name,
       text: commentText,
       timestamp: new Date().toISOString(),
     };
     
-    await addCommentToAlert(alert.id, newComment);
-    
+    const originalComments = [...alert.comments];
+    // Optimistic update
     onUpdateAlert({ ...alert, comments: [...alert.comments, newComment] });
     setCommentText('');
-    toast({
-      title: 'Комментарий опубликован',
-      description: 'Ваш комментарий был добавлен к предупреждению.',
-    });
+
+    try {
+      await addCommentToAlert(alert.id, newComment);
+      // We might want to refetch the alert here to get the real comment ID from the server
+      // For now, the optimistic one will do.
+    } catch (error) {
+      console.error("Failed to add comment:", error);
+      toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось добавить комментарий.'});
+      // Revert UI on failure
+      onUpdateAlert({ ...alert, comments: originalComments });
+    } finally {
+      setIsSubmittingComment(false);
+    }
   };
 
   const handleReport = (reason: string) => {
@@ -184,11 +212,11 @@ export function AlertCard({
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleLike}
+              onClick={() => handleReaction('like')}
               className={`flex items-center gap-2 ${
                 hasLiked ? 'text-primary' : 'text-muted-foreground'
               }`}
-              disabled={!currentUser}
+              disabled={!currentUser || isSubmittingReaction}
             >
               <ThumbsUp className="h-4 w-4" />
               <span>{alert.likes.length}</span>
@@ -196,11 +224,11 @@ export function AlertCard({
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleDislike}
+              onClick={() => handleReaction('dislike')}
               className={`flex items-center gap-2 ${
                 hasDisliked ? 'text-destructive' : 'text-muted-foreground'
               }`}
-              disabled={!currentUser}
+              disabled={!currentUser || isSubmittingReaction}
             >
               <ThumbsDown className="h-4 w-4" />
               <span>{alert.dislikes.length}</span>
@@ -211,6 +239,7 @@ export function AlertCard({
               commentText={commentText}
               setCommentText={setCommentText}
               onAddComment={handleAddComment}
+              isSubmitting={isSubmittingComment}
             />
           </div>
         </CardFooter>
@@ -227,7 +256,7 @@ export function AlertCard({
   );
 }
 
-function CommentDialog({ alert, currentUser, commentText, setCommentText, onAddComment }: any) {
+function CommentDialog({ alert, currentUser, commentText, setCommentText, onAddComment, isSubmitting }: any) {
     return (
         <Dialog>
             <DialogTrigger asChild>
@@ -264,9 +293,12 @@ function CommentDialog({ alert, currentUser, commentText, setCommentText, onAddC
                         value={commentText}
                         onChange={(e) => setCommentText(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && onAddComment()}
-                        disabled={!currentUser}
+                        disabled={!currentUser || isSubmitting}
                     />
-                    <Button onClick={onAddComment} disabled={!currentUser || !commentText.trim()}>Опубликовать</Button>
+                    <Button onClick={onAddComment} disabled={!currentUser || !commentText.trim() || isSubmitting}>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isSubmitting ? 'Публикация...' : 'Опубликовать'}
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -320,3 +352,5 @@ function ReportDialog({ onConfirm, disabled }: { onConfirm: (reason: string) => 
     </Dialog>
   );
 }
+
+    

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, notFound } from 'next/navigation';
 import { TraderProfileView } from '@/components/user/trader-profile-view';
 import {
@@ -86,16 +86,10 @@ export default function TraderProfilePage() {
     setAlerts(currentAlerts => currentAlerts.map(a => a.id === updatedAlert.id ? updatedAlert : a));
   };
 
-  const handleUpdateTraderRep = async (traderId: string, type: 'pos' | 'neg') => {
-    if (!trader || !authUser) return;
-
-    const newReputationAction = await updateTraderReputation(traderId, authUser.uid, type);
-    setUserRepAction(newReputationAction);
-    
-    // For immediate feedback, we can refetch the trader or optimistically update
-    const updatedTrader = await getTrader(traderId);
-    if(updatedTrader) setTrader(updatedTrader);
-  };
+  const handleUpdateTraderRep = useCallback((updatedTrader: Trader, newRepAction: 'pos' | 'neg' | null) => {
+    setTrader(updatedTrader);
+    setUserRepAction(newRepAction);
+  }, []);
   
   const handleReport = async (newReport: Omit<Report, 'id' | 'status'>) => {
     await createReport(newReport);
@@ -133,3 +127,5 @@ export default function TraderProfilePage() {
     </div>
   );
 }
+
+    
