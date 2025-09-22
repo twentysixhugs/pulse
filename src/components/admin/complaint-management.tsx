@@ -7,10 +7,10 @@ import {
   AlertPost,
   Trader,
   User,
-  getReports,
+  getAllReports,
   getAlerts,
-  getTraders,
-  getUsers,
+  getAllTraders,
+  getAllUsers,
   resolveReport as resolveReportInDb
 } from '@/lib/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,10 +46,10 @@ export function ComplaintManagement() {
       setLoading(true);
       try {
         const [reportsData, alertsData, tradersData, usersData] = await Promise.all([
-          getReports(),
+          getAllReports(),
           getAlerts(),
-          getTraders(),
-          getUsers()
+          getAllTraders(),
+          getAllUsers()
         ]);
         setReports(reportsData);
         setAlerts(alertsData);
@@ -103,10 +103,9 @@ export function ComplaintManagement() {
         <div className="space-y-6">
           {pendingReports.map((report) => {
             const alert = alerts.find((a) => a.id === report.alertId);
-            const trader = alert ? traders.find((t) => t.id === alert.traderId) : undefined;
             const reporter = users.find(u => u.id === report.reporterId);
 
-            if (!alert || !trader) return null;
+            if (!alert) return null;
 
             return (
               <Card key={report.id} className="overflow-hidden">
@@ -148,7 +147,6 @@ export function ComplaintManagement() {
                     </div>
                   <AlertCard
                     alert={alert}
-                    trader={trader}
                     currentUser={currentUser}
                     onUpdateAlert={() => {}}
                     onReport={() => {}}

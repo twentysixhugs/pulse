@@ -47,16 +47,19 @@ export default function HomePage() {
         if (user) {
             setLoading(true);
             try {
-                // Fetch current user and alerts in parallel
-                const [currentUserData, alertsData] = await Promise.all([
+                const [currentUserData, alertsData, tradersData, categoriesData] = await Promise.all([
                     getUser(user.uid),
                     getAlerts(),
+                    getAllTraders(),
+                    getAllCategories(),
                 ]);
                 setCurrentUser(currentUserData);
                 setAlerts(alertsData);
+                setTraders(tradersData);
+                setCategories(categoriesData);
 
             } catch (error) {
-                console.error("Failed to fetch primary data:", error);
+                console.error("Failed to fetch page data:", error);
             } finally {
                 setLoading(false);
             }
@@ -64,23 +67,6 @@ export default function HomePage() {
     }
     fetchData();
   }, [user]);
-
-  // Fetch non-critical data separately
-  useEffect(() => {
-    async function fetchSecondaryData() {
-      try {
-        const [tradersData, categoriesData] = await Promise.all([
-          getAllTraders(),
-          getAllCategories(),
-        ]);
-        setTraders(tradersData);
-        setCategories(categoriesData);
-      } catch (error) {
-        console.error("Failed to fetch secondary data:", error);
-      }
-    }
-    fetchSecondaryData();
-  }, [])
 
 
   const handleAgree = () => {

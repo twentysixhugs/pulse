@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Trader, Category, getTraders, activateTrader, deactivateTrader, getCategories } from '@/lib/firestore';
+import { Trader, Category, getAllTraders, activateTrader, deactivateTrader, getAllCategories } from '@/lib/firestore';
 import {
   Table,
   TableBody,
@@ -44,7 +44,7 @@ export function TraderManagement() {
     async function fetchData() {
       setLoading(true);
       try {
-        const [tradersData, categoriesData] = await Promise.all([getTraders(), getCategories()]);
+        const [tradersData, categoriesData] = await Promise.all([getAllTraders(), getAllCategories()]);
         setTraders(tradersData);
         setCategories(categoriesData);
       } catch (error) {

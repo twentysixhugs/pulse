@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { User, getUsers, banUser, unbanUser } from '@/lib/firestore';
+import { User, getAllUsers, banUser, unbanUser } from '@/lib/firestore';
 import {
   Table,
   TableBody,
@@ -36,7 +36,7 @@ export function UserManagement() {
     async function fetchData() {
         setLoading(true);
         try {
-            const usersData = await getUsers();
+            const usersData = await getAllUsers();
             setUsers(usersData);
         } catch (error) {
             console.error("Failed to fetch users:", error);
