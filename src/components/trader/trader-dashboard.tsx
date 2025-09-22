@@ -5,8 +5,8 @@ import { useState, useEffect } from 'react';
 import {
   Trader,
   AlertPost,
-  getTraders,
-  getAlerts,
+  getTrader,
+  getAlertsByTrader,
   createAlert,
   updateAlertText,
   deleteAlert,
@@ -56,16 +56,12 @@ export function TraderDashboard() {
         if (authUser) {
             setLoading(true);
             try {
-                const [tradersData, alertsData] = await Promise.all([getTraders(), getAlerts()]);
-                const trader = tradersData.find(t => t.id === authUser.uid);
-                setCurrentTrader(trader);
-
-                if (trader) {
-                    const traderAlerts = alertsData
-                        .filter(a => a.traderId === trader.id)
-                        .sort((a,b) => new Date(b.timestamp as string).getTime() - new Date(a.timestamp as string).getTime());
-                    setAlerts(traderAlerts);
-                }
+                const [traderData, alertsData] = await Promise.all([
+                    getTrader(authUser.uid), 
+                    getAlertsByTrader(authUser.uid)
+                ]);
+                setCurrentTrader(traderData);
+                setAlerts(alertsData);
 
             } catch (error) {
                 console.error("Failed to load trader dashboard:", error);
@@ -132,7 +128,7 @@ export function TraderDashboard() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div className="lg:col-span-2 space-y-8">
-        <PostEditor traderId={currentTrader.id} onSave={handleSavePost} postToEdit={editingPost} />
+        <PostEditor trader={currentTrader} onSave={handleSavePost} postToEdit={editingPost} />
         <div>
             <h2 className="text-2xl font-headline font-bold mb-4">Ваши посты</h2>
             <div className="space-y-4">

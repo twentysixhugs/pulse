@@ -1,4 +1,3 @@
-
 'use client';
 
 import { db } from '@/lib/firebase';
@@ -19,13 +18,15 @@ import {
   limit,
   getDoc,
   setDoc,
+  where,
 } from 'firebase/firestore';
 
 
-// Data type definitions from the old data.ts file
+// Data type definitions
 export type SubscriptionStatus = 'active' | 'inactive';
 export type TraderStatus = 'active' | 'inactive';
 export type ReportStatus = 'pending' | 'resolved';
+export type UserRole = 'user' | 'admin' | 'trader';
 
 export interface Category {
   id: string;
@@ -38,6 +39,7 @@ export interface User {
   telegramId: string;
   isBanned: boolean;
   subscriptionStatus: SubscriptionStatus;
+  role: UserRole;
 }
 
 export interface Reputation {
@@ -56,6 +58,9 @@ export interface Comment {
 export interface AlertPost {
   id: string; // This will be the document ID from Firestore
   traderId: string;
+  traderName: string; // Denormalized
+  traderProfilePicUrl: string; // Denormalized
+  traderProfilePicHint: string; // Denormalized
   text: string;
   screenshotUrl: string;
   screenshotHint: string;
@@ -86,23 +91,33 @@ export interface Report {
 }
 
 
-// Firestore data fetching functions
-export async function getCategories(): Promise<Category[]> {
-  const categoriesCol = collection(db, 'categories');
-  const snapshot = await getDocs(categoriesCol);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+// --- Optimized Firestore data fetching functions ---
+
+export async function getUser(userId: string): Promise<User | undefined> {
+    const userRef = doc(db, 'users', userId);
+    const docSnap = await getDoc(userRef);
+    if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() } as User;
+    }
+    return undefined;
 }
 
-export async function getUsers(): Promise<User[]> {
-  const usersCol = collection(db, 'users');
-  const snapshot = await getDocs(usersCol);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+export async function getTrader(traderId: string): Promise<Trader | undefined> {
+    const traderRef = doc(db, 'traders', traderId);
+    const docSnap = await getDoc(traderRef);
+    if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() } as Trader;
+    }
+    return undefined;
 }
 
-export async function getTraders(): Promise<Trader[]> {
-  const tradersCol = collection(db, 'traders');
-  const snapshot = await getDocs(tradersCol);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Trader));
+export async function getCategory(categoryId: string): Promise<Category | undefined> {
+    const categoryRef = doc(db, 'categories', categoryId);
+    const docSnap = await getDoc(categoryRef);
+    if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() } as Category;
+    }
+    return undefined;
 }
 
 export async function getAlerts(): Promise<AlertPost[]> {
@@ -119,14 +134,49 @@ export async function getAlerts(): Promise<AlertPost[]> {
     });
 }
 
-export async function getReports(): Promise<Report[]> {
+export async function getAlertsByTrader(traderId: string): Promise<AlertPost[]> {
+    const alertsCol = collection(db, 'alerts');
+    const q = query(alertsCol, where('traderId', '==', traderId), orderBy('timestamp', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            timestamp: (data.timestamp as Timestamp).toDate().toISOString(),
+        } as AlertPost;
+    });
+}
+
+
+// --- Functions to get full collections (use with caution, for admin panels etc.) ---
+
+export async function getAllUsers(): Promise<User[]> {
+  const usersCol = collection(db, 'users');
+  const snapshot = await getDocs(usersCol);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+}
+
+export async function getAllTraders(): Promise<Trader[]> {
+  const tradersCol = collection(db, 'traders');
+  const snapshot = await getDocs(tradersCol);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Trader));
+}
+
+export async function getAllCategories(): Promise<Category[]> {
+  const categoriesCol = collection(db, 'categories');
+  const snapshot = await getDocs(categoriesCol);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+}
+
+export async function getAllReports(): Promise<Report[]> {
   const reportsCol = collection(db, 'reports');
   const snapshot = await getDocs(reportsCol);
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Report));
 }
 
 
-// Functions to update data
+// --- Functions to update data ---
 
 export async function toggleAlertLike(alertId: string, userId: string, hasLiked: boolean) {
     const alertRef = doc(db, 'alerts', alertId);
@@ -172,13 +222,18 @@ export async function createReport(report: Omit<Report, 'id' | 'status'>): Promi
 }
 
 
-export async function updateTraderReputation(traderId: string, type: 'pos' | 'neg', previousAction: 'pos' | 'neg' | null) {
+export async function updateTraderReputation(traderId: string, userId: string, type: 'pos' | 'neg') {
     const traderRef = doc(db, 'traders', traderId);
+    const userRepRef = doc(db, 'users', userId, 'traderReputation', traderId);
+    
     const batch = writeBatch(db);
+    const userRepSnap = await getDoc(userRepRef);
+    const previousAction = userRepSnap.exists() ? userRepSnap.data().action : null;
 
     if (previousAction === type) { // Undoing action
         const fieldToDecrement = type === 'pos' ? 'reputation.positive' : 'reputation.negative';
         batch.update(traderRef, { [fieldToDecrement]: increment(-1) });
+        batch.delete(userRepRef);
     } else if (previousAction) { // Switching action
         const fieldToIncrement = type === 'pos' ? 'reputation.positive' : 'reputation.negative';
         const fieldToDecrement = type === 'pos' ? 'reputation.negative' : 'reputation.positive';
@@ -186,14 +241,28 @@ export async function updateTraderReputation(traderId: string, type: 'pos' | 'ne
             [fieldToIncrement]: increment(1),
             [fieldToDecrement]: increment(-1)
         });
+        batch.set(userRepRef, { action: type });
     } else { // New action
         const fieldToIncrement = type === 'pos' ? 'reputation.positive' : 'reputation.negative';
         batch.update(traderRef, { [fieldToIncrement]: increment(1) });
+        batch.set(userRepRef, { action: type });
     }
     
     await batch.commit();
+    
+    const newRepSnap = await getDoc(userRepRef);
+    return newRepSnap.exists() ? newRepSnap.data().action : null;
 }
 
+
+export async function getUserTraderReputation(userId: string, traderId: string) {
+    const userRepRef = doc(db, 'users', userId, 'traderReputation', traderId);
+    const docSnap = await getDoc(userRepRef);
+    if (docSnap.exists()) {
+        return docSnap.data().action as 'pos' | 'neg' | null;
+    }
+    return null;
+}
 
 export async function createAlert(post: Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'>): Promise<AlertPost> {
     const alertsCol = collection(db, 'alerts');

@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { User, getUsers } from '@/lib/firestore';
+import { User, getUser } from '@/lib/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,8 +20,7 @@ export default function ProfilePage() {
     async function fetchUser() {
       if (authUser) {
         setLoading(true);
-        const users = await getUsers();
-        const foundUser = users.find(u => u.id === authUser.uid);
+        const foundUser = await getUser(authUser.uid);
         setCurrentUser(foundUser);
         setLoading(false);
       }

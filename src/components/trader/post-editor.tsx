@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AlertPost } from '@/lib/data';
+import { AlertPost, Trader } from '@/lib/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
@@ -25,12 +25,12 @@ const formSchema = z.object({
 });
 
 type PostEditorProps = {
-  traderId: string;
+  trader: Trader;
   postToEdit?: AlertPost;
-  onSave: (post: Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'> & {id?: string}) => void;
+  onSave: (postData: Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'> & {id?: string}) => void;
 };
 
-export function PostEditor({ traderId, postToEdit, onSave }: PostEditorProps) {
+export function PostEditor({ trader, postToEdit, onSave }: PostEditorProps) {
   const { toast } = useToast();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -42,7 +42,10 @@ export function PostEditor({ traderId, postToEdit, onSave }: PostEditorProps) {
   function onSubmit(values: z.infer<typeof formSchema>) {
     const newPostData = {
       id: postToEdit?.id,
-      traderId,
+      traderId: trader.id,
+      traderName: trader.name,
+      traderProfilePicUrl: trader.profilePicUrl,
+      traderProfilePicHint: trader.profilePicHint,
       text: values.text,
       // In a real app, screenshot would be uploaded and URL returned
       screenshotUrl: postToEdit?.screenshotUrl || `https://picsum.photos/seed/${Date.now()}/800/600`,

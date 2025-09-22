@@ -6,7 +6,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   AlertPost,
-  Trader,
   User,
   Comment as CommentType,
   Report,
@@ -53,7 +52,6 @@ import { ru } from 'date-fns/locale';
 
 type AlertCardProps = {
   alert: AlertPost;
-  trader: Trader;
   currentUser: User;
   onUpdateAlert: (updatedAlert: AlertPost) => void;
   onReport: (report: Omit<Report, 'id' | 'status'>) => void;
@@ -61,7 +59,6 @@ type AlertCardProps = {
 
 export function AlertCard({
   alert,
-  trader,
   currentUser,
   onUpdateAlert,
   onReport,
@@ -140,22 +137,22 @@ export function AlertCard({
     <>
       <Card className="w-full overflow-hidden">
         <CardHeader className="flex flex-row items-start gap-4 p-4">
-          <Link href={`/traders/${trader.id}`}>
+          <Link href={`/traders/${alert.traderId}`}>
             <Avatar>
               <AvatarImage
-                src={trader.profilePicUrl}
-                alt={trader.name}
-                data-ai-hint={trader.profilePicHint}
+                src={alert.traderProfilePicUrl}
+                alt={alert.traderName}
+                data-ai-hint={alert.traderProfilePicHint}
               />
               <AvatarFallback>
-                {trader.name.charAt(0)}
+                {alert.traderName.charAt(0)}
               </AvatarFallback>
             </Avatar>
           </Link>
           <div className="flex-1">
             <div className="flex items-center justify-between">
               <div>
-                <Link href={`/traders/${trader.id}`} className="font-bold hover:underline">{trader.name}</Link>
+                <Link href={`/traders/${alert.traderId}`} className="font-bold hover:underline">{alert.traderName}</Link>
                 <p className="text-xs text-muted-foreground">
                   {formatDistanceToNow(new Date(alert.timestamp as string), { addSuffix: true, locale: ru })}
                 </p>
@@ -210,7 +207,6 @@ export function AlertCard({
             </Button>
             <CommentDialog
               alert={alert}
-              trader={trader}
               currentUser={currentUser}
               commentText={commentText}
               setCommentText={setCommentText}
@@ -225,13 +221,13 @@ export function AlertCard({
         imageUrl={alert.screenshotUrl}
         imageHint={alert.screenshotHint || 'stock chart'}
         alertId={alert.id}
-        title={`Скриншот от ${trader.name}`}
+        title={`Скриншот от ${alert.traderName}`}
       />
     </>
   );
 }
 
-function CommentDialog({ alert, trader, currentUser, commentText, setCommentText, onAddComment }: any) {
+function CommentDialog({ alert, currentUser, commentText, setCommentText, onAddComment }: any) {
     return (
         <Dialog>
             <DialogTrigger asChild>

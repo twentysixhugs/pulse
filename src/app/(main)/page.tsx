@@ -18,14 +18,10 @@ import {
   User,
   Report,
   getAlerts,
-  getCategories,
-  getTraders,
-  getUsers,
-  getReports,
-  toggleAlertLike,
-  toggleAlertDislike,
-  addCommentToAlert,
+  getAllCategories,
+  getAllTraders,
   createReport,
+  getUser,
 } from '@/lib/firestore';
 
 
@@ -38,41 +34,54 @@ export default function HomePage() {
   const [alerts, setAlerts] = useState<AlertPost[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [traders, setTraders] = useState<Trader[]>([]);
-  const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setIsClient(true);
     const agreed = localStorage.getItem('pulsescalp-legal-agreed') === 'true';
     setHasAgreed(agreed);
-    
+  }, []);
+
+  useEffect(() => {
     async function fetchData() {
         if (user) {
+            setLoading(true);
             try {
-                const [usersData, alertsData, tradersData, categoriesData, reportsData] = await Promise.all([
-                    getUsers(),
+                // Fetch current user and alerts in parallel
+                const [currentUserData, alertsData] = await Promise.all([
+                    getUser(user.uid),
                     getAlerts(),
-                    getTraders(),
-                    getCategories(),
-                    getReports(),
                 ]);
-                const foundUser = usersData.find(u => u.id === user.uid);
-                setCurrentUser(foundUser);
+                setCurrentUser(currentUserData);
                 setAlerts(alertsData);
-                setTraders(tradersData);
-                setCategories(categoriesData);
-                setReports(reportsData);
+
             } catch (error) {
-                console.error("Failed to fetch data:", error);
-                // Optionally, set an error state to show a message to the user
+                console.error("Failed to fetch primary data:", error);
             } finally {
                 setLoading(false);
             }
         }
     }
-
     fetchData();
   }, [user]);
+
+  // Fetch non-critical data separately
+  useEffect(() => {
+    async function fetchSecondaryData() {
+      try {
+        const [tradersData, categoriesData] = await Promise.all([
+          getAllTraders(),
+          getAllCategories(),
+        ]);
+        setTraders(tradersData);
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error("Failed to fetch secondary data:", error);
+      }
+    }
+    fetchSecondaryData();
+  }, [])
+
 
   const handleAgree = () => {
     localStorage.setItem('pulsescalp-legal-agreed', 'true');
@@ -85,13 +94,11 @@ export default function HomePage() {
   
   const handleReport = async (newReport: Omit<Report, 'id' | 'status'>) => {
     await createReport(newReport);
-    // Optimistically add to local state or refetch
-    setReports(currentReports => [...currentReports, { ...newReport, id: `temp-${Date.now()}`, status: 'pending' }]);
+    // Don't need to optimistically add, admin panel will see it
   };
 
-  const activeTraders = traders.filter(t => t.status === 'active');
   const activeAlerts = alerts
-    .filter(a => activeTraders.some(t => t.id === a.traderId))
+    .filter(a => traders.find(t => t.id === a.traderId)?.status === 'active')
     .sort((a, b) => new Date(b.timestamp as string).getTime() - new Date(a.timestamp as string).getTime());
 
 
@@ -127,20 +134,15 @@ export default function HomePage() {
             </TabsList>
             <TabsContent value="alerts" className="mt-6">
               <div className="space-y-4">
-                {activeAlerts.map((alert) => {
-                  const trader = traders.find((t) => t.id === alert.traderId);
-                  if (!trader) return null;
-                  return (
+                {activeAlerts.map((alert) => (
                     <AlertCard
                       key={alert.id}
                       alert={alert}
-                      trader={trader}
                       currentUser={currentUser}
                       onUpdateAlert={handleUpdateAlert}
                       onReport={handleReport}
                     />
-                  );
-                })}
+                  ))}
               </div>
             </TabsContent>
             <TabsContent value="categories" className="mt-6">

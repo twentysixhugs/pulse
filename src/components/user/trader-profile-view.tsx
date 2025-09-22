@@ -6,7 +6,6 @@ import {
   Category,
   Trader,
   User,
-  Reputation,
   Report,
 } from '@/lib/firestore';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -21,7 +20,6 @@ type TraderProfileViewProps = {
   trader: Trader;
   category: Category | undefined;
   alerts: AlertPost[];
-  allTraders: Trader[];
   currentUser: User;
   userRepAction: 'pos' | 'neg' | null;
   onUpdateAlert: (updatedAlert: AlertPost) => void;
@@ -33,7 +31,6 @@ export function TraderProfileView({
   trader,
   category,
   alerts,
-  allTraders,
   currentUser,
   userRepAction,
   onUpdateAlert,
@@ -112,20 +109,15 @@ export function TraderProfileView({
         <h2 className="text-2xl font-headline font-bold mb-4">История постов</h2>
         {alerts.length > 0 ? (
           <div className="space-y-4">
-            {alerts.map((alert) => {
-              const alertTrader = allTraders.find(t => t.id === alert.traderId);
-              if (!alertTrader) return null;
-              return (
+            {alerts.map((alert) => (
                 <AlertCard
                   key={alert.id}
                   alert={alert}
-                  trader={alertTrader}
                   currentUser={currentUser}
                   onUpdateAlert={onUpdateAlert}
                   onReport={onReport}
                 />
-              );
-            })}
+            ))}
           </div>
         ) : (
           <div className="text-center py-12">

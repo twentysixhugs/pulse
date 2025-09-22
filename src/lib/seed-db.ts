@@ -41,6 +41,7 @@ export async function seedDatabase() {
       telegramId: 'ivan_p',
       isBanned: false,
       subscriptionStatus: 'active',
+      role: 'user',
     },
     {
       id: 'user-2',
@@ -48,6 +49,7 @@ export async function seedDatabase() {
       telegramId: 'elena_s',
       isBanned: false,
       subscriptionStatus: 'inactive',
+      role: 'user',
     },
     {
       id: 'user-3',
@@ -55,6 +57,7 @@ export async function seedDatabase() {
       telegramId: 'sergey_k',
       isBanned: true,
       subscriptionStatus: 'active',
+      role: 'user',
     },
     {
       id: 'admin-1',
@@ -62,6 +65,7 @@ export async function seedDatabase() {
       telegramId: 'admin_user',
       isBanned: false,
       subscriptionStatus: 'active',
+      role: 'admin',
     },
     {
       id: 'trader-1',
@@ -69,7 +73,24 @@ export async function seedDatabase() {
       telegramId: 'crypto_king_alex',
       isBanned: false,
       subscriptionStatus: 'active',
+      role: 'trader',
     },
+     {
+      id: 'trader-2',
+      name: 'Сара \'ФорексКоролева\' Миллер',
+      telegramId: 'forex_queen_sarah',
+      isBanned: false,
+      subscriptionStatus: 'active',
+      role: 'trader',
+    },
+    {
+      id: 'trader-3',
+      name: 'Бен \'СэнсэйАкций\' Картер',
+      telegramId: 'stock_sensei_ben',
+      isBanned: false,
+      subscriptionStatus: 'active',
+      role: 'trader',
+    }
   ];
   users.forEach((user) => {
     const usersCollection = collection(db, 'users');
@@ -78,6 +99,7 @@ export async function seedDatabase() {
       telegramId: user.telegramId,
       isBanned: user.isBanned,
       subscriptionStatus: user.subscriptionStatus,
+      role: user.role
     });
   });
 
@@ -132,6 +154,9 @@ export async function seedDatabase() {
   });
 
   // --- ALERTS ---
+  // Denormalizing trader data into alerts for faster feed loading
+  const traderMap = new Map(traders.map(t => [t.id, t]));
+
   const alerts = [
     {
       id: 'alert-1',
@@ -179,10 +204,15 @@ export async function seedDatabase() {
       comments: [],
     },
   ];
+
   alerts.forEach((alert) => {
     const alertsCollection = collection(db, 'alerts');
+    const trader = traderMap.get(alert.traderId);
     batch.set(doc(alertsCollection, alert.id), {
       traderId: alert.traderId,
+      traderName: trader?.name || 'Unknown Trader',
+      traderProfilePicUrl: trader?.profilePicUrl || '',
+      traderProfilePicHint: trader?.profilePicHint || '',
       text: alert.text,
       screenshotUrl: alert.screenshotUrl,
       screenshotHint: alert.screenshotHint,
