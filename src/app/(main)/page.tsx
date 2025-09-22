@@ -13,13 +13,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import {
   AlertPost,
-  Category,
-  Trader,
-  User,
   Report,
+  User,
   getAlerts,
-  getAllCategories,
-  getAllTraders,
   createReport,
   getUser,
 } from '@/lib/firestore';
@@ -37,8 +33,6 @@ export default function HomePage() {
   
   const [currentUser, setCurrentUser] = useState<User | undefined>();
   const [alerts, setAlerts] = useState<AlertPost[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [traders, setTraders] = useState<Trader[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDbEmpty, setIsDbEmpty] = useState<boolean | null>(null);
   const [isSeeding, setIsSeeding] = useState(false);
@@ -55,23 +49,18 @@ export default function HomePage() {
         if (user) {
             setLoading(true);
             try {
-                // First, check if DB has any data
                 const userCheckQuery = query(collection(db, 'users'), limit(1));
                 const userCheckSnapshot = await getDocs(userCheckQuery);
                 const dbIsEmpty = userCheckSnapshot.empty;
                 setIsDbEmpty(dbIsEmpty);
 
                 if (!dbIsEmpty) {
-                  const [currentUserData, alertsData, tradersData, categoriesData] = await Promise.all([
+                  const [currentUserData, alertsData] = await Promise.all([
                       getUser(user.uid),
                       getAlerts(),
-                      getAllTraders(),
-                      getAllCategories(),
                   ]);
                   setCurrentUser(currentUserData);
                   setAlerts(alertsData);
-                  setTraders(tradersData);
-                  setCategories(categoriesData);
                 }
             } catch (error) {
                 console.error("Failed to fetch page data:", error);
@@ -108,7 +97,6 @@ export default function HomePage() {
         description: "База данных была заполнена исходными данными.",
       });
       setIsDbEmpty(false);
-      // force reload to show new data
       window.location.reload(); 
     } catch (error) {
       console.error("Failed to seed database:", error);
@@ -122,11 +110,7 @@ export default function HomePage() {
     }
   };
 
-
-  const activeAlerts = alerts
-    .filter(a => traders.find(t => t.id === a.traderId)?.status === 'active')
-    .sort((a, b) => new Date(b.timestamp as string).getTime() - new Date(a.timestamp as string).getTime());
-
+  const activeAlerts = alerts.sort((a, b) => new Date(b.timestamp as string).getTime() - new Date(a.timestamp as string).getTime());
 
   if (!isClient || loading) {
     return <div className="container mx-auto max-w-2xl py-8 space-y-4 px-4">
@@ -156,7 +140,6 @@ export default function HomePage() {
       </div>
     );
   }
-
 
   const isSubscribed = currentUser?.subscriptionStatus === 'active';
 
@@ -194,10 +177,10 @@ export default function HomePage() {
               </div>
             </TabsContent>
             <TabsContent value="categories" className="mt-6">
-              <CategoryView categories={categories} traders={traders} />
+              <CategoryView />
             </TabsContent>
             <TabsContent value="rating" className="mt-6">
-              <RatingView traders={traders} categories={categories} />
+              <RatingView />
             </TabsContent>
           </Tabs>
         </SubscriptionGate>
