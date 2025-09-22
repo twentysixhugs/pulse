@@ -180,8 +180,8 @@ export function AlertCard({
             </Avatar>
           </Link>
           <div className="flex-1">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-start justify-between">
+              <div className="mt-0 leading-[1.3rem]">
                 <Link href={`/traders/${alert.traderId}`} className="font-bold hover:underline">{alert.traderName}</Link>
                 <p className="text-xs text-muted-foreground">
                   {formatDistanceToNow(new Date(alert.timestamp as string), { addSuffix: true, locale: ru })}
