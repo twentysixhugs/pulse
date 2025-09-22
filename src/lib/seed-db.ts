@@ -1,3 +1,4 @@
+
 // This is a temporary file to seed the database.
 // In a real production app, you would use a dedicated script or admin interface for this.
 'use client';
