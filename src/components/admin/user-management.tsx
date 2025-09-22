@@ -119,7 +119,6 @@ export function UserManagement() {
                       <Button
                         variant={user.isBanned ? 'secondary' : 'destructive'}
                         size="sm"
-                        disabled={user.id === 'admin-1'}
                       >
                         {user.isBanned ? 'Разбанить' : 'Забанить'}
                       </Button>
@@ -151,3 +150,5 @@ export function UserManagement() {
     </div>
   );
 }
+
+    

@@ -11,7 +11,7 @@ import {
   getAlerts,
   getAllTraders,
   getAllUsers,
-  resolveReport as resolveReportInDb
+  resolveReport
 } from '@/lib/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -65,12 +65,12 @@ export function ComplaintManagement() {
     fetchData();
   }, [toast]);
 
-  const resolveReport = async (reportId: string) => {
+  const handleResolveReport = async (reportId: string) => {
     // Optimistic update
     setReports((currentReports) => currentReports.filter((report) => report.id !== reportId));
     
     try {
-        await resolveReportInDb(reportId);
+        await resolveReport(reportId);
         toast({
             title: 'Жалоба разрешена',
             description: 'Жалоба была отмечена как разрешенная.',
@@ -131,7 +131,7 @@ export function ComplaintManagement() {
                         <AlertDialogFooter>
                             <AlertDialogCancel>Отмена</AlertDialogCancel>
                             <AlertDialogAction
-                            onClick={() => resolveReport(report.id)}
+                            onClick={() => handleResolveReport(report.id)}
                             >
                             Отметить как разрешенную
                             </AlertDialogAction>
@@ -164,3 +164,5 @@ export function ComplaintManagement() {
     </div>
   );
 }
+
+    

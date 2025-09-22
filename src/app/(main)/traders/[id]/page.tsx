@@ -23,7 +23,6 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
-import { db } from '@/lib/firebase';
 
 export default function TraderProfilePage() {
   const params = useParams();
@@ -90,7 +89,7 @@ export default function TraderProfilePage() {
   const handleUpdateTraderRep = async (traderId: string, type: 'pos' | 'neg') => {
     if (!trader || !authUser) return;
 
-    const newReputationAction = await updateTraderReputation(db, traderId, authUser.uid, type);
+    const newReputationAction = await updateTraderReputation(traderId, authUser.uid, type);
     setUserRepAction(newReputationAction);
     
     // For immediate feedback, we can refetch the trader or optimistically update
@@ -99,7 +98,7 @@ export default function TraderProfilePage() {
   };
   
   const handleReport = async (newReport: Omit<Report, 'id' | 'status'>) => {
-    await createReport(db, newReport);
+    await createReport(newReport);
     console.log("Жалоба отправлена:", newReport);
   };
 
@@ -134,3 +133,5 @@ export default function TraderProfilePage() {
     </div>
   );
 }
+
+    

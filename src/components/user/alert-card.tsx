@@ -49,7 +49,6 @@ import { useToast } from '@/hooks/use-toast';
 import { ImageModal } from './image-modal';
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { db } from '@/lib/firebase';
 
 type AlertCardProps = {
   alert: AlertPost;
@@ -73,7 +72,7 @@ export function AlertCard({
 
   const handleLike = async () => {
     if (!currentUser) return;
-    await toggleAlertLike(db, alert.id, currentUser.id, hasLiked);
+    await toggleAlertLike(alert.id, currentUser.id, hasLiked);
     // Optimistic update
     const newLikes = hasLiked
       ? alert.likes.filter((id) => id !== currentUser.id)
@@ -84,7 +83,7 @@ export function AlertCard({
 
   const handleDislike = async () => {
     if (!currentUser) return;
-    await toggleAlertDislike(db, alert.id, currentUser.id, hasDisliked);
+    await toggleAlertDislike(alert.id, currentUser.id, hasDisliked);
     // Optimistic update
     const newDislikes = hasDisliked
       ? alert.dislikes.filter((id) => id !== currentUser.id)
@@ -103,7 +102,7 @@ export function AlertCard({
       timestamp: new Date().toISOString(),
     };
     
-    await addCommentToAlert(db, alert.id, newComment);
+    await addCommentToAlert(alert.id, newComment);
     
     onUpdateAlert({ ...alert, comments: [...alert.comments, newComment] });
     setCommentText('');
@@ -321,3 +320,5 @@ function ReportDialog({ onConfirm, disabled }: { onConfirm: (reason: string) => 
     </Dialog>
   );
 }
+
+    
