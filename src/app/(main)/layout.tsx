@@ -21,6 +21,13 @@ export default function MainLayout({
   const [showSeedButton, setShowSeedButton] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
   const { toast } = useToast();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    // This ensures that any logic depending on client-side state
+    // runs only after the component has mounted on the client.
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     async function checkDb() {
@@ -32,10 +39,10 @@ export default function MainLayout({
     }
     
     // This check ensures this code only runs on the client, after hydration
-    if (typeof window !== 'undefined') {
+    if (isClient) {
       checkDb();
     }
-  }, []);
+  }, [isClient]);
 
   const handleSeed = async () => {
     setIsSeeding(true);
@@ -68,7 +75,7 @@ export default function MainLayout({
             <Logo />
           </Link>
           <div className="flex items-center gap-2">
-            {showSeedButton && (
+            {isClient && showSeedButton && (
               <div className="flex items-center gap-2 border-r pr-2 mr-2">
                  <AlertCircle className="h-5 w-5 text-destructive" />
                  <span className="text-sm text-muted-foreground hidden sm:inline">No Data Found</span>
