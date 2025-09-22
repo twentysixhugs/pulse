@@ -102,7 +102,7 @@ export function ComplaintManagement() {
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-headline font-bold">Очередь жалоб</h2>
-      {pendingReports.length > 0 && currentUser ? (
+      {pendingReports.length > 0 && currentUser && db ? (
         <div className="space-y-6">
           {pendingReports.map((report) => {
             const alert = alerts.find((a) => a.id === report.alertId);
@@ -153,6 +153,7 @@ export function ComplaintManagement() {
                     currentUser={currentUser}
                     onUpdateAlert={() => {}}
                     onReport={() => {}}
+                    db={db}
                   />
                 </CardContent>
               </Card>

@@ -50,12 +50,14 @@ import { ImageModal } from './image-modal';
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useAuth } from '@/hooks/use-auth';
+import type { Firestore } from 'firebase/firestore';
 
 type AlertCardProps = {
   alert: AlertPost;
   currentUser: User;
   onUpdateAlert: (updatedAlert: AlertPost) => void;
   onReport: (report: Omit<Report, 'id' | 'status'>) => void;
+  db: Firestore;
 };
 
 export function AlertCard({
@@ -63,9 +65,9 @@ export function AlertCard({
   currentUser,
   onUpdateAlert,
   onReport,
+  db,
 }: AlertCardProps) {
   const { toast } = useToast();
-  const { db } = useAuth();
   const [isImageModalOpen, setImageModalOpen] = useState(false);
   const [commentText, setCommentText] = useState('');
 
