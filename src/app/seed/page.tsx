@@ -8,6 +8,9 @@ import { useToast } from '@/hooks/use-toast';
 import { seedDatabase } from '@/lib/seed-db';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { signInAnonymously } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+
 
 export default function SeedPage() {
   const [isSeeding, setIsSeeding] = useState(false);
@@ -17,6 +20,9 @@ export default function SeedPage() {
   const handleSeed = async () => {
     setIsSeeding(true);
     try {
+      // Sign in anonymously to get permissions
+      await signInAnonymously(auth);
+
       // Import db here to avoid premature initialization issues
       const { db } = await import('@/lib/firebase');
       const result = await seedDatabase(db);
