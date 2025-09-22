@@ -42,7 +42,7 @@ export default function SeedPage() {
         <CardHeader>
           <CardTitle className="font-headline text-2xl">Заполнение базы данных</CardTitle>
           <CardDescription>
-            Нажмите кнопку ниже, чтобы заполнить вашу базу данных Firestore начальными данными. Это необходимо сделать только один раз.
+            Нажмите кнопку ниже, чтобы заполнить вашу базу данных Firestore начальными данными. Это перезапишет любые существующие данные с теми же идентификаторами.
           </CardDescription>
         </CardHeader>
         <CardContent>

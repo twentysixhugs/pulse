@@ -21,12 +21,8 @@ async function isCollectionEmpty(db: Firestore, collectionPath: string): Promise
 }
 
 export async function seedDatabase(db: Firestore) {
-  // Check if seeding is necessary
-  const usersEmpty = await isCollectionEmpty(db, 'users');
-  if (!usersEmpty) {
-    console.log('Database already seeded.');
-    return { message: 'Database already contains data. Seeding was skipped.' };
-  }
+  // NOTE: The check for an empty database was removed as it was causing extreme slowdowns.
+  // We will now assume that if this function is called, a seeding operation is intended.
 
   const batch = writeBatch(db);
 
@@ -66,5 +62,5 @@ export async function seedDatabase(db: Firestore) {
   });
 
   await batch.commit();
-  return { message: 'Database seeded successfully!' };
+  return { message: 'База данных успешно заполнена!' };
 }
