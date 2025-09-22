@@ -16,8 +16,10 @@ export default function MainLayout({
             <Logo />
           </Link>
           <nav className="flex items-center gap-2">
-            <Button variant="ghost" size="icon">
-                <User className="h-5 w-5"/>
+            <Button variant="ghost" size="icon" asChild>
+              <Link href="/profile">
+                <User className="h-5 w-5" />
+              </Link>
             </Button>
           </nav>
         </div>
