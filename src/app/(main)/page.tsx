@@ -20,9 +20,7 @@ import {
   getUser,
 } from '@/lib/firestore';
 import { db } from '@/lib/firebase';
-import { seedDatabase } from '@/lib/seed-db';
 import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
 import { collection, getDocs, query, limit } from 'firebase/firestore';
 
 
@@ -35,7 +33,6 @@ export default function HomePage() {
   const [alerts, setAlerts] = useState<AlertPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDbEmpty, setIsDbEmpty] = useState<boolean | null>(null);
-  const [isSeeding, setIsSeeding] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -49,6 +46,7 @@ export default function HomePage() {
         if (user) {
             setLoading(true);
             try {
+                // Efficiently check if the DB is empty by querying for just one document.
                 const userCheckQuery = query(collection(db, 'users'), limit(1));
                 const userCheckSnapshot = await getDocs(userCheckQuery);
                 const dbIsEmpty = userCheckSnapshot.empty;
@@ -87,28 +85,6 @@ export default function HomePage() {
     await createReport(db, newReport);
     // Don't need to optimistically add, admin panel will see it
   };
-  
-  const handleSeed = async () => {
-    setIsSeeding(true);
-    try {
-      await seedDatabase(db);
-      toast({
-        title: "База данных заполнена",
-        description: "База данных была заполнена исходными данными.",
-      });
-      setIsDbEmpty(false);
-      window.location.reload(); 
-    } catch (error) {
-      console.error("Failed to seed database:", error);
-      toast({
-        variant: "destructive",
-        title: "Ошибка заполнения",
-        description: "Произошла ошибка при заполнении базы данных.",
-      });
-    } finally {
-      setIsSeeding(false);
-    }
-  };
 
   const activeAlerts = alerts.sort((a, b) => new Date(b.timestamp as string).getTime() - new Date(a.timestamp as string).getTime());
 
@@ -126,16 +102,7 @@ export default function HomePage() {
         <div className="text-center p-8 border-2 border-dashed rounded-lg">
            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
            <h2 className="text-2xl font-bold mb-2">Данные не найдены</h2>
-           <p className="text-muted-foreground mb-6">База данных пуста. Заполните ее, чтобы начать использовать приложение.</p>
-          <Button
-            onClick={handleSeed}
-            disabled={isSeeding}
-            variant="destructive"
-            size="lg"
-          >
-            <Database className="h-5 w-5 mr-2" />
-            {isSeeding ? "Заполнение..." : "Заполнить базу данных"}
-          </Button>
+           <p className="text-muted-foreground mb-6">База данных пуста. Пожалуйста, импортируйте файл `seed.json` в Firestore, чтобы заполнить ее.</p>
         </div>
       </div>
     );

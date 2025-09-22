@@ -1,0 +1,31 @@
+
+{
+  "categories": {
+    "cat-crypto": { "name": "Криптовалюты" },
+    "cat-forex": { "name": "Форекс" },
+    "cat-stocks": { "name": "Акции" },
+    "cat-options": { "name": "Опционы" }
+  },
+  "users": {
+    "user-1": { "name": "Иван Петров", "telegramId": "ivan_p", "isBanned": false, "subscriptionStatus": "active", "role": "user" },
+    "user-2": { "name": "Елена Сидорова", "telegramId": "elena_s", "isBanned": false, "subscriptionStatus": "inactive", "role": "user" },
+    "user-3": { "name": "Сергей Кузнецов", "telegramId": "sergey_k", "isBanned": true, "subscriptionStatus": "active", "role": "user" },
+    "admin-1": { "name": "Admin User", "telegramId": "admin_user", "isBanned": false, "subscriptionStatus": "active", "role": "admin" },
+    "trader-1": { "name": "Алекс 'КриптоКороль' Иванов", "telegramId": "crypto_king_alex", "isBanned": false, "subscriptionStatus": "active", "role": "trader" },
+    "trader-2": { "name": "Сара 'ФорексКоролева' Миллер", "telegramId": "forex_queen_sarah", "isBanned": false, "subscriptionStatus": "active", "role": "trader" },
+    "trader-3": { "name": "Бен 'СэнсэйАкций' Картер", "telegramId": "stock_sensei_ben", "isBanned": false, "subscriptionStatus": "active", "role": "trader" }
+  },
+  "traders": {
+    "trader-1": { "name": "Алекс 'КриптоКороль' Иванов", "telegramId": "crypto_king_alex", "specialization": "Специалист по BTC и ETH", "category": "cat-crypto", "status": "active", "reputation": { "positive": 125, "negative": 12 }, "profilePicUrl": "https://picsum.photos/seed/trader1/200/200", "profilePicHint": "male portrait" },
+    "trader-2": { "name": "Сара 'ФорексКоролева' Миллер", "telegramId": "forex_queen_sarah", "specialization": "Мастер по основным валютным парам", "category": "cat-forex", "status": "active", "reputation": { "positive": 210, "negative": 5 }, "profilePicUrl": "https://picsum.photos/seed/trader2/200/200", "profilePicHint": "female portrait" },
+    "trader-3": { "name": "Бен 'СэнсэйАкций' Картер", "telegramId": "stock_sensei_ben", "specialization": "Гуру акций технологических компаний", "category": "cat-stocks", "status": "inactive", "reputation": { "positive": 88, "negative": 20 }, "profilePicUrl": "https://picsum.photos/seed/trader3/200/200", "profilePicHint": "male portrait" }
+  },
+  "alerts": {
+    "alert-1": { "traderId": "trader-1", "traderName": "Алекс 'КриптоКороль' Иванов", "traderProfilePicUrl": "https://picsum.photos/seed/trader1/200/200", "traderProfilePicHint": "male portrait", "text": "BTC готовится к прорыву! Ожидаю движения к $70k в ближайшие 24 часа. Стоп-лосс на $65k.", "screenshotUrl": "https://picsum.photos/seed/ss1/800/600", "screenshotHint": "stock chart", "timestamp": { "__datatype__": "timestamp", "value": "2024-05-21T10:00:00Z" }, "likes": ["user-1", "user-2"], "dislikes": [], "comments": [{ "id": "comment-1-1", "userId": "user-2", "userName": "Елена Сидорова", "text": "Отличный анализ, Алекс! Тоже слежу за этим уровнем.", "timestamp": "2024-05-21T10:30:00Z" }] },
+    "alert-2": { "traderId": "trader-2", "traderName": "Сара 'ФорексКоролева' Миллер", "traderProfilePicUrl": "https://picsum.photos/seed/trader2/200/200", "traderProfilePicHint": "female portrait", "text": "Обратите внимание на пару EUR/JPY. Формируется разворотный паттерн 'голова и плечи'. Возможен короткий вход.", "screenshotUrl": "https://picsum.photos/seed/ss2/800/600", "screenshotHint": "forex chart", "timestamp": { "__datatype__": "timestamp", "value": "2024-05-21T06:00:00Z" }, "likes": ["user-1"], "dislikes": ["user-3"], "comments": [] },
+    "alert-3": { "traderId": "trader-1", "traderName": "Алекс 'КриптоКороль' Иванов", "traderProfilePicUrl": "https://picsum.photos/seed/trader1/200/200", "traderProfilePicHint": "male portrait", "text": "ETH показывает силу против BTC. Рассматриваю лонг по ETH/BTC с целью 0.055.", "screenshotUrl": "https://picsum.photos/seed/ss5/800/600", "screenshotHint": "crypto chart", "timestamp": { "__datatype__": "timestamp", "value": "2024-05-20T11:00:00Z" }, "likes": [], "dislikes": [], "comments": [] }
+  },
+  "reports": {
+    "report-1": { "alertId": "alert-2", "reporterId": "user-1", "reason": "Этот трейдер постоянно дает неверные сигналы. Это похоже на манипуляцию рынком.", "status": "pending" }
+  }
+}
