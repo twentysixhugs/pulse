@@ -33,7 +33,6 @@ export default function ProfilePage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-4">
-              <Skeleton className="h-20 w-20 rounded-full" />
               <div className="space-y-2">
                 <Skeleton className="h-8 w-48" />
                 <Skeleton className="h-6 w-32" />
@@ -48,16 +47,9 @@ export default function ProfilePage() {
       ) : (
         <Card>
           <CardHeader>
-            <div className="flex items-center gap-6">
-              <Avatar className="h-24 w-24 border">
-                <AvatarFallback className="text-3xl">
-                  {currentUser.name.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <CardTitle className="text-3xl font-headline">{currentUser.name}</CardTitle>
-                <CardDescription className="mt-1">@{currentUser.telegramId}</CardDescription>
-              </div>
+            <div>
+              <CardTitle className="text-3xl font-headline">{currentUser.name}</CardTitle>
+              <CardDescription className="mt-1">@{currentUser.telegramId}</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
