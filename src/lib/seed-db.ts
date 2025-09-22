@@ -9,9 +9,8 @@ import {
   limit,
   Firestore,
 } from 'firebase/firestore';
-import { db } from './firebase';
 
-export async function isDbSeeded() {
+export async function isDbSeeded(db: Firestore) {
   const q = query(collection(db, 'users'), limit(1));
   const snapshot = await getDocs(q);
   return !snapshot.empty;

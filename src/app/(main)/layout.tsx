@@ -24,9 +24,11 @@ export default function MainLayout({
   useEffect(() => {
     async function checkDb() {
       // This now runs only on the client-side after mount
-      const seeded = await isDbSeeded();
+      const seeded = await isDbSeeded(db);
       setShowSeedButton(!seeded);
     }
+    // The check is performed inside useEffect to ensure it only runs on the client,
+    // after the Firebase connection has been established.
     if (typeof window !== 'undefined') {
       checkDb();
     }
