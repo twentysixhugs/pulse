@@ -1,6 +1,7 @@
 
 'use client';
 
+import { Firestore } from 'firebase/firestore';
 import { createContext, useContext } from 'react';
 
 export type AuthUser = {
@@ -14,6 +15,7 @@ export type AuthContextType = {
   loading: boolean;
   login: (credentials: any) => Promise<void>;
   logout: () => void;
+  db: Firestore | null;
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);

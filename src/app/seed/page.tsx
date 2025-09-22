@@ -9,7 +9,7 @@ import { seedDatabase } from '@/lib/seed-db';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { signInAnonymously, getAuth } from 'firebase/auth';
-import { initializeApp, getApps, getApp } from 'firebase/app';
+import { initializeApp, getApps, getApp, FirebaseOptions } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { firebaseConfig } from '@/lib/firebase';
 

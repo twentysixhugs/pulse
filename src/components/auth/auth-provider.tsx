@@ -5,18 +5,23 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { AuthContext, AuthUser } from '@/hooks/use-auth';
 import { ALL_DUMMY_USERS } from '@/lib/dummy-auth';
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut as firebaseSignOut, User as FirebaseUser, signInAnonymously } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut as firebaseSignOut, User as FirebaseUser, signInAnonymously } from 'firebase/auth';
+import { doc, getDoc, getFirestore, Firestore } from 'firebase/firestore';
+import { firebaseConfig } from '@/lib/firebase';
+import { getApp, getApps, initializeApp } from 'firebase/app';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [db, setDb] = useState<Firestore | null>(null);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
+    const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+    const firestoreDb = getFirestore(app);
+    setDb(firestoreDb);
+
     const storedUser = localStorage.getItem('authUser');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
@@ -60,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loading) return;
 
-    const isAuthPage = pathname === '/login';
+    const isAuthPage = pathname === '/login' || pathname === '/seed';
 
     if (!user && !isAuthPage) {
       router.push('/login');
@@ -73,9 +78,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading,
     login,
     logout,
+    db
   };
   
-  if (loading && pathname !== '/login') {
+  if (loading && pathname !== '/login' && pathname !== '/seed') {
     return <div className="w-screen h-screen flex items-center justify-center bg-background">Loading...</div>;
   }
 

@@ -15,25 +15,28 @@ import { Category, Trader, getAllCategories, getAllTraders } from '@/lib/firesto
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
+import { useAuth } from '@/hooks/use-auth';
 
 export function CategoryView() {
+  const { db } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [traders, setTraders] = useState<Trader[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
+      if (!db) return;
       setLoading(true);
       const [categoriesData, tradersData] = await Promise.all([
-        getAllCategories(),
-        getAllTraders(),
+        getAllCategories(db),
+        getAllTraders(db),
       ]);
       setCategories(categoriesData);
       setTraders(tradersData);
       setLoading(false);
     }
     fetchData();
-  }, []);
+  }, [db]);
 
   const activeTraders = traders.filter(t => t.status === 'active');
 

@@ -19,7 +19,6 @@ import {
   where,
   Firestore,
 } from 'firebase/firestore';
-import { db } from './firebase';
 
 
 // Data type definitions
@@ -93,7 +92,7 @@ export interface Report {
 
 // --- Optimized Firestore data fetching functions ---
 
-export async function getUser(userId: string): Promise<User | undefined> {
+export async function getUser(db: Firestore, userId: string): Promise<User | undefined> {
     const userRef = doc(db, 'users', userId);
     const docSnap = await getDoc(userRef);
     if (docSnap.exists()) {
@@ -102,7 +101,7 @@ export async function getUser(userId: string): Promise<User | undefined> {
     return undefined;
 }
 
-export async function getTrader(traderId: string): Promise<Trader | undefined> {
+export async function getTrader(db: Firestore, traderId: string): Promise<Trader | undefined> {
     const traderRef = doc(db, 'traders', traderId);
     const docSnap = await getDoc(traderRef);
     if (docSnap.exists()) {
@@ -111,7 +110,7 @@ export async function getTrader(traderId: string): Promise<Trader | undefined> {
     return undefined;
 }
 
-export async function getCategory(categoryId: string): Promise<Category | undefined> {
+export async function getCategory(db: Firestore, categoryId: string): Promise<Category | undefined> {
     const categoryRef = doc(db, 'categories', categoryId);
     const docSnap = await getDoc(categoryRef);
     if (docSnap.exists()) {
@@ -120,7 +119,7 @@ export async function getCategory(categoryId: string): Promise<Category | undefi
     return undefined;
 }
 
-export async function getAlerts(): Promise<AlertPost[]> {
+export async function getAlerts(db: Firestore): Promise<AlertPost[]> {
     const alertsCol = collection(db, 'alerts');
     const q = query(alertsCol, orderBy('timestamp', 'desc'));
     const snapshot = await getDocs(q);
@@ -134,7 +133,7 @@ export async function getAlerts(): Promise<AlertPost[]> {
     });
 }
 
-export async function getAlertsByTrader(traderId: string): Promise<AlertPost[]> {
+export async function getAlertsByTrader(db: Firestore, traderId: string): Promise<AlertPost[]> {
     const alertsCol = collection(db, 'alerts');
     const q = query(alertsCol, where('traderId', '==', traderId), orderBy('timestamp', 'desc'));
     const snapshot = await getDocs(q);
@@ -151,25 +150,25 @@ export async function getAlertsByTrader(traderId: string): Promise<AlertPost[]> 
 
 // --- Functions to get full collections (use with caution, for admin panels etc.) ---
 
-export async function getAllUsers(): Promise<User[]> {
+export async function getAllUsers(db: Firestore): Promise<User[]> {
   const usersCol = collection(db, 'users');
   const snapshot = await getDocs(usersCol);
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
 }
 
-export async function getAllTraders(): Promise<Trader[]> {
+export async function getAllTraders(db: Firestore): Promise<Trader[]> {
   const tradersCol = collection(db, 'traders');
   const snapshot = await getDocs(tradersCol);
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Trader));
 }
 
-export async function getAllCategories(): Promise<Category[]> {
+export async function getAllCategories(db: Firestore): Promise<Category[]> {
   const categoriesCol = collection(db, 'categories');
   const snapshot = await getDocs(categoriesCol);
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
 }
 
-export async function getAllReports(): Promise<Report[]> {
+export async function getAllReports(db: Firestore): Promise<Report[]> {
   const reportsCol = collection(db, 'reports');
   const snapshot = await getDocs(reportsCol);
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Report));
@@ -178,7 +177,7 @@ export async function getAllReports(): Promise<Report[]> {
 
 // --- Functions to update data ---
 
-export async function toggleAlertLike(alertId: string, userId: string, hasLiked: boolean) {
+export async function toggleAlertLike(db: Firestore, alertId: string, userId: string, hasLiked: boolean) {
     const alertRef = doc(db, 'alerts', alertId);
     if (hasLiked) {
         await updateDoc(alertRef, { likes: arrayRemove(userId) });
@@ -190,7 +189,7 @@ export async function toggleAlertLike(alertId: string, userId: string, hasLiked:
     }
 }
 
-export async function toggleAlertDislike(alertId: string, userId: string, hasDisliked: boolean) {
+export async function toggleAlertDislike(db: Firestore, alertId: string, userId: string, hasDisliked: boolean) {
     const alertRef = doc(db, 'alerts', alertId);
     if (hasDisliked) {
         await updateDoc(alertRef, { dislikes: arrayRemove(userId) });
@@ -203,7 +202,7 @@ export async function toggleAlertDislike(alertId: string, userId: string, hasDis
 }
 
 
-export async function addCommentToAlert(alertId: string, comment: Comment) {
+export async function addCommentToAlert(db: Firestore, alertId: string, comment: Comment) {
   const alertRef = doc(db, 'alerts', alertId);
   await updateDoc(alertRef, {
     comments: arrayUnion(comment),
@@ -222,7 +221,7 @@ export async function createReport(db: Firestore, report: Omit<Report, 'id' | 's
 }
 
 
-export async function updateTraderReputation(traderId: string, userId: string, type: 'pos' | 'neg') {
+export async function updateTraderReputation(db: Firestore, traderId: string, userId: string, type: 'pos' | 'neg') {
     const traderRef = doc(db, 'traders', traderId);
     const userRepRef = doc(db, 'users', userId, 'traderReputation', traderId);
     
@@ -255,7 +254,7 @@ export async function updateTraderReputation(traderId: string, userId: string, t
 }
 
 
-export async function getUserTraderReputation(userId: string, traderId: string) {
+export async function getUserTraderReputation(db: Firestore, userId: string, traderId: string) {
     const userRepRef = doc(db, 'users', userId, 'traderReputation', traderId);
     const docSnap = await getDoc(userRepRef);
     if (docSnap.exists()) {
@@ -264,7 +263,7 @@ export async function getUserTraderReputation(userId: string, traderId: string) 
     return null;
 }
 
-export async function createAlert(post: Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'>): Promise<AlertPost> {
+export async function createAlert(db: Firestore, post: Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'>): Promise<AlertPost> {
     const alertsCol = collection(db, 'alerts');
     const newPost = {
         ...post,
@@ -279,12 +278,12 @@ export async function createAlert(post: Omit<AlertPost, 'id' | 'timestamp' | 'li
     return { ...newPost, id: docRef.id, timestamp: (data?.timestamp as Timestamp).toDate().toISOString() };
 }
 
-export async function updateAlertText(alertId: string, newText: string) {
+export async function updateAlertText(db: Firestore, alertId: string, newText: string) {
     const alertRef = doc(db, 'alerts', alertId);
     await updateDoc(alertRef, { text: newText });
 }
 
-export async function deleteAlert(alertId: string) {
+export async function deleteAlert(db: Firestore, alertId: string) {
     const alertRef = doc(db, 'alerts', alertId);
     await deleteDoc(alertRef);
 }

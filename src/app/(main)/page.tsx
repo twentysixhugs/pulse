@@ -19,13 +19,12 @@ import {
   createReport,
   getUser,
 } from '@/lib/firestore';
-import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { collection, getDocs, query, limit } from 'firebase/firestore';
 
 
 export default function HomePage() {
-  const { user } = useAuth();
+  const { user, db } = useAuth();
   const [isClient, setIsClient] = useState(false);
   const [hasAgreed, setHasAgreed] = useState(false);
   
@@ -42,12 +41,12 @@ export default function HomePage() {
 
   useEffect(() => {
     async function fetchData() {
-        if (user) {
+        if (user && db) {
             setLoading(true);
             try {
               const [currentUserData, alertsData] = await Promise.all([
-                  getUser(user.uid),
-                  getAlerts(),
+                  getUser(db, user.uid),
+                  getAlerts(db),
               ]);
               setCurrentUser(currentUserData);
               setAlerts(alertsData);
@@ -60,7 +59,7 @@ export default function HomePage() {
         }
     }
     fetchData();
-  }, [user, toast]);
+  }, [user, db, toast]);
 
 
   const handleAgree = () => {
@@ -73,6 +72,7 @@ export default function HomePage() {
   };
   
   const handleReport = async (newReport: Omit<Report, 'id' | 'status'>) => {
+    if (!db) return;
     await createReport(db, newReport);
     // Don't need to optimistically add, admin panel will see it
     toast({
@@ -83,7 +83,7 @@ export default function HomePage() {
 
   const activeAlerts = alerts.sort((a, b) => new Date(b.timestamp as string).getTime() - new Date(a.timestamp as string).getTime());
 
-  if (!isClient || loading || !currentUser) {
+  if (!isClient || loading || !currentUser || !db) {
     return <div className="container mx-auto max-w-2xl py-8 space-y-4 px-4">
         <Skeleton className="h-10 w-1/3" />
         <Skeleton className="h-96 w-full" />

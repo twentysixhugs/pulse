@@ -33,9 +33,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '../ui/skeleton';
-import { db } from '@/lib/firebase';
+import { useAuth } from '@/hooks/use-auth';
 
 export function TraderManagement() {
+  const { db } = useAuth();
   const [traders, setTraders] = useState<Trader[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,9 +44,10 @@ export function TraderManagement() {
 
   useEffect(() => {
     async function fetchData() {
+      if (!db) return;
       setLoading(true);
       try {
-        const [tradersData, categoriesData] = await Promise.all([getAllTraders(), getAllCategories()]);
+        const [tradersData, categoriesData] = await Promise.all([getAllTraders(db), getAllCategories(db)]);
         setTraders(tradersData);
         setCategories(categoriesData);
       } catch (error) {
@@ -56,9 +58,10 @@ export function TraderManagement() {
       }
     }
     fetchData();
-  }, [toast]);
+  }, [db, toast]);
 
   const toggleTraderStatus = async (traderId: string, currentStatus: 'active' | 'inactive') => {
+    if (!db) return;
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
     const action = newStatus === 'active' ? activateTrader : deactivateTrader;
     

@@ -12,21 +12,21 @@ import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 
 export default function ProfilePage() {
-  const { user: authUser } = useAuth();
+  const { user: authUser, db } = useAuth();
   const [currentUser, setCurrentUser] = useState<User | undefined>(undefined);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchUser() {
-      if (authUser) {
+      if (authUser && db) {
         setLoading(true);
-        const foundUser = await getUser(authUser.uid);
+        const foundUser = await getUser(db, authUser.uid);
         setCurrentUser(foundUser);
         setLoading(false);
       }
     }
     fetchUser();
-  }, [authUser]);
+  }, [authUser, db]);
 
   return (
     <div className="container mx-auto max-w-2xl py-8 px-4">

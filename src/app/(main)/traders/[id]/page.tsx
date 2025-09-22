@@ -23,11 +23,10 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
-import { db } from '@/lib/firebase';
 
 export default function TraderProfilePage() {
   const params = useParams();
-  const { user: authUser } = useAuth();
+  const { user: authUser, db } = useAuth();
   const traderId = params.id as string;
 
   const [trader, setTrader] = useState<Trader | undefined>(undefined);
@@ -39,18 +38,18 @@ export default function TraderProfilePage() {
 
   useEffect(() => {
     async function fetchData() {
-      if (!traderId) return;
+      if (!traderId || !db) return;
       setLoading(true);
       try {
         const [traderData, alertsData] = await Promise.all([
-          getTrader(traderId),
-          getAlertsByTrader(traderId),
+          getTrader(db, traderId),
+          getAlertsByTrader(db, traderId),
         ]);
         
         if (traderData) {
           setTrader(traderData);
           if (traderData.category) {
-            const categoryData = await getCategory(traderData.category);
+            const categoryData = await getCategory(db, traderData.category);
             setCategory(categoryData);
           }
         } else {
@@ -67,38 +66,39 @@ export default function TraderProfilePage() {
       }
     }
     fetchData();
-  }, [traderId]);
+  }, [traderId, db]);
 
   useEffect(() => {
     async function fetchUserAndRep() {
-        if(authUser && traderId) {
+        if(authUser && traderId && db) {
             const [userData, repAction] = await Promise.all([
-                getUser(authUser.uid),
-                getUserTraderReputation(authUser.uid, traderId)
+                getUser(db, authUser.uid),
+                getUserTraderReputation(db, authUser.uid, traderId)
             ]);
             setCurrentUser(userData);
             setUserRepAction(repAction);
         }
     }
     fetchUserAndRep();
-  }, [authUser, traderId]);
+  }, [authUser, traderId, db]);
   
   const handleUpdateAlert = (updatedAlert: AlertPost) => {
     setAlerts(currentAlerts => currentAlerts.map(a => a.id === updatedAlert.id ? updatedAlert : a));
   };
 
   const handleUpdateTraderRep = async (traderId: string, type: 'pos' | 'neg') => {
-    if (!trader || !authUser) return;
+    if (!trader || !authUser || !db) return;
 
-    const newReputationAction = await updateTraderReputation(traderId, authUser.uid, type);
+    const newReputationAction = await updateTraderReputation(db, traderId, authUser.uid, type);
     setUserRepAction(newReputationAction);
     
     // For immediate feedback, we can refetch the trader or optimistically update
-    const updatedTrader = await getTrader(traderId);
+    const updatedTrader = await getTrader(db, traderId);
     if(updatedTrader) setTrader(updatedTrader);
   };
   
   const handleReport = async (newReport: Omit<Report, 'id' | 'status'>) => {
+    if (!db) return;
     await createReport(db, newReport);
     console.log("Жалоба отправлена:", newReport);
   };
@@ -113,7 +113,7 @@ export default function TraderProfilePage() {
           Назад к ленте
         </Link>
       </Button>
-      {loading || !trader || !currentUser ? (
+      {loading || !trader || !currentUser || !db ? (
         <div className="space-y-6">
             <Skeleton className="h-48 w-full" />
             <Skeleton className="h-10 w-1/4" />

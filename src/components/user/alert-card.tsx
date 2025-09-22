@@ -49,6 +49,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ImageModal } from './image-modal';
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import { useAuth } from '@/hooks/use-auth';
 
 type AlertCardProps = {
   alert: AlertPost;
@@ -64,6 +65,7 @@ export function AlertCard({
   onReport,
 }: AlertCardProps) {
   const { toast } = useToast();
+  const { db } = useAuth();
   const [isImageModalOpen, setImageModalOpen] = useState(false);
   const [commentText, setCommentText] = useState('');
 
@@ -71,8 +73,8 @@ export function AlertCard({
   const hasDisliked = currentUser && alert.dislikes.includes(currentUser.id);
 
   const handleLike = async () => {
-    if (!currentUser) return;
-    await toggleAlertLike(alert.id, currentUser.id, hasLiked);
+    if (!currentUser || !db) return;
+    await toggleAlertLike(db, alert.id, currentUser.id, hasLiked);
     // Optimistic update
     const newLikes = hasLiked
       ? alert.likes.filter((id) => id !== currentUser.id)
@@ -82,8 +84,8 @@ export function AlertCard({
   };
 
   const handleDislike = async () => {
-    if (!currentUser) return;
-    await toggleAlertDislike(alert.id, currentUser.id, hasDisliked);
+    if (!currentUser || !db) return;
+    await toggleAlertDislike(db, alert.id, currentUser.id, hasDisliked);
     // Optimistic update
     const newDislikes = hasDisliked
       ? alert.dislikes.filter((id) => id !== currentUser.id)
@@ -93,7 +95,7 @@ export function AlertCard({
   };
 
   const handleAddComment = async () => {
-    if (!commentText.trim() || !currentUser) return;
+    if (!commentText.trim() || !currentUser || !db) return;
     const newComment: CommentType = {
       id: `comment-${Date.now()}`,
       userId: currentUser.id,
@@ -102,7 +104,7 @@ export function AlertCard({
       timestamp: new Date().toISOString(),
     };
     
-    await addCommentToAlert(alert.id, newComment);
+    await addCommentToAlert(db, alert.id, newComment);
     
     onUpdateAlert({ ...alert, comments: [...alert.comments, newComment] });
     setCommentText('');
@@ -320,5 +322,3 @@ function ReportDialog({ onConfirm, disabled }: { onConfirm: (reason: string) => 
     </Dialog>
   );
 }
-
-    

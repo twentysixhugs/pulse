@@ -43,7 +43,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '../ui/skeleton';
 
 export function TraderDashboard() {
-  const { user: authUser } = useAuth();
+  const { user: authUser, db } = useAuth();
   const [currentTrader, setCurrentTrader] = useState<Trader | undefined>();
   const [alerts, setAlerts] = useState<AlertPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,12 +53,12 @@ export function TraderDashboard() {
 
   useEffect(() => {
     async function fetchData() {
-        if (authUser) {
+        if (authUser && db) {
             setLoading(true);
             try {
                 const [traderData, alertsData] = await Promise.all([
-                    getTrader(authUser.uid), 
-                    getAlertsByTrader(authUser.uid)
+                    getTrader(db, authUser.uid), 
+                    getAlertsByTrader(db, authUser.uid)
                 ]);
                 setCurrentTrader(traderData);
                 setAlerts(alertsData);
@@ -72,15 +72,15 @@ export function TraderDashboard() {
         }
     }
     fetchData();
-  }, [authUser, toast]);
+  }, [authUser, db, toast]);
 
   const handleStatusChange = async (isActive: boolean) => {
-    if (!currentTrader) return;
+    if (!currentTrader || !db) return;
     const newStatus = isActive ? 'active' : 'inactive';
     const action = isActive ? activateTrader : deactivateTrader;
 
     try {
-      await action(currentTrader.id);
+      await action(db, currentTrader.id);
       setCurrentTrader({ ...currentTrader, status: newStatus });
       toast({
         title: 'Статус обновлен',
@@ -93,20 +93,22 @@ export function TraderDashboard() {
   };
   
   const handleSavePost = async (postData: Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'> & {id?: string}) => {
+    if (!db) return;
     if (postData.id && editingPost) { // Editing
-      await updateAlertText(postData.id, postData.text);
+      await updateAlertText(db, postData.id, postData.text);
       setAlerts(alerts.map(a => a.id === postData.id ? {...a, text: postData.text, screenshotUrl: postData.screenshotUrl || a.screenshotUrl } : a));
       setEditingPost(undefined);
     } else { // Creating
       if (currentTrader) {
-        const newPost = await createAlert({...postData, traderId: currentTrader.id });
+        const newPost = await createAlert(db, {...postData, traderId: currentTrader.id });
         setAlerts([newPost, ...alerts]);
       }
     }
   };
 
   const handleDeletePost = async (postId: string) => {
-    await deleteAlert(postId);
+    if (!db) return;
+    await deleteAlert(db, postId);
     setAlerts(alerts.filter(a => a.id !== postId));
     toast({ variant: 'destructive', title: 'Пост удален' });
   }
@@ -201,5 +203,3 @@ export function TraderDashboard() {
     </div>
   );
 }
-
-    

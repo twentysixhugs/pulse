@@ -31,9 +31,9 @@ import {
   } from '@/components/ui/alert-dialog';
 import { Skeleton } from '../ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
-import { db } from '@/lib/firebase';
 
 export function ComplaintManagement() {
+  const { db } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [alerts, setAlerts] = useState<AlertPost[]>([]);
   const [traders, setTraders] = useState<Trader[]>([]);
@@ -44,13 +44,14 @@ export function ComplaintManagement() {
 
   useEffect(() => {
     async function fetchData() {
+      if (!db) return;
       setLoading(true);
       try {
         const [reportsData, alertsData, tradersData, usersData] = await Promise.all([
-          getAllReports(),
-          getAlerts(),
-          getAllTraders(),
-          getAllUsers()
+          getAllReports(db),
+          getAlerts(db),
+          getAllTraders(db),
+          getAllUsers(db)
         ]);
         setReports(reportsData);
         setAlerts(alertsData);
@@ -64,9 +65,10 @@ export function ComplaintManagement() {
       }
     }
     fetchData();
-  }, [toast]);
+  }, [db, toast]);
 
   const handleResolveReport = async (reportId: string) => {
+    if (!db) return;
     // Optimistic update
     setReports((currentReports) => currentReports.filter((report) => report.id !== reportId));
     
