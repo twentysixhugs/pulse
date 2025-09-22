@@ -49,15 +49,12 @@ import { useToast } from '@/hooks/use-toast';
 import { ImageModal } from './image-modal';
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { useAuth } from '@/hooks/use-auth';
-import type { Firestore } from 'firebase/firestore';
 
 type AlertCardProps = {
   alert: AlertPost;
   currentUser: User;
   onUpdateAlert: (updatedAlert: AlertPost) => void;
   onReport: (report: Omit<Report, 'id' | 'status'>) => void;
-  db: Firestore;
 };
 
 export function AlertCard({
@@ -65,7 +62,6 @@ export function AlertCard({
   currentUser,
   onUpdateAlert,
   onReport,
-  db,
 }: AlertCardProps) {
   const { toast } = useToast();
   const [isImageModalOpen, setImageModalOpen] = useState(false);
@@ -75,8 +71,8 @@ export function AlertCard({
   const hasDisliked = currentUser && alert.dislikes.includes(currentUser.id);
 
   const handleLike = async () => {
-    if (!currentUser || !db) return;
-    await toggleAlertLike(db, alert.id, currentUser.id, hasLiked);
+    if (!currentUser) return;
+    await toggleAlertLike(alert.id, currentUser.id, hasLiked);
     // Optimistic update
     const newLikes = hasLiked
       ? alert.likes.filter((id) => id !== currentUser.id)
@@ -86,8 +82,8 @@ export function AlertCard({
   };
 
   const handleDislike = async () => {
-    if (!currentUser || !db) return;
-    await toggleAlertDislike(db, alert.id, currentUser.id, hasDisliked);
+    if (!currentUser) return;
+    await toggleAlertDislike(alert.id, currentUser.id, hasDisliked);
     // Optimistic update
     const newDislikes = hasDisliked
       ? alert.dislikes.filter((id) => id !== currentUser.id)
@@ -97,7 +93,7 @@ export function AlertCard({
   };
 
   const handleAddComment = async () => {
-    if (!commentText.trim() || !currentUser || !db) return;
+    if (!commentText.trim() || !currentUser) return;
     const newComment: CommentType = {
       id: `comment-${Date.now()}`,
       userId: currentUser.id,
@@ -106,7 +102,7 @@ export function AlertCard({
       timestamp: new Date().toISOString(),
     };
     
-    await addCommentToAlert(db, alert.id, newComment);
+    await addCommentToAlert(alert.id, newComment);
     
     onUpdateAlert({ ...alert, comments: [...alert.comments, newComment] });
     setCommentText('');

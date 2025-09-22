@@ -33,10 +33,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '../ui/skeleton';
-import { useAuth } from '@/hooks/use-auth';
 
 export function TraderManagement() {
-  const { db } = useAuth();
   const [traders, setTraders] = useState<Trader[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,10 +42,9 @@ export function TraderManagement() {
 
   useEffect(() => {
     async function fetchData() {
-      if (!db) return;
       setLoading(true);
       try {
-        const [tradersData, categoriesData] = await Promise.all([getAllTraders(db), getAllCategories(db)]);
+        const [tradersData, categoriesData] = await Promise.all([getAllTraders(), getAllCategories()]);
         setTraders(tradersData);
         setCategories(categoriesData);
       } catch (error) {
@@ -58,15 +55,14 @@ export function TraderManagement() {
       }
     }
     fetchData();
-  }, [db, toast]);
+  }, [toast]);
 
   const toggleTraderStatus = async (traderId: string, currentStatus: 'active' | 'inactive') => {
-    if (!db) return;
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
     const action = newStatus === 'active' ? activateTrader : deactivateTrader;
     
     try {
-        await action(db, traderId);
+        await action(traderId);
         setTraders((currentTraders) =>
             currentTraders.map((trader) =>
             trader.id === traderId ? { ...trader, status: newStatus } : trader

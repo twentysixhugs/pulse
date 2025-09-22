@@ -33,7 +33,6 @@ import { Skeleton } from '../ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 
 export function ComplaintManagement() {
-  const { db } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [alerts, setAlerts] = useState<AlertPost[]>([]);
   const [traders, setTraders] = useState<Trader[]>([]);
@@ -44,14 +43,13 @@ export function ComplaintManagement() {
 
   useEffect(() => {
     async function fetchData() {
-      if (!db) return;
       setLoading(true);
       try {
         const [reportsData, alertsData, tradersData, usersData] = await Promise.all([
-          getAllReports(db),
-          getAlerts(db),
-          getAllTraders(db),
-          getAllUsers(db)
+          getAllReports(),
+          getAlerts(),
+          getAllTraders(),
+          getAllUsers()
         ]);
         setReports(reportsData);
         setAlerts(alertsData);
@@ -65,15 +63,14 @@ export function ComplaintManagement() {
       }
     }
     fetchData();
-  }, [db, toast]);
+  }, [toast]);
 
   const handleResolveReport = async (reportId: string) => {
-    if (!db) return;
     // Optimistic update
     setReports((currentReports) => currentReports.filter((report) => report.id !== reportId));
     
     try {
-        await resolveReport(db, reportId);
+        await resolveReport(reportId);
         toast({
             title: 'Жалоба разрешена',
             description: 'Жалоба была отмечена как разрешенная.',
@@ -102,7 +99,7 @@ export function ComplaintManagement() {
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-headline font-bold">Очередь жалоб</h2>
-      {pendingReports.length > 0 && currentUser && db ? (
+      {pendingReports.length > 0 && currentUser ? (
         <div className="space-y-6">
           {pendingReports.map((report) => {
             const alert = alerts.find((a) => a.id === report.alertId);
@@ -153,7 +150,6 @@ export function ComplaintManagement() {
                     currentUser={currentUser}
                     onUpdateAlert={() => {}}
                     onReport={() => {}}
-                    db={db}
                   />
                 </CardContent>
               </Card>

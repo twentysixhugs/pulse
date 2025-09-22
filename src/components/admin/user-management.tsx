@@ -26,20 +26,17 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Skeleton } from '../ui/skeleton';
-import { useAuth } from '@/hooks/use-auth';
 
 export function UserManagement() {
-  const { db } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     async function fetchData() {
-        if (!db) return;
         setLoading(true);
         try {
-            const usersData = await getAllUsers(db);
+            const usersData = await getAllUsers();
             setUsers(usersData);
         } catch (error) {
             console.error("Failed to fetch users:", error);
@@ -49,15 +46,14 @@ export function UserManagement() {
         }
     }
     fetchData();
-  }, [db, toast]);
+  }, [toast]);
 
   const toggleBanStatus = async (userId: string, isBanned: boolean) => {
-    if (!db) return;
     const action = isBanned ? unbanUser : banUser;
     const newBanStatus = !isBanned;
 
     try {
-        await action(db, userId);
+        await action(userId);
         setUsers((currentUsers) =>
             currentUsers.map((user) =>
             user.id === userId ? { ...user, isBanned: newBanStatus } : user

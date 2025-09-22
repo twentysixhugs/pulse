@@ -24,7 +24,7 @@ import { collection, getDocs, query, limit } from 'firebase/firestore';
 
 
 export default function HomePage() {
-  const { user, db } = useAuth();
+  const { user } = useAuth();
   const [isClient, setIsClient] = useState(false);
   const [hasAgreed, setHasAgreed] = useState(false);
   
@@ -41,12 +41,12 @@ export default function HomePage() {
 
   useEffect(() => {
     async function fetchData() {
-        if (user && db) {
+        if (user) {
             setLoading(true);
             try {
               const [currentUserData, alertsData] = await Promise.all([
-                  getUser(db, user.uid),
-                  getAlerts(db),
+                  getUser(user.uid),
+                  getAlerts(),
               ]);
               setCurrentUser(currentUserData);
               setAlerts(alertsData);
@@ -59,7 +59,7 @@ export default function HomePage() {
         }
     }
     fetchData();
-  }, [user, db, toast]);
+  }, [user, toast]);
 
 
   const handleAgree = () => {
@@ -72,8 +72,7 @@ export default function HomePage() {
   };
   
   const handleReport = async (newReport: Omit<Report, 'id' | 'status'>) => {
-    if (!db) return;
-    await createReport(db, newReport);
+    await createReport(newReport);
     // Don't need to optimistically add, admin panel will see it
     toast({
         title: 'Жалоба отправлена',
@@ -83,7 +82,7 @@ export default function HomePage() {
 
   const activeAlerts = alerts.sort((a, b) => new Date(b.timestamp as string).getTime() - new Date(a.timestamp as string).getTime());
 
-  if (!isClient || loading || !currentUser || !db) {
+  if (!isClient || loading || !currentUser) {
     return <div className="container mx-auto max-w-2xl py-8 space-y-4 px-4">
         <Skeleton className="h-10 w-1/3" />
         <Skeleton className="h-96 w-full" />
@@ -122,7 +121,6 @@ export default function HomePage() {
                       currentUser={currentUser}
                       onUpdateAlert={handleUpdateAlert}
                       onReport={handleReport}
-                      db={db}
                     />
                   ))}
               </div>

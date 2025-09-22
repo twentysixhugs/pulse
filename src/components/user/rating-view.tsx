@@ -15,28 +15,25 @@ import { Category, Trader, getAllTraders, getAllCategories } from '@/lib/firesto
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { Skeleton } from '../ui/skeleton';
-import { useAuth } from '@/hooks/use-auth';
 
 export function RatingView() {
-  const { db } = useAuth();
   const [traders, setTraders] = useState<Trader[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
-      if (!db) return;
       setLoading(true);
       const [tradersData, categoriesData] = await Promise.all([
-        getAllTraders(db),
-        getAllCategories(db),
+        getAllTraders(),
+        getAllCategories(),
       ]);
       setTraders(tradersData);
       setCategories(categoriesData);
       setLoading(false);
     }
     fetchData();
-  }, [db]);
+  }, []);
 
   const sortedTraders = [...traders]
     .filter(t => t.status === 'active')

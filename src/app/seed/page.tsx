@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { signInAnonymously, getAuth } from 'firebase/auth';
 import { initializeApp, getApps, getApp, FirebaseOptions } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { firebaseConfig } from '@/lib/firebase';
+import { firebaseConfig, db } from '@/lib/firebase';
 
 
 export default function SeedPage() {
@@ -22,10 +22,7 @@ export default function SeedPage() {
   const handleSeed = async () => {
     setIsSeeding(true);
     try {
-      const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-      const auth = getAuth(app);
-      const db = getFirestore(app);
-      
+      const auth = getAuth(getApps().length ? getApp() : initializeApp(firebaseConfig));
       await signInAnonymously(auth);
 
       const result = await seedDatabase(db);

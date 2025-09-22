@@ -7,21 +7,15 @@ import { AuthContext, AuthUser } from '@/hooks/use-auth';
 import { ALL_DUMMY_USERS } from '@/lib/dummy-auth';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut as firebaseSignOut, User as FirebaseUser, signInAnonymously } from 'firebase/auth';
 import { doc, getDoc, getFirestore, Firestore } from 'firebase/firestore';
-import { firebaseConfig } from '@/lib/firebase';
-import { getApp, getApps, initializeApp } from 'firebase/app';
+import { app, db } from '@/lib/firebase';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [db, setDb] = useState<Firestore | null>(null);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-    const firestoreDb = getFirestore(app);
-    setDb(firestoreDb);
-
     const storedUser = localStorage.getItem('authUser');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
