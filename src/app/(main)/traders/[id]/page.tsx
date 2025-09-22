@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
-import { notFound } from 'next/navigation';
+import { useParams, notFound } from 'next/navigation';
 import { TraderProfileView } from '@/components/user/trader-profile-view';
 import {
   traders as initialTraders,
@@ -18,14 +19,16 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export default function TraderProfilePage({ params }: { params: { id: string } }) {
+export default function TraderProfilePage() {
+  const params = useParams();
   const [traders, setTraders] = useState(initialTraders);
   const [alerts, setAlerts] = useState(initialAlerts);
   const [trader, setTrader] = useState<Trader | undefined>(undefined);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const foundTrader = initialTraders.find((t) => t.id === params.id);
+    const traderId = params.id as string;
+    const foundTrader = initialTraders.find((t) => t.id === traderId);
     if (foundTrader) {
       setTrader(foundTrader);
     } else {
