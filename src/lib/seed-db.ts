@@ -8,11 +8,13 @@ import {
   getDocs,
   Timestamp,
   doc,
+  query,
+  limit,
 } from 'firebase/firestore';
 
 export async function isDbSeeded() {
-  const usersCollection = collection(db, 'users');
-  const snapshot = await getDocs(usersCollection);
+  const q = query(collection(db, 'users'), limit(1));
+  const snapshot = await getDocs(q);
   return !snapshot.empty;
 }
 
