@@ -5,3 +5,7 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
+  # Pin to the latest supported runtime version
+  # For more details, see https://firebase.google.com/docs/app-hosting/runtime
+  pinTag: 'latest'
+
