@@ -1,3 +1,4 @@
+
 {
   "hosting": {
     "site": "studio-2674085050-7674d",
@@ -6,7 +7,6 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
-    ],
-    "frameworksBackend": {}
+    ]
   }
 }
