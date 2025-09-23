@@ -16,9 +16,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('authUser');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    // Only run on the client
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('authUser');
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
     }
     setLoading(false);
   }, []);

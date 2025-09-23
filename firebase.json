@@ -1,10 +1,15 @@
 {
   "hosting": {
+    "site": "studio-2674085050-7674d",
     "source": ".",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
-    ]
+    ],
+    "backend": {
+      "id": "studio-2674085050-7674d",
+      "region": "us-central1"
+    }
   }
 }

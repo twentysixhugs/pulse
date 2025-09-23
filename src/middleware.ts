@@ -2,12 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  const url = request.nextUrl.clone();
-  const hostname = request.headers.get('host') || '';
-
-  // This middleware is now a no-op but is kept for future domain-based routing.
-  // The logic has been moved to the file structure itself.
-
+  // This middleware is currently a no-op.
+  // It is kept for potential future use cases like domain-based routing or advanced auth checks.
   return NextResponse.next();
 }
 
