@@ -35,7 +35,11 @@ export async function seedDatabase(db: Firestore) {
   // --- USERS ---
   Object.entries(seedData.users).forEach(([id, data]) => {
     const docRef = doc(db, 'users', id);
-    batch.set(docRef, data);
+    const userData: { [key: string]: any } = { ...data };
+    if (userData.subscriptionEndDate) {
+      userData.subscriptionEndDate = Timestamp.fromDate(new Date((userData.subscriptionEndDate as any).value));
+    }
+    batch.set(docRef, userData);
   });
 
   // --- TRADERS ---

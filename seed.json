@@ -7,13 +7,13 @@
     "cat-options": { "name": "Опционы" }
   },
   "users": {
-    "user-1": { "name": "Иван Петров", "telegramId": "ivan_p", "isBanned": false, "subscriptionStatus": "active", "role": "user" },
+    "user-1": { "name": "Иван Петров", "telegramId": "ivan_p", "isBanned": false, "subscriptionStatus": "active", "subscriptionEndDate": { "__datatype__": "timestamp", "value": "2024-06-15T10:00:00Z" }, "role": "user" },
     "user-2": { "name": "Елена Сидорова", "telegramId": "elena_s", "isBanned": false, "subscriptionStatus": "inactive", "role": "user" },
-    "user-3": { "name": "Сергей Кузнецов", "telegramId": "sergey_k", "isBanned": true, "subscriptionStatus": "active", "role": "user" },
-    "admin-1": { "name": "Admin User", "telegramId": "admin_user", "isBanned": false, "subscriptionStatus": "active", "role": "admin" },
-    "trader-1": { "name": "Алекс 'КриптоКороль' Иванов", "telegramId": "crypto_king_alex", "isBanned": false, "subscriptionStatus": "active", "role": "trader" },
-    "trader-2": { "name": "Сара 'ФорексКоролева' Миллер", "telegramId": "forex_queen_sarah", "isBanned": false, "subscriptionStatus": "active", "role": "trader" },
-    "trader-3": { "name": "Бен 'СэнсэйАкций' Картер", "telegramId": "stock_sensei_ben", "isBanned": false, "subscriptionStatus": "active", "role": "trader" }
+    "user-3": { "name": "Сергей Кузнецов", "telegramId": "sergey_k", "isBanned": true, "subscriptionStatus": "active", "subscriptionEndDate": { "__datatype__": "timestamp", "value": "2024-06-25T10:00:00Z" }, "role": "user" },
+    "admin-1": { "name": "Admin User", "telegramId": "admin_user", "isBanned": false, "subscriptionStatus": "active", "subscriptionEndDate": { "__datatype__": "timestamp", "value": "2099-01-01T10:00:00Z" }, "role": "admin" },
+    "trader-1": { "name": "Алекс 'КриптоКороль' Иванов", "telegramId": "crypto_king_alex", "isBanned": false, "subscriptionStatus": "active", "subscriptionEndDate": { "__datatype__": "timestamp", "value": "2099-01-01T10:00:00Z" }, "role": "trader" },
+    "trader-2": { "name": "Сара 'ФорексКоролева' Миллер", "telegramId": "forex_queen_sarah", "isBanned": false, "subscriptionStatus": "active", "subscriptionEndDate": { "__datatype__": "timestamp", "value": "2099-01-01T10:00:00Z" }, "role": "trader" },
+    "trader-3": { "name": "Бен 'СэнсэйАкций' Картер", "telegramId": "stock_sensei_ben", "isBanned": false, "subscriptionStatus": "active", "subscriptionEndDate": { "__datatype__": "timestamp", "value": "2099-01-01T10:00:00Z" }, "role": "trader" }
   },
   "traders": {
     "trader-1": { "name": "Алекс 'КриптоКороль' Иванов", "telegramId": "crypto_king_alex", "specialization": "Специалист по BTC и ETH", "category": "cat-crypto", "status": "active", "reputation": { "positive": 125, "negative": 12 }, "profilePicUrl": "https://picsum.photos/seed/trader1/200/200", "profilePicHint": "male portrait" },

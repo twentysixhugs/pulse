@@ -39,6 +39,7 @@ export interface User {
   telegramId: string;
   isBanned: boolean;
   subscriptionStatus: SubscriptionStatus;
+  subscriptionEndDate?: string | Timestamp; // ISO string or Firestore Timestamp
   role: UserRole;
 }
 
@@ -97,7 +98,12 @@ export async function getUser(userId: string): Promise<User | undefined> {
     const userRef = doc(db, 'users', userId);
     const docSnap = await getDoc(userRef);
     if (docSnap.exists()) {
-        return { id: docSnap.id, ...docSnap.data() } as User;
+        const data = docSnap.data();
+        let subscriptionEndDate = data.subscriptionEndDate;
+        if (subscriptionEndDate instanceof Timestamp) {
+            subscriptionEndDate = subscriptionEndDate.toDate().toISOString();
+        }
+        return { id: docSnap.id, ...data, subscriptionEndDate } as User;
     }
     return undefined;
 }
@@ -113,7 +119,7 @@ export async function getTrader(traderId: string): Promise<Trader | undefined> {
 
 export async function getCategory(categoryId: string): Promise<Category | undefined> {
     const categoryRef = doc(db, 'categories', categoryId);
-    const docSnap = await getDoc(categoryRef);
+    const docSnap = await getDoc(docSnap.ref);
     if (docSnap.exists()) {
         return { id: docSnap.id, ...docSnap.data() } as Category;
     }
@@ -178,37 +184,52 @@ export async function getAllReports(): Promise<Report[]> {
 
 // --- Functions to update data ---
 
-export async function toggleAlertLike(alertId: string, userId: string, hasLiked: boolean) {
+export async function toggleAlertLike(alertId: string, userId: string) {
     const alertRef = doc(db, 'alerts', alertId);
+    const alertSnap = await getDoc(alertRef);
+    if (!alertSnap.exists()) throw new Error("Alert not found");
+
+    const hasLiked = alertSnap.data().likes.includes(userId);
+    const batch = writeBatch(db);
+
     if (hasLiked) {
-        await updateDoc(alertRef, { likes: arrayRemove(userId) });
+        batch.update(alertRef, { likes: arrayRemove(userId) });
     } else {
-        const batch = writeBatch(db);
         batch.update(alertRef, { likes: arrayUnion(userId) });
         batch.update(alertRef, { dislikes: arrayRemove(userId) });
-        await batch.commit();
     }
+    await batch.commit();
 }
 
-export async function toggleAlertDislike(alertId: string, userId: string, hasDisliked: boolean) {
+export async function toggleAlertDislike(alertId: string, userId: string) {
     const alertRef = doc(db, 'alerts', alertId);
+    const alertSnap = await getDoc(alertRef);
+    if (!alertSnap.exists()) throw new Error("Alert not found");
+
+    const hasDisliked = alertSnap.data().dislikes.includes(userId);
+    const batch = writeBatch(db);
+
     if (hasDisliked) {
-        await updateDoc(alertRef, { dislikes: arrayRemove(userId) });
+        batch.update(alertRef, { dislikes: arrayRemove(userId) });
     } else {
-        const batch = writeBatch(db);
         batch.update(alertRef, { dislikes: arrayUnion(userId) });
         batch.update(alertRef, { likes: arrayRemove(userId) });
-        await batch.commit();
     }
+    await batch.commit();
 }
 
 
-export async function addCommentToAlert(alertId: string, comment: Comment) {
+export async function addCommentToAlert(alertId: string, comment: Omit<Comment, 'id' | 'timestamp'>) {
   const alertRef = doc(db, 'alerts', alertId);
+  const newComment = {
+    ...comment,
+    id: `comment-${Date.now()}`,
+    timestamp: new Date().toISOString(),
+  }
   await updateDoc(alertRef, {
-    comments: arrayUnion(comment),
+    comments: arrayUnion(newComment),
   });
-  return comment;
+  return newComment;
 }
 
 export async function createReport(report: Omit<Report, 'id' | 'status'>): Promise<Report> {
@@ -250,8 +271,13 @@ export async function updateTraderReputation(traderId: string, userId: string, t
     
     await batch.commit();
     
+    const updatedTraderSnap = await getDoc(traderRef);
     const newRepSnap = await getDoc(userRepRef);
-    return newRepSnap.exists() ? newRepSnap.data().action : null;
+
+    return {
+        updatedTrader: { id: updatedTraderSnap.id, ...updatedTraderSnap.data() } as Trader,
+        newRepAction: newRepSnap.exists() ? newRepSnap.data().action : null
+    }
 }
 
 
@@ -308,4 +334,9 @@ export async function deactivateTrader(traderId: string) {
 export async function resolveReport(reportId: string) {
     const reportRef = doc(db, 'reports', reportId);
     await updateDoc(reportRef, { status: 'resolved' });
+}
+
+export async function updateUserSubscription(userId: string, newEndDate: Date) {
+  const userRef = doc(db, 'users', userId);
+  await updateDoc(userRef, { subscriptionEndDate: Timestamp.fromDate(newEndDate) });
 }
