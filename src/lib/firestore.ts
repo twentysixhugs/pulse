@@ -99,11 +99,7 @@ export async function getUser(userId: string): Promise<User | undefined> {
     const docSnap = await getDoc(userRef);
     if (docSnap.exists()) {
         const data = docSnap.data();
-        let subscriptionEndDate = data.subscriptionEndDate;
-        if (subscriptionEndDate instanceof Timestamp) {
-            subscriptionEndDate = subscriptionEndDate.toDate().toISOString();
-        }
-        return { id: docSnap.id, ...data, subscriptionEndDate } as User;
+        return { id: docSnap.id, ...data } as User;
     }
     return undefined;
 }
@@ -315,23 +311,23 @@ export async function deleteAlert(alertId: string) {
     await deleteDoc(alertRef);
 }
 
-export async function banUser(userId: string) {
+export async function banUser(db: Firestore, userId: string) {
     const userRef = doc(db, 'users', userId);
     await updateDoc(userRef, { isBanned: true });
 }
-export async function unbanUser(userId: string) {
+export async function unbanUser(db: Firestore, userId: string) {
     const userRef = doc(db, 'users', userId);
 await updateDoc(userRef, { isBanned: false });
 }
-export async function activateTrader(traderId: string) {
+export async function activateTrader(db: Firestore, traderId: string) {
     const traderRef = doc(db, 'traders', traderId);
     await updateDoc(traderRef, { status: 'active' });
 }
-export async function deactivateTrader(traderId: string) {
+export async function deactivateTrader(db: Firestore, traderId: string) {
     const traderRef = doc(db, 'traders', traderId);
     await updateDoc(traderRef, { status: 'inactive' });
 }
-export async function resolveReport(reportId: string) {
+export async function resolveReport(db: Firestore, reportId: string) {
     const reportRef = doc(db, 'reports', reportId);
     await updateDoc(reportRef, { status: 'resolved' });
 }

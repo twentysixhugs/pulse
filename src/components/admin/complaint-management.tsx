@@ -39,7 +39,7 @@ export function ComplaintManagement() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const { user: adminUser } = useAuth();
+  const { user: adminUser, db } = useAuth();
 
   useEffect(() => {
     async function fetchData() {
@@ -66,11 +66,12 @@ export function ComplaintManagement() {
   }, [toast]);
 
   const handleResolveReport = async (reportId: string) => {
+    if (!db) return;
     // Optimistic update
     setReports((currentReports) => currentReports.filter((report) => report.id !== reportId));
     
     try {
-        await resolveReport(reportId);
+        await resolveReport(db, reportId);
         toast({
             title: 'Жалоба разрешена',
             description: 'Жалоба была отмечена как разрешенная.',

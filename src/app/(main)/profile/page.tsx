@@ -10,8 +10,9 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft, Minus, Plus, RefreshCcw } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import { differenceInDays } from 'date-fns';
+import { differenceInDays, addDays } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { Timestamp } from 'firebase/firestore';
 
 export default function ProfilePage() {
   const { user: authUser } = useAuth();
@@ -32,15 +33,22 @@ export default function ProfilePage() {
   }, [authUser]);
 
   const handleSubscriptionChange = async (days: number, isReset = false) => {
-    if (!currentUser || !currentUser.subscriptionEndDate) return;
+    if (!currentUser) return;
     
     let newEndDate;
     if (isReset) {
       newEndDate = new Date();
-      newEndDate.setDate(newEndDate.getDate() - 1); // Set to yesterday to make it 0 or less days
+      newEndDate.setDate(newEndDate.getDate() - 1); // Set to yesterday to make it expired
     } else {
-      newEndDate = new Date(currentUser.subscriptionEndDate as string);
-      newEndDate.setDate(newEndDate.getDate() + days);
+        const currentEndDate = currentUser.subscriptionEndDate 
+            ? (currentUser.subscriptionEndDate as Timestamp).toDate() 
+            : new Date();
+      
+        if (differenceInDays(currentEndDate, new Date()) < 0) {
+             newEndDate = addDays(new Date(), days);
+        } else {
+            newEndDate = addDays(currentEndDate, days);
+        }
     }
 
     try {
@@ -68,7 +76,7 @@ export default function ProfilePage() {
     }
 
     const today = new Date();
-    const endDate = new Date(currentUser.subscriptionEndDate as string);
+    const endDate = (currentUser.subscriptionEndDate as Timestamp).toDate();
     const daysLeft = differenceInDays(endDate, today);
 
     if (daysLeft < 0) {

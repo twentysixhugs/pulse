@@ -26,11 +26,14 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Skeleton } from '../ui/skeleton';
+import { db } from '@/lib/firebase';
+import { useAuth } from '@/hooks/use-auth';
 
 export function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { db } = useAuth();
 
   useEffect(() => {
     async function fetchData() {
@@ -49,11 +52,12 @@ export function UserManagement() {
   }, [toast]);
 
   const toggleBanStatus = async (userId: string, isBanned: boolean) => {
+    if (!db) return;
     const action = isBanned ? unbanUser : banUser;
     const newBanStatus = !isBanned;
 
     try {
-        await action(userId);
+        await action(db, userId);
         setUsers((currentUsers) =>
             currentUsers.map((user) =>
             user.id === userId ? { ...user, isBanned: newBanStatus } : user
