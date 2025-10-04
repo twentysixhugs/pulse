@@ -17,7 +17,6 @@ import { Button } from '@/components/ui/button';
 import { ThumbsUp, ThumbsDown, Check, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AlertCard } from './alert-card';
-import { FixedSizeList as List } from 'react-window';
 
 type TraderProfileViewProps = {
   trader: Trader;
@@ -93,23 +92,6 @@ export function TraderProfileView({
     }
   };
   
-  const AlertRow = ({ index, style }: { index: number; style: React.CSSProperties }) => {
-    const alert = alerts[index];
-    return (
-      <div style={style}>
-        <div className="px-1 pb-4">
-          <AlertCard
-            key={alert.id}
-            alert={alert}
-            currentUser={currentUser}
-            onUpdateAlert={onUpdateAlert}
-            onReport={onReport}
-          />
-        </div>
-      </div>
-    );
-  };
-
 
   return (
     <div className="space-y-6">
@@ -168,14 +150,17 @@ export function TraderProfileView({
       <div>
         <h2 className="text-2xl font-headline font-bold mb-4">История постов</h2>
         {alerts.length > 0 ? (
-          <List
-            height={window.innerHeight - 200 > 400 ? window.innerHeight - 200 : 400}
-            itemCount={alerts.length}
-            itemSize={420}
-            width="100%"
-          >
-            {AlertRow}
-          </List>
+          <div className="space-y-4">
+            {alerts.map((alert) => (
+              <AlertCard
+                key={alert.id}
+                alert={alert}
+                currentUser={currentUser}
+                onUpdateAlert={onUpdateAlert}
+                onReport={onReport}
+              />
+            ))}
+          </div>
         ) : (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Этот трейдер еще не оставлял постов.</p>
