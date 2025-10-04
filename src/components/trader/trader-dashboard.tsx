@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -224,7 +225,7 @@ export function TraderDashboard() {
                             <CardHeader className="flex flex-row justify-between items-start p-4">
                                <div className="flex-1">
                                  <p className="text-sm text-muted-foreground">{format(new Date(alert.timestamp as string), 'd MMMM yyyy, HH:mm', { locale: ru })}</p>
-                                 <p className="mt-2">{alert.text}</p>
+                                 <p className="mt-2 break-words">{alert.text}</p>
                                </div>
                                <AlertDialog>
                                 <DropdownMenu>

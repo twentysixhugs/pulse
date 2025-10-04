@@ -192,7 +192,7 @@ export function AlertCard({
           </div>
         </CardHeader>
         <CardContent className="px-4 pb-2 pt-0">
-          <p className="mb-4 text-sm text-foreground/90">{alert.text}</p>
+          <p className="mb-4 text-sm text-foreground/90 break-words">{alert.text}</p>
           {alert.screenshotUrl && (
             <div
               className="relative aspect-video w-full cursor-pointer overflow-hidden rounded-lg border"
@@ -286,7 +286,7 @@ function CommentDialog({ alert, currentUser, commentText, setCommentText, onAddC
                                 </Avatar>
                                 <div>
                                     <p className="text-sm font-semibold">{comment.userName}</p>
-                                    <p className="text-sm text-muted-foreground">{comment.text}</p>
+                                    <p className="text-sm text-muted-foreground break-words">{comment.text}</p>
                                     <p className="text-xs text-muted-foreground/70">{formatDistanceToNow(new Date(comment.timestamp), { addSuffix: true, locale: ru })}</p>
                                 </div>
                             </div>
