@@ -193,21 +193,23 @@ export function AlertCard({
         </CardHeader>
         <CardContent className="px-4 pb-2 pt-0">
           <p className="mb-4 text-sm text-foreground/90">{alert.text}</p>
-          <div
-            className="relative aspect-video w-full cursor-pointer overflow-hidden rounded-lg border"
-            onClick={() => setImageModalOpen(true)}
-          >
-            <Image
-              src={alert.screenshotUrl}
-              alt="Скриншот предупреждения"
-              fill
-              className="object-cover transition-transform duration-300 hover:scale-105"
-              data-ai-hint={alert.screenshotHint}
-            />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity hover:opacity-100">
-              <ZoomIn className="h-10 w-10 text-white" />
+          {alert.screenshotUrl && (
+            <div
+              className="relative aspect-video w-full cursor-pointer overflow-hidden rounded-lg border"
+              onClick={() => setImageModalOpen(true)}
+            >
+              <Image
+                src={alert.screenshotUrl}
+                alt="Скриншот предупреждения"
+                fill
+                className="object-cover transition-transform duration-300 hover:scale-105"
+                data-ai-hint={alert.screenshotHint}
+              />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity hover:opacity-100">
+                <ZoomIn className="h-10 w-10 text-white" />
+              </div>
             </div>
-          </div>
+          )}
         </CardContent>
         <CardFooter className="flex justify-between p-2 px-4">
           <div className="flex gap-2">
@@ -246,14 +248,16 @@ export function AlertCard({
           </div>
         </CardFooter>
       </Card>
-      <ImageModal
-        isOpen={isImageModalOpen}
-        onClose={() => setImageModalOpen(false)}
-        imageUrl={alert.screenshotUrl}
-        imageHint={alert.screenshotHint || 'stock chart'}
-        alertId={alert.id}
-        title={`Скриншот от ${alert.traderName}`}
-      />
+      {alert.screenshotUrl && (
+        <ImageModal
+          isOpen={isImageModalOpen}
+          onClose={() => setImageModalOpen(false)}
+          imageUrl={alert.screenshotUrl}
+          imageHint={alert.screenshotHint}
+          alertId={alert.id}
+          title={`Скриншот от ${alert.traderName}`}
+        />
+      )}
     </>
   );
 }

@@ -15,7 +15,7 @@ type ImageModalProps = {
   isOpen: boolean;
   onClose: () => void;
   imageUrl: string;
-  imageHint: string;
+  imageHint?: string;
   title?: string;
   alertId: string;
 };
@@ -33,7 +33,7 @@ export function ImageModal({ isOpen, onClose, imageUrl, imageHint, title = "Scre
                     src={imageUrl} 
                     alt={title} 
                     fill
-                    data-ai-hint={imageHint}
+                    data-ai-hint={imageHint || 'stock chart'}
                     className="object-contain rounded-md"
                 />
             </div>

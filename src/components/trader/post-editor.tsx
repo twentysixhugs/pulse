@@ -40,24 +40,37 @@ export function PostEditor({ trader, postToEdit, onSave }: PostEditorProps) {
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    const newPostData = {
+    // In a real app, you would handle file uploads properly.
+    // For now, we simulate it with a placeholder or keep the existing one.
+    const hasNewScreenshot = values.screenshot && values.screenshot.length > 0;
+    const screenshotUrl = hasNewScreenshot 
+      ? `https://picsum.photos/seed/${Date.now()}/800/600` 
+      : postToEdit?.screenshotUrl;
+    const screenshotHint = hasNewScreenshot 
+      ? 'stock chart'
+      : postToEdit?.screenshotHint;
+
+    const newPostData: Omit<AlertPost, 'timestamp' | 'likes' | 'dislikes' | 'comments'> & {id?: string} = {
       id: postToEdit?.id,
       traderId: trader.id,
       traderName: trader.name,
       traderProfilePicUrl: trader.profilePicUrl,
       traderProfilePicHint: trader.profilePicHint,
       text: values.text,
-      // In a real app, screenshot would be uploaded and URL returned
-      screenshotUrl: postToEdit?.screenshotUrl || `https://picsum.photos/seed/${Date.now()}/800/600`,
-      screenshotHint: 'stock chart',
     };
+
+    if (screenshotUrl) {
+      newPostData.screenshotUrl = screenshotUrl;
+      newPostData.screenshotHint = screenshotHint;
+    }
+
     onSave(newPostData);
     toast({
       title: postToEdit ? 'Пост обновлен' : 'Пост создан',
       description: 'Ваше оповещение было успешно сохранено.',
     });
     if (!postToEdit) {
-      form.reset({ text: '' });
+      form.reset({ text: '', screenshot: null });
     }
   }
 
@@ -93,10 +106,10 @@ export function PostEditor({ trader, postToEdit, onSave }: PostEditorProps) {
               name="screenshot"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Скриншот</FormLabel>
+                  <FormLabel>Скриншот (необязательно)</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Input type="file" className="pl-10"/>
+                      <Input type="file" className="pl-10" onChange={(e) => field.onChange(e.target.files)} />
                       <Paperclip className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"/>
                     </div>
                   </FormControl>

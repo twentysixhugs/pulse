@@ -64,8 +64,8 @@ export interface AlertPost {
   traderProfilePicUrl: string; // Denormalized
   traderProfilePicHint: string; // Denormalized
   text: string;
-  screenshotUrl: string;
-  screenshotHint: string;
+  screenshotUrl?: string;
+  screenshotHint?: string;
   timestamp: string | Timestamp; // ISO string or Firestore Timestamp
   likes: string[]; // array of userIds
   dislikes: string[]; // array of userIds
@@ -128,7 +128,7 @@ export async function getCategory(categoryId: string): Promise<Category | undefi
     return undefined;
 }
 
-export async function getAlerts(startAfterId: string | null, count: number): Promise<PaginatedAlertsResponse> {
+export async function getAlerts(startAfterId: string | null = null, count: number = 20): Promise<PaginatedAlertsResponse> {
     const alertsCol = collection(db, 'alerts');
     let q;
     if (startAfterId) {
@@ -150,7 +150,7 @@ export async function getAlerts(startAfterId: string | null, count: number): Pro
     return { alerts, lastVisibleId };
 }
 
-export async function getAlertsByTrader(traderId: string, startAfterId: string | null, count: number): Promise<PaginatedAlertsResponse> {
+export async function getAlertsByTrader(traderId: string, startAfterId: string | null = null, count: number = 20): Promise<PaginatedAlertsResponse> {
     const alertsCol = collection(db, 'alerts');
     let q;
     const constraints = [where('traderId', '==', traderId), orderBy('timestamp', 'desc'), limit(count)];
