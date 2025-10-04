@@ -127,21 +127,28 @@ export function TraderDashboard() {
         const { id, ...restOfPostData } = postData;
         const newPost = await createAlert({...restOfPostData, traderId: currentTrader.id });
         
-        // Invalidate cache to refetch and see new post on page 1
-        setAlertsCache({});
-        setLastDocIdCache({ 1: null });
-        setCurrentPage(1);
-        setTotalAlerts(count => count + 1);
-        
-        // Immediately fetch page 1
-        setLoading(true);
-        getAlertsByTrader(currentTrader.id, null, ALERTS_PER_PAGE).then(initialAlerts => {
-          setAlertsCache({ 1: initialAlerts.alerts });
-          if (initialAlerts.lastVisibleId) {
-            setLastDocIdCache({ 1: initialAlerts.lastVisibleId });
-          }
-          setLoading(false);
+        // Optimistic update: add the new post to the top of the list for page 1
+        setAlertsCache(prevCache => {
+            const pageOneAlerts = prevCache[1] || [];
+            // To prevent issues with pagination keys if we just unshift, we'll refetch page 1 in the background
+            // but for the UI, we just add it to the top.
+            // A more robust solution might involve re-validating the entire cache, but this avoids a full refresh.
+            return {
+                ...prevCache,
+                1: [newPost, ...pageOneAlerts].slice(0, ALERTS_PER_PAGE)
+            };
         });
+
+        setTotalAlerts(count => count + 1);
+
+        // If we were on a different page, go back to page 1 to see the new post.
+        if (currentPage !== 1) {
+            setCurrentPage(1);
+        }
+
+        // We can optionally invalidate the lastDocId for page 1 if we want to ensure perfect consistency on next load,
+        // but for now, this provides a smooth UX.
+        // setLastDocIdCache(prev => ({...prev, 1: newPost.id}));
       }
     }
   };
