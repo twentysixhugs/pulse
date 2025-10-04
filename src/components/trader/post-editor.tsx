@@ -20,7 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Paperclip } from 'lucide-react';
 
 const formSchema = z.object({
-  text: z.string().min(10, 'Пост должен содержать не менее 10 символов.'),
+  text: z.string().min(1, 'Пост не может быть пустым.'),
   screenshot: z.any().optional(),
 });
 
