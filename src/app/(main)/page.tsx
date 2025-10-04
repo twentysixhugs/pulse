@@ -127,7 +127,8 @@ export default function HomePage() {
     });
   };
 
-  const handlePageChange = (newPage: number) => {
+  const handlePageChange = (selectedItem: { selected: number }) => {
+    const newPage = selectedItem.selected + 1;
     if (newPage > 0 && newPage <= totalPages) {
       setCurrentPage(newPage);
     }
@@ -187,7 +188,7 @@ export default function HomePage() {
                         {totalPages > 1 && (
                           <PaginationControl 
                             currentPage={currentPage}
-                            totalPages={totalPages}
+                            pageCount={totalPages}
                             onPageChange={handlePageChange}
                           />
                         )}

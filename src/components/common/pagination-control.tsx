@@ -1,95 +1,43 @@
 'use client';
-import {
-    Pagination,
-    PaginationContent,
-    PaginationEllipsis,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
-  } from '@/components/ui/pagination';
-  
-  type PaginationControlProps = {
-    currentPage: number;
-    totalPages: number;
-    onPageChange: (page: number) => void;
-  };
-  
-  export function PaginationControl({ currentPage, totalPages, onPageChange }: PaginationControlProps) {
-    const pageNumbers = [];
-    const maxPagesToShow = 4;
-    
-    if (totalPages <= maxPagesToShow + 1) {
-      for (let i = 1; i <= totalPages; i++) {
-        pageNumbers.push(i);
+import ReactPaginate from 'react-paginate';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+type PaginationControlProps = {
+  pageCount: number;
+  currentPage: number;
+  onPageChange: (selectedItem: { selected: number }) => void;
+};
+
+export function PaginationControl({ pageCount, currentPage, onPageChange }: PaginationControlProps) {
+  return (
+    <ReactPaginate
+      breakLabel="..."
+      nextLabel={
+        <span className="flex items-center justify-center">
+          <ChevronRight className="h-5 w-5" />
+        </span>
       }
-    } else {
-      let startPage, endPage;
-      if (currentPage <= Math.ceil(maxPagesToShow / 2)) {
-        startPage = 1;
-        endPage = maxPagesToShow;
-      } else if (currentPage + Math.floor(maxPagesToShow / 2) >= totalPages) {
-        startPage = totalPages - maxPagesToShow + 1;
-        endPage = totalPages;
-      } else {
-        startPage = currentPage - Math.floor(maxPagesToShow / 2);
-        endPage = currentPage + Math.floor(maxPagesToShow / 2);
+      onPageChange={onPageChange}
+      pageRangeDisplayed={2}
+      marginPagesDisplayed={1}
+      pageCount={pageCount}
+      forcePage={currentPage - 1}
+      previousLabel={
+        <span className="flex items-center justify-center">
+          <ChevronLeft className="h-5 w-5" />
+        </span>
       }
-  
-      if (startPage > 1) {
-        pageNumbers.push(1);
-        if (startPage > 2) {
-          pageNumbers.push('...');
-        }
-      }
-  
-      for (let i = startPage; i <= endPage; i++) {
-        pageNumbers.push(i);
-      }
-  
-      if (endPage < totalPages) {
-        if (endPage < totalPages - 1) {
-          pageNumbers.push('...');
-        }
-        pageNumbers.push(totalPages);
-      }
-    }
-  
-    return (
-      <Pagination>
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious
-              onClick={() => onPageChange(currentPage - 1)}
-              className={currentPage === 1 ? 'pointer-events-none opacity-50' : undefined}
-            />
-          </PaginationItem>
-          {pageNumbers.map((number, index) =>
-            number === '...' ? (
-              <PaginationItem key={`${number}-${index}`}>
-                <PaginationEllipsis />
-              </PaginationItem>
-            ) : (
-              <PaginationItem key={number}>
-                <PaginationLink
-                  onClick={() => onPageChange(number as number)}
-                  isActive={currentPage === number}
-                  href="#"
-                  className="text-lg w-10 h-10"
-                >
-                  {number}
-                </PaginationLink>
-              </PaginationItem>
-            )
-          )}
-          <PaginationItem>
-            <PaginationNext
-              onClick={() => onPageChange(currentPage + 1)}
-              className={currentPage === totalPages ? 'pointer-events-none opacity-50' : undefined}
-            />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
-    );
-  }
-  
+      renderOnZeroPageCount={null}
+      containerClassName="flex items-center justify-center gap-1 md:gap-2 my-8"
+      pageClassName="inline-flex"
+      pageLinkClassName="flex items-center justify-center text-sm md:text-base font-medium h-9 w-9 md:h-10 md:w-10 rounded-md hover:bg-muted"
+      previousClassName="inline-flex"
+      previousLinkClassName="flex items-center justify-center text-sm h-9 w-9 md:h-10 md:w-10 rounded-md hover:bg-muted"
+      nextClassName="inline-flex"
+      nextLinkClassName="flex items-center justify-center text-sm h-9 w-9 md:h-10 md:w-10 rounded-md hover:bg-muted"
+      breakClassName="inline-flex"
+      breakLinkClassName="flex items-center justify-center h-9 w-9 md:h-10 md:w-10"
+      activeClassName="!bg-primary !text-primary-foreground rounded-md"
+    />
+  );
+}

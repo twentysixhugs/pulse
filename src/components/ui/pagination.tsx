@@ -52,7 +52,6 @@ const PaginationLink = ({
         variant: isActive ? "outline" : "ghost",
         size,
       }),
-      "cursor-pointer",
       className
     )}
     {...props}
@@ -66,8 +65,8 @@ const PaginationPrevious = ({
 }: React.ComponentProps<typeof PaginationLink>) => (
   <PaginationLink
     aria-label="Go to previous page"
-    size="sm"
-    className={cn("gap-1", className)}
+    size="default"
+    className={cn("gap-1 pl-2.5 cursor-pointer", className)}
     {...props}
   >
     <ChevronLeft className="h-4 w-4" />
@@ -81,8 +80,8 @@ const PaginationNext = ({
 }: React.ComponentProps<typeof PaginationLink>) => (
   <PaginationLink
     aria-label="Go to next page"
-    size="sm"
-    className={cn("gap-1", className)}
+    size="default"
+    className={cn("gap-1 pr-2.5 cursor-pointer", className)}
     {...props}
   >
     <ChevronRight className="h-4 w-4" />
