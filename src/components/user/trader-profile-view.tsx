@@ -266,7 +266,7 @@ export function TraderProfileView({
                         </PaginationItem>
                         {[...Array(totalPages)].map((_, i) => (
                         <PaginationItem key={i}>
-                            <PaginationLink onClick={() => handlePageChange(i + 1)} isActive={currentPage === i + 1} href="#">
+                            <PaginationLink onClick={() => handlePageChange(i + 1)} isActive={currentPage === i + 1} href="#" size="icon" className="text-lg">
                             {i + 1}
                             </PaginationLink>
                         </PaginationItem>
