@@ -8,7 +8,7 @@ export const DUMMY_USERS = [
 ];
 
 export const DUMMY_TRADERS = [
-  // { email: 'trader@example.com', password: 'password', role: 'trader', uid: 'trader-1', name: 'Алекс \'КриптоКороль\' Иванов' },
+  { email: 'trader@example.com', password: 'password', role: 'trader', uid: 'trader-1', name: 'Алекс \'КриптоКороль\' Иванов' },
 ];
 
 export const DUMMY_ADMINS = [
