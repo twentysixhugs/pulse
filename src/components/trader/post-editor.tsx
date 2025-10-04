@@ -36,8 +36,17 @@ export function PostEditor({ trader, postToEdit, onSave }: PostEditorProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       text: postToEdit?.text || '',
+      screenshot: undefined,
     },
   });
+  
+  // Reset form when postToEdit changes (i.e., when editing starts or stops)
+  useEffect(() => {
+    form.reset({
+      text: postToEdit?.text || '',
+      screenshot: undefined,
+    });
+  }, [postToEdit, form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     // In a real app, you would handle file uploads properly.
@@ -50,19 +59,16 @@ export function PostEditor({ trader, postToEdit, onSave }: PostEditorProps) {
       ? 'stock chart'
       : postToEdit?.screenshotHint;
 
-    const newPostData: Omit<AlertPost, 'timestamp' | 'likes' | 'dislikes' | 'comments'> & {id?: string} = {
+    const newPostData: Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'> & {id?: string} = {
       id: postToEdit?.id,
       traderId: trader.id,
       traderName: trader.name,
       traderProfilePicUrl: trader.profilePicUrl,
       traderProfilePicHint: trader.profilePicHint,
       text: values.text,
+      screenshotUrl: screenshotUrl,
+      screenshotHint: screenshotHint,
     };
-
-    if (screenshotUrl) {
-      newPostData.screenshotUrl = screenshotUrl;
-      newPostData.screenshotHint = screenshotHint;
-    }
 
     onSave(newPostData);
     toast({
@@ -70,7 +76,7 @@ export function PostEditor({ trader, postToEdit, onSave }: PostEditorProps) {
       description: 'Ваше оповещение было успешно сохранено.',
     });
     if (!postToEdit) {
-      form.reset({ text: '', screenshot: null });
+      form.reset({ text: '', screenshot: undefined });
     }
   }
 
@@ -107,6 +113,11 @@ export function PostEditor({ trader, postToEdit, onSave }: PostEditorProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Скриншот (необязательно)</FormLabel>
+                   {postToEdit?.screenshotUrl && !field.value?.length && (
+                      <div className="relative aspect-video w-full max-w-sm overflow-hidden rounded-lg border">
+                         <Image src={postToEdit.screenshotUrl} alt="Current screenshot" fill className="object-cover" />
+                      </div>
+                    )}
                   <FormControl>
                     <div className="relative">
                       <Input type="file" className="pl-10" onChange={(e) => field.onChange(e.target.files)} />

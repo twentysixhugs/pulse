@@ -32,7 +32,7 @@ export default function HomePage() {
   
   const [currentUser, setCurrentUser] = useState<User | undefined>();
   const [alertsCache, setAlertsCache] = useState<Record<number, AlertPost[]>>({});
-  const [lastDocIdCache, setLastDocIdCache] = useState<Record<number, string | null>>({ 1: null });
+  const [lastDocIdCache, setLastDocIdCache] = useState<Record<number, string | null>>({ 0: null });
   const [totalAlerts, setTotalAlerts] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -51,9 +51,9 @@ export default function HomePage() {
     
     setLoading(true);
     try {
-      const startAfterDocId = lastDocIdCache[page - 1] === undefined && page > 1 ? alertsCache[page-1]?.[ALERTS_PER_PAGE-1]?.id : lastDocIdCache[page-1];
+      const startAfterDocId = lastDocIdCache[page - 1];
 
-      const { alerts: newAlerts, lastVisibleId } = await getAlerts(startAfterDocId ?? null, ALERTS_PER_PAGE);
+      const { alerts: newAlerts, lastVisibleId } = await getAlerts(startAfterDocId, ALERTS_PER_PAGE);
       
       setAlertsCache(prev => ({ ...prev, [page]: newAlerts }));
       if (lastVisibleId) {
@@ -74,7 +74,7 @@ export default function HomePage() {
         if (user) {
             setLoading(true);
             try {
-              const [currentUserData, initialAlerts, count] = await Promise.all([
+              const [currentUserData, initialAlertsResponse, count] = await Promise.all([
                   getUser(user.uid),
                   getAlerts(null, ALERTS_PER_PAGE),
                   getAlertsCount(),
@@ -82,9 +82,9 @@ export default function HomePage() {
 
               setCurrentUser(currentUserData);
               setTotalAlerts(count);
-              setAlertsCache({ 1: initialAlerts.alerts });
-              if (initialAlerts.lastVisibleId) {
-                setLastDocIdCache({ 1: initialAlerts.lastVisibleId });
+              setAlertsCache({ 1: initialAlertsResponse.alerts });
+              if (initialAlertsResponse.lastVisibleId) {
+                setLastDocIdCache({ 1: initialAlertsResponse.lastVisibleId });
               }
             } catch (error) {
                 console.error("Failed to fetch page data:", error);
@@ -188,17 +188,17 @@ export default function HomePage() {
                           <Pagination>
                             <PaginationContent>
                               <PaginationItem>
-                                <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} />
+                                <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}/>
                               </PaginationItem>
                               {[...Array(totalPages)].map((_, i) => (
                                 <PaginationItem key={i}>
-                                  <PaginationLink onClick={() => handlePageChange(i + 1)} isActive={currentPage === i + 1}>
+                                  <PaginationLink onClick={() => handlePageChange(i + 1)} isActive={currentPage === i + 1} href="#">
                                     {i + 1}
                                   </PaginationLink>
                                 </PaginationItem>
                               ))}
                               <PaginationItem>
-                                <PaginationNext onClick={() => handlePageChange(currentPage + 1)} />
+                                <PaginationNext onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}/>
                               </PaginationItem>
                             </PaginationContent>
                           </Pagination>

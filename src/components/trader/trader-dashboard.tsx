@@ -7,15 +7,15 @@ import {
   getTrader,
   getAlertsByTrader,
   createAlert,
-  updateAlertText,
+  updateAlert,
   deleteAlert,
   getAlertsCountByTrader,
 } from '@/lib/firestore';
-import { Card, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { PostEditor } from './post-editor';
 import { Button } from '../ui/button';
-import { MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { MoreVertical, Edit, Trash2, ZoomIn } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,6 +38,8 @@ import { ru } from 'date-fns/locale';
 import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '../ui/skeleton';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '../ui/pagination';
+import Image from 'next/image';
+import { ImageModal } from '../user/image-modal';
 
 const ALERTS_PER_PAGE = 20;
 
@@ -50,6 +52,7 @@ export function TraderDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [editingPost, setEditingPost] = useState<AlertPost | undefined>(undefined);
+  const [imageModalState, setImageModalState] = useState<{isOpen: boolean; imageUrl?: string; imageHint?: string; title?: string; alertId?: string}>({isOpen: false});
   
   const { toast } = useToast();
   const totalPages = Math.ceil(totalAlerts / ALERTS_PER_PAGE);
@@ -112,7 +115,7 @@ export function TraderDashboard() {
   
   const handleSavePost = async (postData: Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'> & {id?: string}) => {
     if (postData.id && editingPost) { // Editing
-      await updateAlertText(postData.id, postData.text);
+      await updateAlert(postData.id, { text: postData.text, screenshotUrl: postData.screenshotUrl });
       
       setAlertsCache(currentCache => {
         const newCache = { ...currentCache };
@@ -179,6 +182,18 @@ export function TraderDashboard() {
       setCurrentPage(newPage);
     }
   };
+  
+  const openImageModal = (alert: AlertPost) => {
+    if (alert.screenshotUrl) {
+      setImageModalState({
+        isOpen: true,
+        imageUrl: alert.screenshotUrl,
+        imageHint: alert.screenshotHint,
+        title: `Скриншот от ${alert.traderName}`,
+        alertId: alert.id,
+      });
+    }
+  };
 
   const currentAlerts = alertsCache[currentPage] || [];
 
@@ -205,8 +220,8 @@ export function TraderDashboard() {
                 <div className="space-y-4">
                     {currentAlerts.map(alert => (
                         <Card key={alert.id}>
-                            <CardHeader className="flex flex-row justify-between items-start">
-                               <div>
+                            <CardHeader className="flex flex-row justify-between items-start p-4">
+                               <div className="flex-1">
                                  <p className="text-sm text-muted-foreground">{format(new Date(alert.timestamp as string), 'd MMMM yyyy, HH:mm', { locale: ru })}</p>
                                  <p className="mt-2">{alert.text}</p>
                                </div>
@@ -242,23 +257,42 @@ export function TraderDashboard() {
                                     </AlertDialogContent>
                                 </AlertDialog>
                             </CardHeader>
+                            {alert.screenshotUrl && (
+                                <CardContent className="px-4 pt-0 pb-4">
+                                     <div
+                                        className="relative aspect-video w-full max-w-sm cursor-pointer overflow-hidden rounded-lg border"
+                                        onClick={() => openImageModal(alert)}
+                                        >
+                                        <Image
+                                            src={alert.screenshotUrl}
+                                            alt="Скриншот предупреждения"
+                                            fill
+                                            className="object-cover transition-transform duration-300 hover:scale-105"
+                                            data-ai-hint={alert.screenshotHint}
+                                        />
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity hover:opacity-100">
+                                            <ZoomIn className="h-10 w-10 text-white" />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            )}
                         </Card>
                     ))}
                     {totalPages > 1 && (
                       <Pagination>
                         <PaginationContent>
                           <PaginationItem>
-                            <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} />
+                            <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}/>
                           </PaginationItem>
                           {[...Array(totalPages)].map((_, i) => (
                             <PaginationItem key={i}>
-                              <PaginationLink onClick={() => handlePageChange(i + 1)} isActive={currentPage === i + 1}>
+                              <PaginationLink onClick={() => handlePageChange(i + 1)} isActive={currentPage === i + 1} href="#">
                                 {i + 1}
                               </PaginationLink>
                             </PaginationItem>
                           ))}
                           <PaginationItem>
-                            <PaginationNext onClick={() => handlePageChange(currentPage + 1)} />
+                            <PaginationNext onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}/>
                           </PaginationItem>
                         </PaginationContent>
                       </Pagination>
@@ -270,6 +304,16 @@ export function TraderDashboard() {
                 </div>
             )}
       </div>
+       {imageModalState.isOpen && imageModalState.alertId && (
+        <ImageModal
+          isOpen={imageModalState.isOpen}
+          onClose={() => setImageModalState({isOpen: false})}
+          imageUrl={imageModalState.imageUrl!}
+          imageHint={imageModalState.imageHint}
+          alertId={imageModalState.alertId}
+          title={imageModalState.title}
+        />
+      )}
     </div>
   );
 }

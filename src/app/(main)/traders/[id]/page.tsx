@@ -6,15 +6,12 @@ import { TraderProfileView } from '@/components/user/trader-profile-view';
 import {
   getTrader,
   getCategory,
-  getAlertsByTrader,
   getUser,
-  AlertPost,
   Report,
   Trader,
   User,
   Category,
   createReport,
-  getAlertsCountByTrader,
 } from '@/lib/firestore';
 import { useAuth } from '@/hooks/use-auth';
 import { ArrowLeft } from 'lucide-react';

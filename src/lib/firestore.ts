@@ -337,9 +337,9 @@ export async function createAlert(post: Omit<AlertPost, 'id' | 'timestamp' | 'li
     return { ...newPost, id: docRef.id, timestamp: (data?.timestamp as Timestamp).toDate().toISOString() };
 }
 
-export async function updateAlertText(alertId: string, newText: string) {
+export async function updateAlert(alertId: string, data: Partial<Pick<AlertPost, 'text' | 'screenshotUrl'>>) {
     const alertRef = doc(db, 'alerts', alertId);
-    await updateDoc(alertRef, { text: newText });
+    await updateDoc(alertRef, data);
 }
 
 export async function deleteAlert(alertId: string) {

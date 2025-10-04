@@ -45,7 +45,7 @@ export function TraderProfileView({
   const [isSubmittingRep, setIsSubmittingRep] = useState(false);
 
   const [alertsCache, setAlertsCache] = useState<Record<number, AlertPost[]>>({});
-  const [lastDocIdCache, setLastDocIdCache] = useState<Record<number, string | null>>({ 1: null });
+  const [lastDocIdCache, setLastDocIdCache] = useState<Record<number, string | null>>({ 0: null });
   const [totalAlerts, setTotalAlerts] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [loadingAlerts, setLoadingAlerts] = useState(true);
@@ -59,9 +59,9 @@ export function TraderProfileView({
     
     setLoadingAlerts(true);
     try {
-      const startAfterDocId = lastDocIdCache[page - 1] === undefined && page > 1 ? alertsCache[page-1]?.[ALERTS_PER_PAGE-1]?.id : lastDocIdCache[page-1];
+      const startAfterDocId = lastDocIdCache[page - 1];
 
-      const { alerts: newAlerts, lastVisibleId } = await getAlertsByTrader(trader.id, startAfterDocId ?? null, ALERTS_PER_PAGE);
+      const { alerts: newAlerts, lastVisibleId } = await getAlertsByTrader(trader.id, startAfterDocId, ALERTS_PER_PAGE);
       
       setAlertsCache(prev => ({ ...prev, [page]: newAlerts }));
       if (lastVisibleId) {
@@ -262,17 +262,17 @@ export function TraderProfileView({
                 <Pagination>
                     <PaginationContent>
                         <PaginationItem>
-                        <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} />
+                        <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}/>
                         </PaginationItem>
                         {[...Array(totalPages)].map((_, i) => (
                         <PaginationItem key={i}>
-                            <PaginationLink onClick={() => handlePageChange(i + 1)} isActive={currentPage === i + 1}>
+                            <PaginationLink onClick={() => handlePageChange(i + 1)} isActive={currentPage === i + 1} href="#">
                             {i + 1}
                             </PaginationLink>
                         </PaginationItem>
                         ))}
                         <PaginationItem>
-                        <PaginationNext onClick={() => handlePageChange(currentPage + 1)} />
+                        <PaginationNext onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}/>
                         </PaginationItem>
                     </PaginationContent>
                 </Pagination>
