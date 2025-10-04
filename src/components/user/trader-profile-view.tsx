@@ -1,14 +1,16 @@
-
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   AlertPost,
   Category,
   Trader,
   User,
   Report,
-  updateTraderReputation
+  updateTraderReputation,
+  getAlertsByTrader,
+  getAlertsCountByTrader,
+  getUserTraderReputation,
 } from '@/lib/firestore';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -17,37 +19,125 @@ import { Button } from '@/components/ui/button';
 import { ThumbsUp, ThumbsDown, Check, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AlertCard } from './alert-card';
+import { Skeleton } from '../ui/skeleton';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '../ui/pagination';
 
 type TraderProfileViewProps = {
   trader: Trader;
   category: Category | undefined;
-  alerts: AlertPost[];
   currentUser: User;
   userRepAction: 'pos' | 'neg' | null;
-  onUpdateAlert: (updatedAlert: AlertPost) => void;
   onUpdateTraderRep: (updatedTrader: Trader, newRepAction: 'pos' | 'neg' | null) => void;
   onReport: (report: Omit<Report, 'id' | 'status'>) => void;
 };
 
+const ALERTS_PER_PAGE = 20;
+
 export function TraderProfileView({
   trader,
   category,
-  alerts,
   currentUser,
   userRepAction,
-  onUpdateAlert,
   onUpdateTraderRep,
   onReport,
 }: TraderProfileViewProps) {
   const { toast } = useToast();
   const [isSubmittingRep, setIsSubmittingRep] = useState(false);
 
+  const [alertsCache, setAlertsCache] = useState<Record<number, AlertPost[]>>({});
+  const [lastDocIdCache, setLastDocIdCache] = useState<Record<number, string | null>>({ 1: null });
+  const [totalAlerts, setTotalAlerts] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [loadingAlerts, setLoadingAlerts] = useState(true);
+  
+  const totalPages = Math.ceil(totalAlerts / ALERTS_PER_PAGE);
+  const [currentRepAction, setCurrentRepAction] = useState(userRepAction);
+
+
+  const fetchAlertsForPage = useCallback(async (page: number) => {
+    if (alertsCache[page]) return;
+    
+    setLoadingAlerts(true);
+    try {
+      const startAfterDocId = lastDocIdCache[page - 1] === undefined && page > 1 ? alertsCache[page-1]?.[ALERTS_PER_PAGE-1]?.id : lastDocIdCache[page-1];
+
+      const { alerts: newAlerts, lastVisibleId } = await getAlertsByTrader(trader.id, startAfterDocId ?? null, ALERTS_PER_PAGE);
+      
+      setAlertsCache(prev => ({ ...prev, [page]: newAlerts }));
+      if (lastVisibleId) {
+        setLastDocIdCache(prev => ({ ...prev, [page]: lastVisibleId }));
+      }
+      
+    } catch (error) {
+      console.error(`Failed to fetch alerts for trader ${trader.id}:`, error);
+      toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось загрузить посты трейдера.' });
+    } finally {
+      setLoadingAlerts(false);
+    }
+  }, [trader.id, alertsCache, lastDocIdCache, toast]);
+
+  useEffect(() => {
+    async function fetchInitialAlerts() {
+      setLoadingAlerts(true);
+      try {
+        const [initialAlerts, count] = await Promise.all([
+          getAlertsByTrader(trader.id, null, ALERTS_PER_PAGE),
+          getAlertsCountByTrader(trader.id)
+        ]);
+
+        setTotalAlerts(count);
+        setAlertsCache({ 1: initialAlerts.alerts });
+        if (initialAlerts.lastVisibleId) {
+          setLastDocIdCache({ 1: initialAlerts.lastVisibleId });
+        }
+      } catch (error) {
+        console.error("Failed to fetch initial alerts:", error);
+      } finally {
+        setLoadingAlerts(false);
+      }
+    }
+    fetchInitialAlerts();
+  }, [trader.id]);
+
+  useEffect(() => {
+    if (currentPage > 1 && !alertsCache[currentPage]) {
+      fetchAlertsForPage(currentPage);
+    }
+  }, [currentPage, alertsCache, fetchAlertsForPage]);
+  
+  useEffect(() => {
+    async function fetchRep() {
+      if (currentUser && trader) {
+        const rep = await getUserTraderReputation(currentUser.id, trader.id);
+        setCurrentRepAction(rep);
+      }
+    }
+    fetchRep();
+  }, [currentUser, trader]);
+  
+  const handleUpdateAlert = (updatedAlert: AlertPost) => {
+    setAlertsCache(currentCache => {
+      const newCache = { ...currentCache };
+      for (const page in newCache) {
+        newCache[page] = newCache[page].map(a => a.id === updatedAlert.id ? updatedAlert : a);
+      }
+      return newCache;
+    });
+  };
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage > 0 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
+
+
   const handleRep = async (type: 'pos' | 'neg') => {
     if (isSubmittingRep) return;
     setIsSubmittingRep(true);
 
     const originalTraderState = { ...trader, reputation: { ...trader.reputation }};
-    const originalRepAction = userRepAction;
+    const originalRepAction = currentRepAction;
 
     // Optimistic update
     const isUndoing = originalRepAction === type;
@@ -74,6 +164,7 @@ export function TraderProfileView({
     }
 
     onUpdateTraderRep(optimisticTrader, optimisticRepAction);
+    setCurrentRepAction(optimisticRepAction);
 
     try {
         await updateTraderReputation(trader.id, currentUser.id, type);
@@ -87,11 +178,13 @@ export function TraderProfileView({
         toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось обновить репутацию.'});
         // Revert on failure
         onUpdateTraderRep(originalTraderState, originalRepAction);
+        setCurrentRepAction(originalRepAction);
     } finally {
         setIsSubmittingRep(false);
     }
   };
   
+  const currentAlerts = alertsCache[currentPage] || [];
 
   return (
     <div className="space-y-6">
@@ -136,12 +229,12 @@ export function TraderProfileView({
           </div>
         </CardHeader>
         <CardContent className="p-6 pt-0 flex flex-col sm:flex-row gap-2">
-            <Button onClick={() => handleRep('pos')} variant={userRepAction === 'pos' ? "default" : "outline"} className="w-full sm:w-auto" disabled={isSubmittingRep}>
-                {isSubmittingRep && userRepAction !== 'neg' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (userRepAction === 'pos' && <Check className="mr-2 h-4 w-4" />)}
+            <Button onClick={() => handleRep('pos')} variant={currentRepAction === 'pos' ? "default" : "outline"} className="w-full sm:w-auto" disabled={isSubmittingRep}>
+                {isSubmittingRep && currentRepAction !== 'neg' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (currentRepAction === 'pos' && <Check className="mr-2 h-4 w-4" />)}
                 +Rep
             </Button>
-             <Button onClick={() => handleRep('neg')} variant={userRepAction === 'neg' ? "destructive" : "outline"} className="w-full sm:w-auto" disabled={isSubmittingRep}>
-                {isSubmittingRep && userRepAction !== 'pos' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (userRepAction === 'neg' && <Check className="mr-2 h-4 w-4" />)}
+             <Button onClick={() => handleRep('neg')} variant={currentRepAction === 'neg' ? "destructive" : "outline"} className="w-full sm:w-auto" disabled={isSubmittingRep}>
+                {isSubmittingRep && currentRepAction !== 'pos' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (currentRepAction === 'neg' && <Check className="mr-2 h-4 w-4" />)}
                 -Rep
             </Button>
         </CardContent>
@@ -149,20 +242,44 @@ export function TraderProfileView({
 
       <div>
         <h2 className="text-2xl font-headline font-bold mb-4">История постов</h2>
-        {alerts.length > 0 ? (
+        {loadingAlerts && currentAlerts.length === 0 ? (
+            <div className="space-y-4">
+                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-64 w-full" />
+            </div>
+        ) : currentAlerts.length > 0 ? (
           <div className="space-y-4">
-            {alerts.map((alert) => (
+            {currentAlerts.map((alert) => (
               <AlertCard
                 key={alert.id}
                 alert={alert}
                 currentUser={currentUser}
-                onUpdateAlert={onUpdateAlert}
+                onUpdateAlert={handleUpdateAlert}
                 onReport={onReport}
               />
             ))}
+             {totalPages > 1 && (
+                <Pagination>
+                    <PaginationContent>
+                        <PaginationItem>
+                        <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} />
+                        </PaginationItem>
+                        {[...Array(totalPages)].map((_, i) => (
+                        <PaginationItem key={i}>
+                            <PaginationLink onClick={() => handlePageChange(i + 1)} isActive={currentPage === i + 1}>
+                            {i + 1}
+                            </PaginationLink>
+                        </PaginationItem>
+                        ))}
+                        <PaginationItem>
+                        <PaginationNext onClick={() => handlePageChange(currentPage + 1)} />
+                        </PaginationItem>
+                    </PaginationContent>
+                </Pagination>
+            )}
           </div>
         ) : (
-          <div className="text-center py-12">
+          <div className="text-center py-12 border-dashed border-2 rounded-lg">
             <p className="text-muted-foreground">Этот трейдер еще не оставлял постов.</p>
           </div>
         )}

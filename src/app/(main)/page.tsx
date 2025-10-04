@@ -1,14 +1,13 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { LegalModal } from '@/components/user/legal-modal';
 import { SubscriptionGate } from '@/components/user/subscription-gate';
 import { AlertCard } from '@/components/user/alert-card';
 import { CategoryView } from '@/components/user/category-view';
 import { RatingView } from '@/components/user/rating-view';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart, Flame, Layers, AlertCircle } from 'lucide-react';
+import { BarChart, Flame, Layers } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import {
@@ -18,10 +17,13 @@ import {
   getAlerts,
   createReport,
   getUser,
+  getAlertsCount,
+  PaginatedAlertsResponse,
 } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { collection, getDocs, query, limit } from 'firebase/firestore';
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 
+const ALERTS_PER_PAGE = 20;
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -29,9 +31,14 @@ export default function HomePage() {
   const [hasAgreed, setHasAgreed] = useState(false);
   
   const [currentUser, setCurrentUser] = useState<User | undefined>();
-  const [alerts, setAlerts] = useState<AlertPost[]>([]);
+  const [alertsCache, setAlertsCache] = useState<Record<number, AlertPost[]>>({});
+  const [lastDocIdCache, setLastDocIdCache] = useState<Record<number, string | null>>({ 1: null });
+  const [totalAlerts, setTotalAlerts] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  const totalPages = Math.ceil(totalAlerts / ALERTS_PER_PAGE);
 
   useEffect(() => {
     setIsClient(true);
@@ -39,17 +46,46 @@ export default function HomePage() {
     setHasAgreed(agreed);
   }, []);
 
+  const fetchAlertsForPage = useCallback(async (page: number) => {
+    if (alertsCache[page] || !user) return;
+    
+    setLoading(true);
+    try {
+      const startAfterDocId = lastDocIdCache[page - 1] === undefined && page > 1 ? alertsCache[page-1]?.[ALERTS_PER_PAGE-1]?.id : lastDocIdCache[page-1];
+
+      const { alerts: newAlerts, lastVisibleId } = await getAlerts(startAfterDocId ?? null, ALERTS_PER_PAGE);
+      
+      setAlertsCache(prev => ({ ...prev, [page]: newAlerts }));
+      if (lastVisibleId) {
+        setLastDocIdCache(prev => ({ ...prev, [page]: lastVisibleId }));
+      }
+      
+    } catch (error) {
+      console.error("Failed to fetch alerts:", error);
+      toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось загрузить алерты.' });
+    } finally {
+      setLoading(false);
+    }
+  }, [user, alertsCache, lastDocIdCache, toast]);
+
+
   useEffect(() => {
-    async function fetchData() {
+    async function fetchInitialData() {
         if (user) {
             setLoading(true);
             try {
-              const [currentUserData, alertsData] = await Promise.all([
+              const [currentUserData, initialAlerts, count] = await Promise.all([
                   getUser(user.uid),
-                  getAlerts(),
+                  getAlerts(null, ALERTS_PER_PAGE),
+                  getAlertsCount(),
               ]);
+
               setCurrentUser(currentUserData);
-              setAlerts(alertsData);
+              setTotalAlerts(count);
+              setAlertsCache({ 1: initialAlerts.alerts });
+              if (initialAlerts.lastVisibleId) {
+                setLastDocIdCache({ 1: initialAlerts.lastVisibleId });
+              }
             } catch (error) {
                 console.error("Failed to fetch page data:", error);
                 toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось загрузить данные.'})
@@ -58,8 +94,14 @@ export default function HomePage() {
             }
         }
     }
-    fetchData();
+    fetchInitialData();
   }, [user, toast]);
+  
+  useEffect(() => {
+    if (currentPage > 1 && !alertsCache[currentPage]) {
+      fetchAlertsForPage(currentPage);
+    }
+  }, [currentPage, alertsCache, fetchAlertsForPage]);
 
 
   const handleAgree = () => {
@@ -68,21 +110,32 @@ export default function HomePage() {
   };
   
   const handleUpdateAlert = (updatedAlert: AlertPost) => {
-    setAlerts(currentAlerts => currentAlerts.map(a => a.id === updatedAlert.id ? updatedAlert : a));
+    setAlertsCache(currentCache => {
+      const newCache = { ...currentCache };
+      for (const page in newCache) {
+        newCache[page] = newCache[page].map(a => a.id === updatedAlert.id ? updatedAlert : a);
+      }
+      return newCache;
+    });
   };
   
   const handleReport = async (newReport: Omit<Report, 'id' | 'status'>) => {
     await createReport(newReport);
-    // Don't need to optimistically add, admin panel will see it
     toast({
         title: 'Жалоба отправлена',
         description: 'Спасибо, мы рассмотрим вашу жалобу.',
     });
   };
 
-  const activeAlerts = alerts.sort((a, b) => new Date(b.timestamp as string).getTime() - new Date(a.timestamp as string).getTime());
+  const handlePageChange = (newPage: number) => {
+    if (newPage > 0 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
 
-  if (!isClient || loading || !currentUser) {
+  const currentAlerts = alertsCache[currentPage] || [];
+  
+  if (!isClient || (loading && !currentAlerts.length) || !currentUser) {
     return <div className="container mx-auto max-w-2xl py-8 space-y-4 px-4">
         <Skeleton className="h-10 w-1/3" />
         <Skeleton className="h-96 w-full" />
@@ -115,8 +168,14 @@ export default function HomePage() {
             </TabsList>
             <TabsContent value="alerts" className="mt-6">
                 <div className="space-y-4">
-                    {activeAlerts.length > 0 ? (
-                        activeAlerts.map((alert) => (
+                    {loading && currentAlerts.length === 0 ? (
+                        <>
+                           <Skeleton className="h-96 w-full" />
+                           <Skeleton className="h-96 w-full" />
+                        </>
+                    ) : currentAlerts.length > 0 ? (
+                      <>
+                        {currentAlerts.map((alert) => (
                             <AlertCard
                                 key={alert.id}
                                 alert={alert}
@@ -124,7 +183,27 @@ export default function HomePage() {
                                 onUpdateAlert={handleUpdateAlert}
                                 onReport={handleReport}
                             />
-                        ))
+                        ))}
+                        {totalPages > 1 && (
+                          <Pagination>
+                            <PaginationContent>
+                              <PaginationItem>
+                                <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} />
+                              </PaginationItem>
+                              {[...Array(totalPages)].map((_, i) => (
+                                <PaginationItem key={i}>
+                                  <PaginationLink onClick={() => handlePageChange(i + 1)} isActive={currentPage === i + 1}>
+                                    {i + 1}
+                                  </PaginationLink>
+                                </PaginationItem>
+                              ))}
+                              <PaginationItem>
+                                <PaginationNext onClick={() => handlePageChange(currentPage + 1)} />
+                              </PaginationItem>
+                            </PaginationContent>
+                          </Pagination>
+                        )}
+                      </>
                     ) : (
                         !loading && (
                             <div className="text-center py-16 border-dashed border-2 rounded-lg">

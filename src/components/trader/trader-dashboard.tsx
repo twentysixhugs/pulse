@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Trader,
   AlertPost,
@@ -10,8 +9,9 @@ import {
   createAlert,
   updateAlertText,
   deleteAlert,
+  getAlertsCountByTrader,
 } from '@/lib/firestore';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { PostEditor } from './post-editor';
 import { Button } from '../ui/button';
@@ -37,28 +37,61 @@ import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '../ui/skeleton';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '../ui/pagination';
+
+const ALERTS_PER_PAGE = 20;
 
 export function TraderDashboard() {
   const { user: authUser } = useAuth();
   const [currentTrader, setCurrentTrader] = useState<Trader | undefined>();
-  const [alerts, setAlerts] = useState<AlertPost[]>([]);
+  const [alertsCache, setAlertsCache] = useState<Record<number, AlertPost[]>>({});
+  const [lastDocIdCache, setLastDocIdCache] = useState<Record<number, string | null>>({ 1: null });
+  const [totalAlerts, setTotalAlerts] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [editingPost, setEditingPost] = useState<AlertPost | undefined>(undefined);
   
   const { toast } = useToast();
+  const totalPages = Math.ceil(totalAlerts / ALERTS_PER_PAGE);
+
+
+  const fetchAlertsForPage = useCallback(async (page: number, traderId: string) => {
+    if (alertsCache[page]) return;
+    
+    setLoading(true);
+    try {
+      const startAfterDocId = lastDocIdCache[page - 1] === undefined && page > 1 ? alertsCache[page-1]?.[ALERTS_PER_PAGE-1]?.id : lastDocIdCache[page-1];
+      const { alerts: newAlerts, lastVisibleId } = await getAlertsByTrader(traderId, startAfterDocId ?? null, ALERTS_PER_PAGE);
+      
+      setAlertsCache(prev => ({ ...prev, [page]: newAlerts }));
+      if (lastVisibleId) {
+        setLastDocIdCache(prev => ({ ...prev, [page]: lastVisibleId }));
+      }
+    } catch (error) {
+      console.error(`Failed to load alerts for page ${page}:`, error);
+      toast({ variant: 'destructive', title: "Error", description: `Could not load page ${page} data.`});
+    } finally {
+      setLoading(false);
+    }
+  }, [alertsCache, lastDocIdCache, toast]);
+
 
   useEffect(() => {
     async function fetchData() {
         if (authUser) {
             setLoading(true);
             try {
-                const [traderData, alertsData] = await Promise.all([
+                const [traderData, initialAlerts, count] = await Promise.all([
                     getTrader(authUser.uid), 
-                    getAlertsByTrader(authUser.uid)
+                    getAlertsByTrader(authUser.uid, null, ALERTS_PER_PAGE),
+                    getAlertsCountByTrader(authUser.uid),
                 ]);
                 setCurrentTrader(traderData);
-                setAlerts(alertsData);
-
+                setTotalAlerts(count);
+                setAlertsCache({ 1: initialAlerts.alerts });
+                if (initialAlerts.lastVisibleId) {
+                  setLastDocIdCache({ 1: initialAlerts.lastVisibleId });
+                }
             } catch (error) {
                 console.error("Failed to load trader dashboard:", error);
                 toast({ variant: 'destructive', title: "Error", description: "Could not load dashboard data."});
@@ -70,28 +103,79 @@ export function TraderDashboard() {
     fetchData();
   }, [authUser, toast]);
 
+  useEffect(() => {
+    if (authUser && currentPage > 1 && !alertsCache[currentPage]) {
+      fetchAlertsForPage(currentPage, authUser.uid);
+    }
+  }, [authUser, currentPage, alertsCache, fetchAlertsForPage]);
+
   
   const handleSavePost = async (postData: Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'> & {id?: string}) => {
     if (postData.id && editingPost) { // Editing
       await updateAlertText(postData.id, postData.text);
-      setAlerts(alerts.map(a => a.id === postData.id ? {...a, text: postData.text, screenshotUrl: postData.screenshotUrl || a.screenshotUrl } : a));
+      
+      setAlertsCache(currentCache => {
+        const newCache = { ...currentCache };
+        for (const page in newCache) {
+          newCache[page] = newCache[page].map(a => a.id === postData.id ? {...a, text: postData.text, screenshotUrl: postData.screenshotUrl || a.screenshotUrl } : a);
+        }
+        return newCache;
+      });
       setEditingPost(undefined);
     } else { // Creating
       if (currentTrader) {
         const { id, ...restOfPostData } = postData;
         const newPost = await createAlert({...restOfPostData, traderId: currentTrader.id });
-        setAlerts([newPost, ...alerts]);
+        
+        // Invalidate cache to refetch and see new post on page 1
+        setAlertsCache({});
+        setLastDocIdCache({ 1: null });
+        setCurrentPage(1);
+        setTotalAlerts(count => count + 1);
+        
+        // Immediately fetch page 1
+        setLoading(true);
+        getAlertsByTrader(currentTrader.id, null, ALERTS_PER_PAGE).then(initialAlerts => {
+          setAlertsCache({ 1: initialAlerts.alerts });
+          if (initialAlerts.lastVisibleId) {
+            setLastDocIdCache({ 1: initialAlerts.lastVisibleId });
+          }
+          setLoading(false);
+        });
       }
     }
   };
 
   const handleDeletePost = async (postId: string) => {
     await deleteAlert(postId);
-    setAlerts(alerts.filter(a => a.id !== postId));
+    // Invalidate cache to refetch
+    setAlertsCache({});
+    setLastDocIdCache({ 1: null });
+    setCurrentPage(1);
+    setTotalAlerts(count => count - 1);
+
+    if (authUser) {
+        setLoading(true);
+        getAlertsByTrader(authUser.uid, null, ALERTS_PER_PAGE).then(initialAlerts => {
+            setAlertsCache({ 1: initialAlerts.alerts });
+            if (initialAlerts.lastVisibleId) {
+                setLastDocIdCache({ 1: initialAlerts.lastVisibleId });
+            }
+            setLoading(false);
+        });
+    }
     toast({ variant: 'destructive', title: 'Пост удален' });
   }
+  
+  const handlePageChange = (newPage: number) => {
+    if (newPage > 0 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
 
-  if (loading || !currentTrader) {
+  const currentAlerts = alertsCache[currentPage] || [];
+
+  if (loading && !currentAlerts.length || !currentTrader) {
       return (
         <div className="space-y-8">
             <Skeleton className="h-96 w-full" />
@@ -100,16 +184,19 @@ export function TraderDashboard() {
       );
   }
 
-  const sortedAlerts = alerts.sort((a, b) => new Date(b.timestamp as string).getTime() - new Date(a.timestamp as string).getTime());
-
   return (
     <div className="space-y-8">
       <PostEditor trader={currentTrader} onSave={handleSavePost} postToEdit={editingPost} />
       <div>
           <h2 className="text-2xl font-headline font-bold mb-4">Ваши посты</h2>
-            {sortedAlerts.length > 0 ? (
+            {loading && currentAlerts.length === 0 ? (
+                 <div className="space-y-4">
+                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-24 w-full" />
+                 </div>
+            ) : currentAlerts.length > 0 ? (
                 <div className="space-y-4">
-                    {sortedAlerts.map(alert => (
+                    {currentAlerts.map(alert => (
                         <Card key={alert.id}>
                             <CardHeader className="flex flex-row justify-between items-start">
                                <div>
@@ -150,6 +237,25 @@ export function TraderDashboard() {
                             </CardHeader>
                         </Card>
                     ))}
+                    {totalPages > 1 && (
+                      <Pagination>
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} />
+                          </PaginationItem>
+                          {[...Array(totalPages)].map((_, i) => (
+                            <PaginationItem key={i}>
+                              <PaginationLink onClick={() => handlePageChange(i + 1)} isActive={currentPage === i + 1}>
+                                {i + 1}
+                              </PaginationLink>
+                            </PaginationItem>
+                          ))}
+                          <PaginationItem>
+                            <PaginationNext onClick={() => handlePageChange(currentPage + 1)} />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    )}
                 </div>
             ) : (
                 <div className="text-center py-16 border-dashed border-2 rounded-lg">

@@ -1,4 +1,3 @@
-
 import {
   collection,
   getDocs,
@@ -18,6 +17,8 @@ import {
   setDoc,
   where,
   Firestore,
+  getCountFromServer,
+  startAfter,
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -91,6 +92,11 @@ export interface Report {
   status: ReportStatus;
 }
 
+export interface PaginatedAlertsResponse {
+    alerts: AlertPost[];
+    lastVisibleId: string | null;
+}
+
 
 // --- Optimized Firestore data fetching functions ---
 
@@ -115,18 +121,24 @@ export async function getTrader(traderId: string): Promise<Trader | undefined> {
 
 export async function getCategory(categoryId: string): Promise<Category | undefined> {
     const categoryRef = doc(db, 'categories', categoryId);
-    const docSnap = await getDoc(docSnap.ref);
+    const docSnap = await getDoc(categoryRef);
     if (docSnap.exists()) {
         return { id: docSnap.id, ...docSnap.data() } as Category;
     }
     return undefined;
 }
 
-export async function getAlerts(): Promise<AlertPost[]> {
+export async function getAlerts(startAfterId: string | null, count: number): Promise<PaginatedAlertsResponse> {
     const alertsCol = collection(db, 'alerts');
-    const q = query(alertsCol, orderBy('timestamp', 'desc'));
+    let q;
+    if (startAfterId) {
+        const startAfterDoc = await getDoc(doc(db, 'alerts', startAfterId));
+        q = query(alertsCol, orderBy('timestamp', 'desc'), startAfter(startAfterDoc), limit(count));
+    } else {
+        q = query(alertsCol, orderBy('timestamp', 'desc'), limit(count));
+    }
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => {
+    const alerts = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
             id: doc.id,
@@ -134,13 +146,22 @@ export async function getAlerts(): Promise<AlertPost[]> {
             timestamp: (data.timestamp as Timestamp).toDate().toISOString(),
         } as AlertPost;
     });
+    const lastVisibleId = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1].id : null;
+    return { alerts, lastVisibleId };
 }
 
-export async function getAlertsByTrader(traderId: string): Promise<AlertPost[]> {
+export async function getAlertsByTrader(traderId: string, startAfterId: string | null, count: number): Promise<PaginatedAlertsResponse> {
     const alertsCol = collection(db, 'alerts');
-    const q = query(alertsCol, where('traderId', '==', traderId), orderBy('timestamp', 'desc'));
+    let q;
+    const constraints = [where('traderId', '==', traderId), orderBy('timestamp', 'desc'), limit(count)];
+    if (startAfterId) {
+        const startAfterDoc = await getDoc(doc(db, 'alerts', startAfterId));
+        q = query(alertsCol, ...constraints, startAfter(startAfterDoc));
+    } else {
+        q = query(alertsCol, ...constraints);
+    }
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => {
+    const alerts = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
             id: doc.id,
@@ -148,6 +169,21 @@ export async function getAlertsByTrader(traderId: string): Promise<AlertPost[]> 
             timestamp: (data.timestamp as Timestamp).toDate().toISOString(),
         } as AlertPost;
     });
+    const lastVisibleId = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1].id : null;
+    return { alerts, lastVisibleId };
+}
+
+export async function getAlertsCount(): Promise<number> {
+    const alertsCol = collection(db, 'alerts');
+    const snapshot = await getCountFromServer(alertsCol);
+    return snapshot.data().count;
+}
+
+export async function getAlertsCountByTrader(traderId: string): Promise<number> {
+    const alertsCol = collection(db, 'alerts');
+    const q = query(alertsCol, where('traderId', '==', traderId));
+    const snapshot = await getCountFromServer(q);
+    return snapshot.data().count;
 }
 
 

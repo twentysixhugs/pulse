@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -14,9 +13,8 @@ import {
   Trader,
   User,
   Category,
-  updateTraderReputation,
-  getUserTraderReputation,
   createReport,
+  getAlertsCountByTrader,
 } from '@/lib/firestore';
 import { useAuth } from '@/hooks/use-auth';
 import { ArrowLeft } from 'lucide-react';
@@ -31,7 +29,6 @@ export default function TraderProfilePage() {
 
   const [trader, setTrader] = useState<Trader | undefined>(undefined);
   const [category, setCategory] = useState<Category | undefined>(undefined);
-  const [alerts, setAlerts] = useState<AlertPost[]>([]);
   const [currentUser, setCurrentUser] = useState<User | undefined>();
   const [userRepAction, setUserRepAction] = useState<'pos' | 'neg' | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,10 +38,7 @@ export default function TraderProfilePage() {
       if (!traderId) return;
       setLoading(true);
       try {
-        const [traderData, alertsData] = await Promise.all([
-          getTrader(traderId),
-          getAlertsByTrader(traderId),
-        ]);
+        const traderData = await getTrader(traderId);
         
         if (traderData) {
           setTrader(traderData);
@@ -56,7 +50,6 @@ export default function TraderProfilePage() {
           notFound();
           return;
         }
-        setAlerts(alertsData);
         
       } catch (error) {
         console.error("Failed to fetch trader profile data:", error);
@@ -69,34 +62,20 @@ export default function TraderProfilePage() {
   }, [traderId]);
 
   useEffect(() => {
-    async function fetchUserAndRep() {
-        if(authUser && traderId) {
-            const [userData, repAction] = await Promise.all([
-                getUser(authUser.uid),
-                getUserTraderReputation(authUser.uid, traderId)
-            ]);
+    async function fetchUser() {
+        if(authUser) {
+            const userData = await getUser(authUser.uid);
             setCurrentUser(userData);
-            setUserRepAction(repAction);
         }
     }
-    fetchUserAndRep();
-  }, [authUser, traderId]);
+    fetchUser();
+  }, [authUser]);
   
-  const handleUpdateAlert = (updatedAlert: AlertPost) => {
-    setAlerts(currentAlerts => currentAlerts.map(a => a.id === updatedAlert.id ? updatedAlert : a));
-  };
 
-  const handleUpdateTraderRep = useCallback((updatedTrader: Trader, newRepAction: 'pos' | 'neg' | null) => {
-    setTrader(updatedTrader);
-    setUserRepAction(newRepAction);
-  }, []);
-  
   const handleReport = async (newReport: Omit<Report, 'id' | 'status'>) => {
     await createReport(newReport);
     console.log("Жалоба отправлена:", newReport);
   };
-
-  const sortedAlerts = alerts.sort((a, b) => new Date(b.timestamp as string).getTime() - new Date(a.timestamp as string).getTime());
 
   return (
     <div className="container mx-auto max-w-3xl py-8 px-4">
@@ -116,16 +95,15 @@ export default function TraderProfilePage() {
         <TraderProfileView
           trader={trader}
           category={category}
-          alerts={sortedAlerts}
           currentUser={currentUser}
           userRepAction={userRepAction}
-          onUpdateAlert={handleUpdateAlert}
-          onUpdateTraderRep={handleUpdateTraderRep}
+          onUpdateTraderRep={(trader, rep) => {
+              setTrader(trader);
+              setUserRepAction(rep);
+          }}
           onReport={handleReport}
         />
       )}
     </div>
   );
 }
-
-    
