@@ -21,6 +21,7 @@ import {
 } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { collection, getDocs, query, limit } from 'firebase/firestore';
+import { FixedSizeList as List } from 'react-window';
 
 
 export default function HomePage() {
@@ -91,6 +92,23 @@ export default function HomePage() {
   }
 
   const isSubscribed = currentUser?.subscriptionStatus === 'active';
+  
+  const AlertRow = ({ index, style }: { index: number; style: React.CSSProperties }) => {
+    const alert = activeAlerts[index];
+    return (
+      <div style={style}>
+        <div className="px-1 pb-4">
+            <AlertCard
+              key={alert.id}
+              alert={alert}
+              currentUser={currentUser}
+              onUpdateAlert={handleUpdateAlert}
+              onReport={handleReport}
+            />
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="container mx-auto max-w-3xl py-8 px-4">
@@ -113,17 +131,21 @@ export default function HomePage() {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="alerts" className="mt-6">
-              <div className="space-y-4">
-                {activeAlerts.map((alert) => (
-                    <AlertCard
-                      key={alert.id}
-                      alert={alert}
-                      currentUser={currentUser}
-                      onUpdateAlert={handleUpdateAlert}
-                      onReport={handleReport}
-                    />
-                  ))}
-              </div>
+                {isClient && activeAlerts.length > 0 && (
+                    <List
+                        height={window.innerHeight - 200} // Adjust height as needed
+                        itemCount={activeAlerts.length}
+                        itemSize={420} // Approximate height of AlertCard + padding
+                        width="100%"
+                    >
+                        {AlertRow}
+                    </List>
+                )}
+                {activeAlerts.length === 0 && !loading && (
+                    <div className="text-center py-16 border-dashed border-2 rounded-lg">
+                        <p className="text-muted-foreground">Пока нет алертов.</p>
+                    </div>
+                )}
             </TabsContent>
             <TabsContent value="categories" className="mt-6">
               <CategoryView />

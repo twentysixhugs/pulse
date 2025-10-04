@@ -37,6 +37,7 @@ import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '../ui/skeleton';
+import { FixedSizeList as List } from 'react-window';
 
 export function TraderDashboard() {
   const { user: authUser } = useAuth();
@@ -100,54 +101,74 @@ export function TraderDashboard() {
       );
   }
 
+  const PostRow = ({ index, style }: { index: number, style: React.CSSProperties }) => {
+    const alert = alerts[index];
+    return (
+        <div style={style}>
+            <div className="pb-4 px-1">
+                <Card key={alert.id}>
+                    <CardHeader className="flex flex-row justify-between items-start">
+                       <div>
+                         <p className="text-sm text-muted-foreground">{format(new Date(alert.timestamp as string), 'd MMMM yyyy, HH:mm', { locale: ru })}</p>
+                         <p className="mt-2">{alert.text}</p>
+                       </div>
+                       <AlertDialog>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4"/></Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setEditingPost(alert)}>
+                                    <Edit className="mr-2 h-4 w-4" /> Редактировать
+                                </DropdownMenuItem>
+                                <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                        <Trash2 className="mr-2 h-4 w-4" /> Удалить
+                                    </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                         <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Удалить пост?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                Это действие навсегда удалит ваш пост. Это действие нельзя отменить.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeletePost(alert.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    Удалить
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </CardHeader>
+                </Card>
+            </div>
+        </div>
+    );
+  };
+
   return (
     <div className="space-y-8">
       <PostEditor trader={currentTrader} onSave={handleSavePost} postToEdit={editingPost} />
       <div>
           <h2 className="text-2xl font-headline font-bold mb-4">Ваши посты</h2>
-          <div className="space-y-4">
-              {alerts.map(alert => (
-                  <Card key={alert.id}>
-                      <CardHeader className="flex flex-row justify-between items-start">
-                         <div>
-                           <p className="text-sm text-muted-foreground">{format(new Date(alert.timestamp as string), 'd MMMM yyyy, HH:mm', { locale: ru })}</p>
-                           <p className="mt-2">{alert.text}</p>
-                         </div>
-                         <AlertDialog>
-                          <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4"/></Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => setEditingPost(alert)}>
-                                      <Edit className="mr-2 h-4 w-4" /> Редактировать
-                                  </DropdownMenuItem>
-                                  <AlertDialogTrigger asChild>
-                                      <DropdownMenuItem className="text-destructive focus:text-destructive">
-                                          <Trash2 className="mr-2 h-4 w-4" /> Удалить
-                                      </DropdownMenuItem>
-                                  </AlertDialogTrigger>
-                              </DropdownMenuContent>
-                          </DropdownMenu>
-                           <AlertDialogContent>
-                              <AlertDialogHeader>
-                                  <AlertDialogTitle>Удалить пост?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                  Это действие навсегда удалит ваш пост. Это действие нельзя отменить.
-                                  </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                  <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeletePost(alert.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                      Удалить
-                                  </AlertDialogAction>
-                              </AlertDialogFooter>
-                              </AlertDialogContent>
-                          </AlertDialog>
-                      </CardHeader>
-                  </Card>
-              ))}
-          </div>
+            {alerts.length > 0 ? (
+                 <List
+                    height={window.innerHeight - 400 > 200 ? window.innerHeight - 400 : 200}
+                    itemCount={alerts.length}
+                    itemSize={120} // Approximate height of the post card
+                    width="100%"
+                >
+                    {PostRow}
+                </List>
+            ) : (
+                <div className="text-center py-16 border-dashed border-2 rounded-lg">
+                    <p className="text-muted-foreground">Вы еще не создали ни одного поста.</p>
+                </div>
+            )}
       </div>
     </div>
   );
