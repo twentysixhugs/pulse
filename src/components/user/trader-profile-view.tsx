@@ -20,7 +20,7 @@ import { ThumbsUp, ThumbsDown, Check, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AlertCard } from './alert-card';
 import { Skeleton } from '../ui/skeleton';
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '../ui/pagination';
+import { PaginationControl } from '../common/pagination-control';
 
 type TraderProfileViewProps = {
   trader: Trader;
@@ -259,23 +259,11 @@ export function TraderProfileView({
               />
             ))}
              {totalPages > 1 && (
-                <Pagination>
-                    <PaginationContent>
-                        <PaginationItem>
-                        <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}/>
-                        </PaginationItem>
-                        {[...Array(totalPages)].map((_, i) => (
-                        <PaginationItem key={i}>
-                            <PaginationLink onClick={() => handlePageChange(i + 1)} isActive={currentPage === i + 1} href="#" size="icon" className="text-lg">
-                            {i + 1}
-                            </PaginationLink>
-                        </PaginationItem>
-                        ))}
-                        <PaginationItem>
-                        <PaginationNext onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}/>
-                        </PaginationItem>
-                    </PaginationContent>
-                </Pagination>
+                <PaginationControl
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
+                />
             )}
           </div>
         ) : (

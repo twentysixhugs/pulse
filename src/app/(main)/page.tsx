@@ -21,7 +21,7 @@ import {
   PaginatedAlertsResponse,
 } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { PaginationControl } from '@/components/common/pagination-control';
 
 const ALERTS_PER_PAGE = 20;
 
@@ -185,23 +185,11 @@ export default function HomePage() {
                             />
                         ))}
                         {totalPages > 1 && (
-                          <Pagination>
-                            <PaginationContent>
-                              <PaginationItem>
-                                <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}/>
-                              </PaginationItem>
-                              {[...Array(totalPages)].map((_, i) => (
-                                <PaginationItem key={i}>
-                                  <PaginationLink onClick={() => handlePageChange(i + 1)} isActive={currentPage === i + 1} href="#" size="icon" className="text-lg">
-                                    {i + 1}
-                                  </PaginationLink>
-                                </PaginationItem>
-                              ))}
-                              <PaginationItem>
-                                <PaginationNext onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}/>
-                              </PaginationItem>
-                            </PaginationContent>
-                          </Pagination>
+                          <PaginationControl 
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={handlePageChange}
+                          />
                         )}
                       </>
                     ) : (
