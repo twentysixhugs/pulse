@@ -133,7 +133,7 @@ export function PostEditor({ trader, postToEdit, onSave }: PostEditorProps) {
                 <FormItem>
                   <FormControl>
                     <Textarea
-                      placeholder="например, BTC выглядит бычьим, жду прорыва выше..."
+                      placeholder=""
                       rows={5}
                       {...field}
                     />
