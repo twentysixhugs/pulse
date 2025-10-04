@@ -78,7 +78,8 @@ export function TraderDashboard() {
       setEditingPost(undefined);
     } else { // Creating
       if (currentTrader) {
-        const newPost = await createAlert({...postData, traderId: currentTrader.id });
+        const { id, ...restOfPostData } = postData;
+        const newPost = await createAlert({...restOfPostData, traderId: currentTrader.id });
         setAlerts([newPost, ...alerts]);
       }
     }
