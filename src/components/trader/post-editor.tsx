@@ -17,8 +17,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Paperclip } from 'lucide-react';
-import { useEffect } from 'react';
+import { Paperclip, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 
 const formSchema = z.object({
@@ -41,13 +41,17 @@ export function PostEditor({ trader, postToEdit, onSave }: PostEditorProps) {
       screenshot: undefined,
     },
   });
-  
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+
   // Reset form when postToEdit changes (i.e., when editing starts or stops)
   useEffect(() => {
     form.reset({
       text: postToEdit?.text || '',
       screenshot: undefined,
     });
+    setSelectedFileName(null);
   }, [postToEdit, form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
@@ -65,6 +69,10 @@ export function PostEditor({ trader, postToEdit, onSave }: PostEditorProps) {
       screenshotHint = postToEdit.screenshotHint;
     }
 
+    if (!hasNewScreenshot && !postToEdit?.screenshotUrl) {
+      screenshotUrl = undefined;
+      screenshotHint = undefined;
+    }
 
     const newPostData: Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'> & {id?: string} = {
       id: postToEdit?.id,
@@ -73,28 +81,46 @@ export function PostEditor({ trader, postToEdit, onSave }: PostEditorProps) {
       traderProfilePicUrl: trader.profilePicUrl,
       traderProfilePicHint: trader.profilePicHint,
       text: values.text,
+      screenshotUrl: screenshotUrl,
+      screenshotHint: screenshotHint,
     };
-
-    if (screenshotUrl) {
-      newPostData.screenshotUrl = screenshotUrl;
-      newPostData.screenshotHint = screenshotHint;
-    }
 
     onSave(newPostData);
     toast({
       title: postToEdit ? 'Пост обновлен' : 'Пост создан',
       description: 'Ваше оповещение было успешно сохранено.',
     });
-    if (!postToEdit) {
-      form.reset({ text: '', screenshot: undefined });
+    
+    form.reset({ text: '', screenshot: undefined });
+    setSelectedFileName(null);
+    if(fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   }
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    form.setValue('screenshot', event.target.files);
+    setSelectedFileName(event.target.files?.[0]?.name || null);
+  };
+  
+  const clearFile = () => {
+    form.setValue('screenshot', undefined);
+    setSelectedFileName(null);
+    if (postToEdit) {
+      postToEdit.screenshotUrl = undefined;
+      postToEdit.screenshotHint = undefined;
+    }
+    if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+    }
+  };
+
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="font-headline">
-          {postToEdit ? 'Редактировать оповещение' : 'Создать новое оповещение'}
+          {postToEdit ? 'Редактировать алерт' : 'Новый алерт'}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -105,7 +131,6 @@ export function PostEditor({ trader, postToEdit, onSave }: PostEditorProps) {
               name="text"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Содержание оповещения</FormLabel>
                   <FormControl>
                     <Textarea
                       placeholder="например, BTC выглядит бычьим, жду прорыва выше..."
@@ -117,28 +142,36 @@ export function PostEditor({ trader, postToEdit, onSave }: PostEditorProps) {
                 </FormItem>
               )}
             />
-            <FormField
+             <FormField
               control={form.control}
               name="screenshot"
-              render={({ field }) => (
+              render={() => (
                 <FormItem>
-                  <FormLabel>Скриншот (необязательно)</FormLabel>
-                   {postToEdit?.screenshotUrl && !field.value?.length && (
+                   <FormLabel>Скриншот (необязательно)</FormLabel>
+                   {(postToEdit?.screenshotUrl || selectedFileName) && (
                       <div className="relative aspect-video w-full max-w-sm overflow-hidden rounded-lg border">
-                         <Image src={postToEdit.screenshotUrl} alt="Current screenshot" fill className="object-cover" />
+                         <Image src={selectedFileName ? URL.createObjectURL(form.getValues('screenshot')[0]) : postToEdit!.screenshotUrl!} alt="Current screenshot" fill className="object-cover" />
+                         <Button type="button" size="icon" variant="destructive" className="absolute top-2 right-2 h-6 w-6 z-10" onClick={clearFile}><X className="h-4 w-4"/></Button>
                       </div>
                     )}
-                  <FormControl>
-                    <div className="relative">
-                      <Input type="file" className="pl-10" onChange={(e) => field.onChange(e.target.files)} />
-                      <Paperclip className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"/>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
+                   <FormControl>
+                     <label className="relative flex items-center gap-2 cursor-pointer text-sm text-muted-foreground border rounded-md p-2 hover:bg-muted">
+                        <Paperclip className="h-4 w-4"/>
+                        <span>{selectedFileName || 'Прикрепить скриншот'}</span>
+                        <Input
+                            type="file"
+                            className="hidden"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                            accept="image/*"
+                         />
+                     </label>
+                   </FormControl>
+                   <FormMessage/>
                 </FormItem>
               )}
             />
-            <Button type="submit">{postToEdit ? 'Сохранить изменения' : 'Опубликовать оповещение'}</Button>
+            <Button type="submit">{postToEdit ? 'Сохранить' : 'Опубликовать'}</Button>
           </form>
         </Form>
       </CardContent>
