@@ -18,6 +18,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Paperclip } from 'lucide-react';
+import { useEffect } from 'react';
+import Image from 'next/image';
 
 const formSchema = z.object({
   text: z.string().min(1, 'Пост не может быть пустым.'),
@@ -52,12 +54,17 @@ export function PostEditor({ trader, postToEdit, onSave }: PostEditorProps) {
     // In a real app, you would handle file uploads properly.
     // For now, we simulate it with a placeholder or keep the existing one.
     const hasNewScreenshot = values.screenshot && values.screenshot.length > 0;
-    const screenshotUrl = hasNewScreenshot 
-      ? `https://picsum.photos/seed/${Date.now()}/800/600` 
-      : postToEdit?.screenshotUrl;
-    const screenshotHint = hasNewScreenshot 
-      ? 'stock chart'
-      : postToEdit?.screenshotHint;
+    
+    let screenshotUrl, screenshotHint;
+
+    if (hasNewScreenshot) {
+      screenshotUrl = `https://picsum.photos/seed/${Date.now()}/800/600`;
+      screenshotHint = 'stock chart';
+    } else if (postToEdit) {
+      screenshotUrl = postToEdit.screenshotUrl;
+      screenshotHint = postToEdit.screenshotHint;
+    }
+
 
     const newPostData: Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'> & {id?: string} = {
       id: postToEdit?.id,
@@ -66,9 +73,12 @@ export function PostEditor({ trader, postToEdit, onSave }: PostEditorProps) {
       traderProfilePicUrl: trader.profilePicUrl,
       traderProfilePicHint: trader.profilePicHint,
       text: values.text,
-      screenshotUrl: screenshotUrl,
-      screenshotHint: screenshotHint,
     };
+
+    if (screenshotUrl) {
+      newPostData.screenshotUrl = screenshotUrl;
+      newPostData.screenshotHint = screenshotHint;
+    }
 
     onSave(newPostData);
     toast({
