@@ -114,14 +114,14 @@ export function TraderDashboard() {
   }, [authUser, currentPage, alertsCache, fetchAlertsForPage]);
 
   
-  const handleSavePost = async (postData: Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'> & {id?: string}) => {
+  const handleSavePost = async (postData: Partial<Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'>> & {id?: string}) => {
     if (postData.id && editingPost) { // Editing
       await updateAlert(postData.id, { text: postData.text, screenshotUrl: postData.screenshotUrl });
       
       setAlertsCache(currentCache => {
         const newCache = { ...currentCache };
         for (const page in newCache) {
-          newCache[page] = newCache[page].map(a => a.id === postData.id ? {...a, text: postData.text, screenshotUrl: postData.screenshotUrl || a.screenshotUrl } : a);
+          newCache[page] = newCache[page].map(a => a.id === postData.id ? {...a, text: postData.text, screenshotUrl: postData.screenshotUrl || a.screenshotUrl } as AlertPost : a);
         }
         return newCache;
       });

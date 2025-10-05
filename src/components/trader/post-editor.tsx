@@ -1,3 +1,4 @@
+
 'use client';
 
 import { z } from 'zod';
@@ -29,7 +30,7 @@ const formSchema = z.object({
 type PostEditorProps = {
   trader: Trader;
   postToEdit?: AlertPost;
-  onSave: (postData: Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'> & {id?: string}) => void;
+  onSave: (postData: Partial<Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'>> & {id?: string}) => void;
 };
 
 export function PostEditor({ trader, postToEdit, onSave }: PostEditorProps) {
@@ -59,31 +60,23 @@ export function PostEditor({ trader, postToEdit, onSave }: PostEditorProps) {
     // For now, we simulate it with a placeholder or keep the existing one.
     const hasNewScreenshot = values.screenshot && values.screenshot.length > 0;
     
-    let screenshotUrl, screenshotHint;
-
-    if (hasNewScreenshot) {
-      screenshotUrl = `https://picsum.photos/seed/${Date.now()}/800/600`;
-      screenshotHint = 'stock chart';
-    } else if (postToEdit) {
-      screenshotUrl = postToEdit.screenshotUrl;
-      screenshotHint = postToEdit.screenshotHint;
-    }
-
-    if (!hasNewScreenshot && !postToEdit?.screenshotUrl) {
-      screenshotUrl = undefined;
-      screenshotHint = undefined;
-    }
-
-    const newPostData: Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'> & {id?: string} = {
+    const newPostData: Partial<Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'>> & {id?: string} = {
       id: postToEdit?.id,
       traderId: trader.id,
       traderName: trader.name,
       traderProfilePicUrl: trader.profilePicUrl,
       traderProfilePicHint: trader.profilePicHint,
       text: values.text,
-      screenshotUrl: screenshotUrl,
-      screenshotHint: screenshotHint,
     };
+
+    if (hasNewScreenshot) {
+      newPostData.screenshotUrl = `https://picsum.photos/seed/${Date.now()}/800/600`;
+      newPostData.screenshotHint = 'stock chart';
+    } else if (postToEdit?.screenshotUrl) {
+      newPostData.screenshotUrl = postToEdit.screenshotUrl;
+      newPostData.screenshotHint = postToEdit.screenshotHint;
+    }
+
 
     onSave(newPostData);
     toast({

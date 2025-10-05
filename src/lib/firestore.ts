@@ -322,7 +322,7 @@ export async function getUserTraderReputation(userId: string, traderId: string) 
     return null;
 }
 
-export async function createAlert(post: Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'>): Promise<AlertPost> {
+export async function createAlert(post: Partial<Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'>>): Promise<AlertPost> {
     const alertsCol = collection(db, 'alerts');
     const newPost = {
         ...post,
@@ -334,7 +334,7 @@ export async function createAlert(post: Omit<AlertPost, 'id' | 'timestamp' | 'li
     const docRef = await addDoc(alertsCol, newPost);
     const docSnap = await getDoc(docRef);
     const data = docSnap.data();
-    return { ...newPost, id: docRef.id, timestamp: (data?.timestamp as Timestamp).toDate().toISOString() };
+    return { ...newPost, id: docRef.id, timestamp: (data?.timestamp as Timestamp).toDate().toISOString() } as AlertPost;
 }
 
 export async function updateAlert(alertId: string, data: Partial<Pick<AlertPost, 'text' | 'screenshotUrl'>>) {
