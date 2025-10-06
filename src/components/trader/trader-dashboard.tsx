@@ -50,7 +50,7 @@ import { Skeleton } from '../ui/skeleton';
 import Image from 'next/image';
 import { ImageModal } from '../user/image-modal';
 import { Unsubscribe } from 'firebase/firestore';
-import { Avatar, AvatarFallback } from '../ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 
 function CommentsModal({ alert }: { alert: AlertPost }) {
@@ -220,42 +220,51 @@ export function TraderDashboard() {
                 <div className="space-y-4">
                     {alerts.map(alert => (
                         <Card key={alert.id} className="w-full overflow-hidden">
-                            <CardHeader className="flex flex-row justify-between items-start p-4">
+                             <CardHeader className="flex flex-row items-start gap-4 p-4">
+                                <Avatar>
+                                    <AvatarImage src={alert.traderProfilePicUrl} alt={alert.traderName} data-ai-hint={alert.traderProfilePicHint} />
+                                    <AvatarFallback>{alert.traderName.charAt(0)}</AvatarFallback>
+                                </Avatar>
                                <div className="flex-1 space-y-2">
-                                  <p className="text-sm text-muted-foreground">{format(new Date(alert.timestamp as string), 'd MMMM yyyy, HH:mm', { locale: ru })}</p>
+                                  <div className="flex justify-between items-start">
+                                    <div className="leading-[1.3rem]">
+                                        <p className="font-bold">{alert.traderName}</p>
+                                        <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(alert.timestamp as string), { addSuffix: true, locale: ru })}</p>
+                                    </div>
+                                    <AlertDialog>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 -mt-1"><MoreVertical className="h-4 w-4"/></Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem onClick={() => setEditingPost(alert)}>
+                                                    <Edit className="mr-2 h-4 w-4" /> Редактировать
+                                                </DropdownMenuItem>
+                                                <AlertDialogTrigger asChild>
+                                                    <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                                        <Trash2 className="mr-2 h-4 w-4" /> Удалить
+                                                    </DropdownMenuItem>
+                                                </AlertDialogTrigger>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Удалить пост?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                Это действие навсегда удалит ваш пост. Это действие нельзя отменить.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleDeletePost(alert.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                                    Удалить
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                  </div>
                                   <p className="text-sm break-words">{alert.text}</p>
                                </div>
-                               <AlertDialog>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4"/></Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => setEditingPost(alert)}>
-                                            <Edit className="mr-2 h-4 w-4" /> Редактировать
-                                        </DropdownMenuItem>
-                                        <AlertDialogTrigger asChild>
-                                            <DropdownMenuItem className="text-destructive focus:text-destructive">
-                                                <Trash2 className="mr-2 h-4 w-4" /> Удалить
-                                            </DropdownMenuItem>
-                                        </AlertDialogTrigger>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                                 <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Удалить пост?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                        Это действие навсегда удалит ваш пост. Это действие нельзя отменить.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDeletePost(alert.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                            Удалить
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
                             </CardHeader>
                             {alert.screenshotUrl && (
                                 <CardContent className="px-4 pt-0 pb-4">
@@ -276,16 +285,18 @@ export function TraderDashboard() {
                                     </div>
                                 </CardContent>
                             )}
-                             <CardFooter className="flex justify-start p-2 px-4 border-t">
-                                <div className="flex gap-4 text-sm text-muted-foreground">
-                                    <div className="flex items-center gap-1.5 pointer-events-none">
+                             <CardFooter className="flex justify-between p-2 px-4 border-t items-center">
+                                <div className="flex gap-4 text-sm text-muted-foreground pointer-events-none">
+                                    <div className="flex items-center gap-1.5">
                                         <ThumbsUp className="h-4 w-4 text-green-500" />
                                         <span>{alert.likes.length}</span>
                                     </div>
-                                    <div className="flex items-center gap-1.5 pointer-events-none">
+                                    <div className="flex items-center gap-1.5">
                                         <ThumbsDown className="h-4 w-4 text-red-500" />
                                         <span>{alert.dislikes.length}</span>
                                     </div>
+                                </div>
+                                <div>
                                     <CommentsModal alert={alert} />
                                 </div>
                              </CardFooter>
