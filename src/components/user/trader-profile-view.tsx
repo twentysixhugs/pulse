@@ -23,7 +23,7 @@ import { Skeleton } from '../ui/skeleton';
 import { Unsubscribe } from 'firebase/firestore';
 import { PaginationControl } from '../common/pagination-control';
 
-const ALERTS_PER_PAGE = 5;
+const ALERTS_PER_PAGE = 20;
 
 type TraderProfileViewProps = {
   trader: Trader;
@@ -88,7 +88,6 @@ export function TraderProfileView({
 
     try {
         const updatedTrader = await updateTraderReputation(trader.id, currentUser.id, actionType);
-        onUpdateTraderRep(updatedTrader, isUndoing ? null : 'pos');
         
     } catch (error) {
         console.error("Failed to update reputation:", error);

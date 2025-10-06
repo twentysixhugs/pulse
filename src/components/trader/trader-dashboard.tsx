@@ -52,7 +52,7 @@ import { Unsubscribe } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { PaginationControl } from '../common/pagination-control';
 
-const ALERTS_PER_PAGE = 5;
+const ALERTS_PER_PAGE = 20;
 
 function CommentsModal({ alert }: { alert: AlertPost }) {
     return (

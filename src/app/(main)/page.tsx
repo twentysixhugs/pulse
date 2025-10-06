@@ -22,7 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Unsubscribe } from 'firebase/firestore';
 import { PaginationControl } from '@/components/common/pagination-control';
 
-const ALERTS_PER_PAGE = 5;
+const ALERTS_PER_PAGE = 20;
 
 export default function HomePage() {
   const { user } = useAuth();
