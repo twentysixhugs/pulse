@@ -29,7 +29,7 @@ export default function TraderProfilePage() {
   const [trader, setTrader] = useState<Trader | undefined>(undefined);
   const [category, setCategory] = useState<Category | undefined>(undefined);
   const [currentUser, setCurrentUser] = useState<User | undefined>();
-  const [userRepAction, setUserRepAction] = useState<'pos' | 'neg' | null>(null);
+  const [userRepAction, setUserRepAction] = useState<'pos' | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -88,7 +88,7 @@ export default function TraderProfilePage() {
     console.log("Жалоба отправлена:", newReport);
   };
 
-  const handleUpdateTraderRep = (updatedTrader: Trader, newRepAction: 'pos' | 'neg' | null) => {
+  const handleUpdateTraderRep = (updatedTrader: Trader, newRepAction: 'pos' | null) => {
       setTrader(updatedTrader);
       setUserRepAction(newRepAction);
   }

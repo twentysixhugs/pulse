@@ -44,9 +44,10 @@ export function TraderProfileView({
 }: TraderProfileViewProps) {
   const { toast } = useToast();
   const [isSubmittingRep, setIsSubmittingRep] = useState(false);
+  const [repLoading, setRepLoading] = useState(true);
   const [alerts, setAlerts] = useState<AlertPost[]>([]);
   const [loadingAlerts, setLoadingAlerts] = useState(true);
-  const [currentRepAction, setCurrentRepAction] = useState(userRepAction);
+  const [currentRepAction, setCurrentRepAction] = useState<'pos' | null>(null);
   
   const [currentPage, setCurrentPage] = useState(1);
   const [totalAlerts, setTotalAlerts] = useState(0);
@@ -77,8 +78,10 @@ export function TraderProfileView({
   useEffect(() => {
     async function fetchRep() {
       if (currentUser && trader) {
+        setRepLoading(true);
         const rep = await getUserTraderReputation(currentUser.id, trader.id);
         setCurrentRepAction(rep);
+        setRepLoading(false);
       }
     }
     fetchRep();
@@ -95,17 +98,16 @@ export function TraderProfileView({
 
     const originalTraderState = { ...trader, reputation: { ...trader.reputation }};
     const originalRepAction = currentRepAction;
-    const actionType = 'pos'; // We only handle positive reputation now
+    const actionType = 'pos'; 
 
-    // Optimistic update
     const isUndoing = originalRepAction === actionType;
     
     let optimisticTrader = { ...trader, reputation: { ...trader.reputation }};
-    let optimisticRepAction: 'pos' | 'neg' | null = isUndoing ? null : actionType;
+    let optimisticRepAction: 'pos' | null = isUndoing ? null : actionType;
 
     if (isUndoing) {
         optimisticTrader.reputation.positive--;
-    } else { // New action
+    } else { 
         optimisticTrader.reputation.positive++;
     }
 
@@ -122,7 +124,6 @@ export function TraderProfileView({
     } catch (error) {
         console.error("Failed to update reputation:", error);
         toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось обновить репутацию.'});
-        // Revert on failure
         onUpdateTraderRep(originalTraderState, originalRepAction);
         setCurrentRepAction(originalRepAction);
     } finally {
@@ -174,9 +175,9 @@ export function TraderProfileView({
           </div>
         </CardHeader>
         <CardContent className="p-6 pt-0 flex flex-col sm:flex-row gap-2">
-            <Button onClick={handleRep} variant={currentRepAction === 'pos' ? "default" : "outline"} className="w-full sm:w-auto" disabled={isSubmittingRep || isTraderViewing}>
-                {isSubmittingRep ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Star className="mr-2 h-4 w-4" />}
-                {currentRepAction === 'pos' ? 'Убрать голос' : 'Повысить рейтинг'}
+            <Button onClick={handleRep} variant={currentRepAction === 'pos' ? "default" : "outline"} className="w-full sm:w-auto" disabled={isSubmittingRep || isTraderViewing || repLoading}>
+                {repLoading || isSubmittingRep ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Star className="mr-2 h-4 w-4" />}
+                {repLoading ? 'Загрузка...' : (currentRepAction === 'pos' ? 'Убрать голос' : 'Повысить рейтинг')}
             </Button>
         </CardContent>
       </Card>

@@ -49,7 +49,6 @@ export interface User {
 
 export interface Reputation {
   positive: number;
-  negative: number;
 }
 
 export interface Comment {
@@ -286,7 +285,7 @@ export async function createReport(report: Omit<Report, 'id' | 'status'>): Promi
 }
 
 
-export async function updateTraderReputation(traderId: string, userId: string, type: 'pos' | 'neg') {
+export async function updateTraderReputation(traderId: string, userId: string, type: 'pos') {
     const traderRef = doc(db, 'traders', traderId);
     const userRepRef = doc(db, 'users', userId, 'traderReputation', traderId);
     
@@ -297,7 +296,7 @@ export async function updateTraderReputation(traderId: string, userId: string, t
     if (previousAction === type) { // Undoing 'pos' action
         batch.update(traderRef, { 'reputation.positive': increment(-1) });
         batch.delete(userRepRef);
-    } else { // It's always a 'pos' action now, so this handles adding a new vote. Dislikes are deprecated.
+    } else { 
         batch.update(traderRef, { 'reputation.positive': increment(1) });
         batch.set(userRepRef, { action: type });
     }
@@ -314,11 +313,11 @@ export async function updateTraderReputation(traderId: string, userId: string, t
 }
 
 
-export async function getUserTraderReputation(userId: string, traderId: string) {
+export async function getUserTraderReputation(userId: string, traderId: string): Promise<'pos' | null> {
     const userRepRef = doc(db, 'users', userId, 'traderReputation', traderId);
     const docSnap = await getDoc(userRepRef);
     if (docSnap.exists()) {
-        return docSnap.data().action as 'pos' | 'neg' | null;
+        return docSnap.data().action as 'pos' | null;
     }
     return null;
 }
