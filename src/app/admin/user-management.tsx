@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +28,13 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Skeleton } from '../ui/skeleton';
 import { db } from '@/lib/firebase';
+import { MoreVertical } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
@@ -79,16 +86,26 @@ export function UserManagement() {
       )
   }
 
-  const UserActionDialog = ({ user }: { user: User }) => (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button
-          variant={user.isBanned ? 'secondary' : 'destructive'}
-          className="w-full"
-        >
-          {user.isBanned ? 'Разбанить' : 'Забанить'}
-        </Button>
-      </AlertDialogTrigger>
+  const UserActionMenu = ({ user }: { user: User }) => (
+     <AlertDialog>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon">
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+           <DropdownMenuItem disabled>
+              Посмотреть детали
+            </DropdownMenuItem>
+          <AlertDialogTrigger asChild>
+             <DropdownMenuItem className={user.isBanned ? '' : 'text-destructive focus:text-destructive'}>
+              {user.isBanned ? 'Разбанить' : 'Забанить'}
+            </DropdownMenuItem>
+          </AlertDialogTrigger>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
@@ -117,34 +134,30 @@ export function UserManagement() {
       <div className="grid gap-4 md:hidden">
         {users.map((user) => (
           <Card key={user.id} className="w-full">
-            <CardHeader>
-                <CardTitle className="text-lg">{user.name}</CardTitle>
-                <CardDescription>@{user.telegramId}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Подписка:</span>
-                 <Badge
-                    variant={user.subscriptionStatus === 'active' ? 'default' : 'secondary'}
-                    className={
-                      user.subscriptionStatus === 'active'
-                        ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                        : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-                    }
-                  >
-                    {user.subscriptionStatus === 'active' ? 'активна' : 'неактивна'}
-                  </Badge>
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Статус:</span>
-                <Badge variant={user.isBanned ? 'destructive' : 'outline'}>
-                    {user.isBanned ? 'Забанен' : 'Активен'}
-                </Badge>
-              </div>
+            <CardContent className="p-4 flex items-center justify-between">
+                <div className="flex-1 space-y-2">
+                    <div>
+                        <p className="font-semibold text-base">{user.name}</p>
+                        <p className="text-sm text-muted-foreground">@{user.telegramId}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Badge
+                            variant={user.subscriptionStatus === 'active' ? 'default' : 'secondary'}
+                            className={`text-xs ${
+                            user.subscriptionStatus === 'active'
+                                ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                                : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                            }`}
+                        >
+                            {user.subscriptionStatus === 'active' ? 'Подписка' : 'Нет подписки'}
+                        </Badge>
+                        <Badge variant={user.isBanned ? 'destructive' : 'outline'} className="text-xs">
+                            {user.isBanned ? 'Забанен' : 'Активен'}
+                        </Badge>
+                    </div>
+                </div>
+                <UserActionMenu user={user} />
             </CardContent>
-            <CardFooter>
-              <UserActionDialog user={user} />
-            </CardFooter>
           </Card>
         ))}
       </div>
