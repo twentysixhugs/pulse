@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -210,7 +209,7 @@ export function TraderDashboard() {
     <div className="space-y-8">
       <PostEditor trader={currentTrader} onSave={handleSavePost} postToEdit={editingPost} />
       <div>
-          <h2 className="text-2xl font-headline font-bold mb-4">Ваши посты</h2>
+          <h2 className="text-2xl font-headline font-bold mb-4">Ваши алерты</h2>
             {loading && alerts.length === 0 ? (
                  <div className="space-y-4">
                     <Skeleton className="h-24 w-full" />
@@ -286,6 +285,9 @@ export function TraderDashboard() {
                                 </CardContent>
                             )}
                              <CardFooter className="flex justify-between p-2 px-4 border-t items-center">
+                                <div>
+                                    <CommentsModal alert={alert} />
+                                </div>
                                 <div className="flex gap-4 text-sm text-muted-foreground pointer-events-none">
                                     <div className="flex items-center gap-1.5">
                                         <ThumbsUp className="h-4 w-4 text-green-500" />
@@ -295,9 +297,6 @@ export function TraderDashboard() {
                                         <ThumbsDown className="h-4 w-4 text-red-500" />
                                         <span>{alert.dislikes.length}</span>
                                     </div>
-                                </div>
-                                <div>
-                                    <CommentsModal alert={alert} />
                                 </div>
                              </CardFooter>
                         </Card>
