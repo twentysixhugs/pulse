@@ -285,9 +285,6 @@ export function TraderDashboard() {
                                 </CardContent>
                             )}
                              <CardFooter className="flex justify-between p-2 px-4 border-t items-center">
-                                <div>
-                                    <CommentsModal alert={alert} />
-                                </div>
                                 <div className="flex gap-4 text-sm text-muted-foreground pointer-events-none">
                                     <div className="flex items-center gap-1.5">
                                         <ThumbsUp className="h-4 w-4 text-green-500" />
@@ -297,6 +294,9 @@ export function TraderDashboard() {
                                         <ThumbsDown className="h-4 w-4 text-red-500" />
                                         <span>{alert.dislikes.length}</span>
                                     </div>
+                                </div>
+                                <div>
+                                    <CommentsModal alert={alert} />
                                 </div>
                              </CardFooter>
                         </Card>
