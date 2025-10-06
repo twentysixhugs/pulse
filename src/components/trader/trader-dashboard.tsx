@@ -11,6 +11,7 @@ import {
   updateAlert,
   deleteAlert,
   listenToAlertsByTrader,
+  Comment,
 } from '@/lib/firestore';
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -34,14 +35,62 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
   } from '@/components/ui/alert-dialog';
-import { format } from 'date-fns';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+import { format, formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '../ui/skeleton';
 import Image from 'next/image';
 import { ImageModal } from '../user/image-modal';
 import { Unsubscribe } from 'firebase/firestore';
+import { Avatar, AvatarFallback } from '../ui/avatar';
 
+
+function CommentsModal({ alert }: { alert: AlertPost }) {
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="flex items-center gap-2 text-muted-foreground">
+                    <MessageSquare className="h-4 w-4" />
+                    <span>{alert.comments.length}</span>
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+                <DialogHeader>
+                    <DialogTitle>Комментарии к вашему посту</DialogTitle>
+                    <DialogDescription>
+                        {format(new Date(alert.timestamp as string), 'd MMMM yyyy, HH:mm', { locale: ru })}
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="max-h-[400px] overflow-y-auto pr-4 space-y-4 my-4">
+                    {alert.comments.length === 0 ? (
+                        <p className="text-muted-foreground text-center">Комментариев пока нет.</p>
+                    ) : (
+                        alert.comments.map((comment: Comment) => (
+                            <div key={comment.id} className="flex gap-3 items-start">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarFallback>{comment.userName.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <p className="text-sm font-semibold">{comment.userName}</p>
+                                    <p className="text-sm text-muted-foreground break-words">{comment.text}</p>
+                                    <p className="text-xs text-muted-foreground/70">{formatDistanceToNow(new Date(comment.timestamp), { addSuffix: true, locale: ru })}</p>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
+    )
+}
 
 export function TraderDashboard() {
   const { user: authUser } = useAuth();
@@ -97,7 +146,12 @@ export function TraderDashboard() {
     try {
       if (postData.id && editingPost) { // Editing
         const { id, ...updateData } = postData;
-        await updateAlert(id, updateData);
+        
+        const dataToSend = {...updateData};
+        if (dataToSend.screenshotUrl === undefined) delete (dataToSend as any).screenshotUrl;
+        if (dataToSend.screenshotHint === undefined) delete (dataToSend as any).screenshotHint;
+
+        await updateAlert(id, dataToSend);
         toast({ title: 'Пост обновлен' });
       } else { // Creating
         if (currentTrader) {
@@ -167,9 +221,9 @@ export function TraderDashboard() {
                     {alerts.map(alert => (
                         <Card key={alert.id} className="w-full overflow-hidden">
                             <CardHeader className="flex flex-row justify-between items-start p-4">
-                               <div className="flex-1">
-                                 <p className="text-sm text-muted-foreground">{format(new Date(alert.timestamp as string), 'd MMMM yyyy, HH:mm', { locale: ru })}</p>
-                                 <p className="mt-2 break-words">{alert.text}</p>
+                               <div className="flex-1 space-y-2">
+                                  <p className="text-sm text-muted-foreground">{format(new Date(alert.timestamp as string), 'd MMMM yyyy, HH:mm', { locale: ru })}</p>
+                                  <p className="text-sm break-words">{alert.text}</p>
                                </div>
                                <AlertDialog>
                                 <DropdownMenu>
@@ -224,18 +278,15 @@ export function TraderDashboard() {
                             )}
                              <CardFooter className="flex justify-start p-2 px-4 border-t">
                                 <div className="flex gap-4 text-sm text-muted-foreground">
-                                    <div className="flex items-center gap-1.5">
+                                    <div className="flex items-center gap-1.5 pointer-events-none">
                                         <ThumbsUp className="h-4 w-4 text-green-500" />
                                         <span>{alert.likes.length}</span>
                                     </div>
-                                    <div className="flex items-center gap-1.5">
+                                    <div className="flex items-center gap-1.5 pointer-events-none">
                                         <ThumbsDown className="h-4 w-4 text-red-500" />
                                         <span>{alert.dislikes.length}</span>
                                     </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <MessageSquare className="h-4 w-4" />
-                                        <span>{alert.comments.length}</span>
-                                    </div>
+                                    <CommentsModal alert={alert} />
                                 </div>
                              </CardFooter>
                         </Card>
