@@ -64,7 +64,7 @@ function CommentsModal({ alert }: { alert: AlertPost }) {
             </DialogTrigger>
             <DialogContent className="max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>Комментарии к вашему посту</DialogTitle>
+                    <DialogTitle>Комментарии</DialogTitle>
                     <DialogDescription>
                         {format(new Date(alert.timestamp as string), 'd MMMM yyyy, HH:mm', { locale: ru })}
                     </DialogDescription>
