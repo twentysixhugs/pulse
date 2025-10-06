@@ -57,8 +57,8 @@ function CommentsModal({ alert }: { alert: AlertPost }) {
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="flex items-center gap-2 text-muted-foreground">
-                    <MessageSquare className="h-4 w-4" />
+                <Button variant="outline" size="sm">
+                    <MessageSquare className="h-4 w-4 mr-2" />
                     <span>{alert.comments.length}</span>
                 </Button>
             </DialogTrigger>
