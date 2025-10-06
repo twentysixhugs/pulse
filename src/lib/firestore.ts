@@ -286,7 +286,7 @@ export async function createReport(report: Omit<Report, 'id' | 'status'>): Promi
 }
 
 
-export async function updateTraderReputation(traderId: string, userId: string, type: 'pos') {
+export async function updateTraderReputation(traderId: string, userId: string, type: 'pos'): Promise<Trader> {
   const traderRef = doc(db, 'traders', traderId);
   const userRepRef = doc(db, 'users', userId, 'traderReputation', traderId);
 
@@ -303,6 +303,9 @@ export async function updateTraderReputation(traderId: string, userId: string, t
       transaction.set(userRepRef, { action: type });
     }
   });
+
+  const updatedTraderDoc = await getDoc(traderRef);
+  return { id: updatedTraderDoc.id, ...updatedTraderDoc.data() } as Trader;
 }
 
 

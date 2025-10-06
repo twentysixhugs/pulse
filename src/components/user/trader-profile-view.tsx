@@ -29,7 +29,7 @@ type TraderProfileViewProps = {
   trader: Trader;
   category: Category | undefined;
   currentUser: User;
-  userRepAction: 'pos' | null;
+  userRepAction: 'pos' | null | undefined;
   onUpdateTraderRep: (updatedTrader: Trader, newRepAction: 'pos' | null) => void;
   onReport: (report: Omit<Report, 'id' | 'status'>) => void;
 };
@@ -44,7 +44,6 @@ export function TraderProfileView({
 }: TraderProfileViewProps) {
   const { toast } = useToast();
   const [isSubmittingRep, setIsSubmittingRep] = useState(false);
-  const [repLoading, setRepLoading] = useState(true);
   const [alerts, setAlerts] = useState<AlertPost[]>([]);
   const [loadingAlerts, setLoadingAlerts] = useState(true);
   
@@ -52,6 +51,7 @@ export function TraderProfileView({
   const [totalAlerts, setTotalAlerts] = useState(0);
 
   const isTraderViewing = currentUser?.role === 'trader';
+  const repLoading = userRepAction === undefined;
 
   useEffect(() => {
     setLoadingAlerts(true);
@@ -74,43 +74,22 @@ export function TraderProfileView({
     return () => unsubscribe();
   }, [trader.id, toast, currentPage]);
   
-  useEffect(() => {
-    // We determine the loading state from the parent now.
-    // If userRepAction is not null, or it is null, it means loading is finished.
-    // We just check if it's undefined.
-    if (userRepAction !== undefined) {
-        setRepLoading(false);
-    }
-  }, [userRepAction]);
-  
   const handleUpdateAlert = (updatedAlert: AlertPost) => {
     setAlerts(currentAlerts => currentAlerts.map(a => a.id === updatedAlert.id ? updatedAlert : a));
   };
 
 
   const handleRep = async () => {
-    if (isSubmittingRep || isTraderViewing) return;
+    if (isSubmittingRep || isTraderViewing || repLoading) return;
     setIsSubmittingRep(true);
 
-    const originalTraderState = { ...trader, reputation: { ...trader.reputation }};
-    const originalRepAction = userRepAction;
     const actionType = 'pos'; 
-
-    const isUndoing = originalRepAction === actionType;
-    
-    let optimisticTrader = { ...trader, reputation: { ...trader.reputation }};
-    let optimisticRepAction: 'pos' | null = isUndoing ? null : actionType;
-
-    if (isUndoing) {
-        optimisticTrader.reputation.positive--;
-    } else { 
-        optimisticTrader.reputation.positive++;
-    }
-
-    onUpdateTraderRep(optimisticTrader, optimisticRepAction);
+    const isUndoing = userRepAction === actionType;
 
     try {
-        await updateTraderReputation(trader.id, currentUser.id, actionType);
+        const updatedTrader = await updateTraderReputation(trader.id, currentUser.id, actionType);
+        onUpdateTraderRep(updatedTrader, isUndoing ? null : 'pos');
+        
          if (isUndoing) {
             toast({ title: 'Ваш голос убран.' });
         } else {
@@ -119,7 +98,7 @@ export function TraderProfileView({
     } catch (error) {
         console.error("Failed to update reputation:", error);
         toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось обновить репутацию.'});
-        onUpdateTraderRep(originalTraderState, originalRepAction);
+        // Re-fetch may be needed here if Firestore state is not updating parent automatically
     } finally {
         setIsSubmittingRep(false);
     }
