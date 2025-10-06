@@ -12,7 +12,7 @@ export const DUMMY_TRADERS = [
 ];
 
 export const DUMMY_ADMINS = [
-  // { email: 'admin@example.com', password: 'password', role: 'admin', uid: 'admin-1', name: 'Admin User' },
+  { email: 'admin@example.com', password: 'password', role: 'admin', uid: 'admin-1', name: 'Admin User' },
 ];
 
 export const ALL_DUMMY_USERS = [...DUMMY_USERS, ...DUMMY_TRADERS, ...DUMMY_ADMINS];
