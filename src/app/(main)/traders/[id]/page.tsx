@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -12,6 +13,7 @@ import {
   User,
   Category,
   createReport,
+  getUserTraderReputation,
 } from '@/lib/firestore';
 import { useAuth } from '@/hooks/use-auth';
 import { ArrowLeft } from 'lucide-react';
@@ -67,12 +69,29 @@ export default function TraderProfilePage() {
     }
     fetchUser();
   }, [authUser]);
+
+  useEffect(() => {
+    async function fetchRep() {
+      if (currentUser && trader) {
+        const rep = await getUserTraderReputation(currentUser.id, trader.id);
+        setUserRepAction(rep);
+      }
+    }
+    if (currentUser && trader) {
+        fetchRep();
+    }
+  }, [currentUser, trader]);
   
 
   const handleReport = async (newReport: Omit<Report, 'id' | 'status'>) => {
     await createReport(newReport);
     console.log("Жалоба отправлена:", newReport);
   };
+
+  const handleUpdateTraderRep = (updatedTrader: Trader, newRepAction: 'pos' | 'neg' | null) => {
+      setTrader(updatedTrader);
+      setUserRepAction(newRepAction);
+  }
 
   return (
     <div className="container mx-auto max-w-3xl py-8 px-4">
@@ -94,10 +113,7 @@ export default function TraderProfilePage() {
           category={category}
           currentUser={currentUser}
           userRepAction={userRepAction}
-          onUpdateTraderRep={(updatedTrader, rep) => {
-              setTrader(updatedTrader);
-              setUserRepAction(rep);
-          }}
+          onUpdateTraderRep={handleUpdateTraderRep}
           onReport={handleReport}
         />
       )}
