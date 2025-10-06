@@ -29,8 +29,8 @@ type TraderProfileViewProps = {
   trader: Trader;
   category: Category | undefined;
   currentUser: User;
-  userRepAction: 'pos' | 'neg' | null;
-  onUpdateTraderRep: (updatedTrader: Trader, newRepAction: 'pos' | 'neg' | null) => void;
+  userRepAction: 'pos' | null;
+  onUpdateTraderRep: (updatedTrader: Trader, newRepAction: 'pos' | null) => void;
   onReport: (report: Omit<Report, 'id' | 'status'>) => void;
 };
 
@@ -47,7 +47,6 @@ export function TraderProfileView({
   const [repLoading, setRepLoading] = useState(true);
   const [alerts, setAlerts] = useState<AlertPost[]>([]);
   const [loadingAlerts, setLoadingAlerts] = useState(true);
-  const [currentRepAction, setCurrentRepAction] = useState<'pos' | null>(null);
   
   const [currentPage, setCurrentPage] = useState(1);
   const [totalAlerts, setTotalAlerts] = useState(0);
@@ -76,16 +75,13 @@ export function TraderProfileView({
   }, [trader.id, toast, currentPage]);
   
   useEffect(() => {
-    async function fetchRep() {
-      if (currentUser && trader) {
-        setRepLoading(true);
-        const rep = await getUserTraderReputation(currentUser.id, trader.id);
-        setCurrentRepAction(rep);
+    // We determine the loading state from the parent now.
+    // If userRepAction is not null, or it is null, it means loading is finished.
+    // We just check if it's undefined.
+    if (userRepAction !== undefined) {
         setRepLoading(false);
-      }
     }
-    fetchRep();
-  }, [currentUser, trader]);
+  }, [userRepAction]);
   
   const handleUpdateAlert = (updatedAlert: AlertPost) => {
     setAlerts(currentAlerts => currentAlerts.map(a => a.id === updatedAlert.id ? updatedAlert : a));
@@ -97,7 +93,7 @@ export function TraderProfileView({
     setIsSubmittingRep(true);
 
     const originalTraderState = { ...trader, reputation: { ...trader.reputation }};
-    const originalRepAction = currentRepAction;
+    const originalRepAction = userRepAction;
     const actionType = 'pos'; 
 
     const isUndoing = originalRepAction === actionType;
@@ -112,7 +108,6 @@ export function TraderProfileView({
     }
 
     onUpdateTraderRep(optimisticTrader, optimisticRepAction);
-    setCurrentRepAction(optimisticRepAction);
 
     try {
         await updateTraderReputation(trader.id, currentUser.id, actionType);
@@ -125,7 +120,6 @@ export function TraderProfileView({
         console.error("Failed to update reputation:", error);
         toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось обновить репутацию.'});
         onUpdateTraderRep(originalTraderState, originalRepAction);
-        setCurrentRepAction(originalRepAction);
     } finally {
         setIsSubmittingRep(false);
     }
@@ -175,9 +169,9 @@ export function TraderProfileView({
           </div>
         </CardHeader>
         <CardContent className="p-6 pt-0 flex flex-col sm:flex-row gap-2">
-            <Button onClick={handleRep} variant={currentRepAction === 'pos' ? "default" : "outline"} className="w-full sm:w-auto" disabled={isSubmittingRep || isTraderViewing || repLoading}>
+            <Button onClick={handleRep} variant={userRepAction === 'pos' ? "default" : "outline"} className="w-full sm:w-auto" disabled={isSubmittingRep || isTraderViewing || repLoading}>
                 {repLoading || isSubmittingRep ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Star className="mr-2 h-4 w-4" />}
-                {repLoading ? 'Загрузка...' : (currentRepAction === 'pos' ? 'Убрать голос' : 'Повысить рейтинг')}
+                {repLoading ? 'Загрузка...' : (userRepAction === 'pos' ? 'Убрать голос' : 'Повысить рейтинг')}
             </Button>
         </CardContent>
       </Card>
