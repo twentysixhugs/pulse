@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
@@ -78,10 +79,78 @@ export function UserManagement() {
       )
   }
 
+  const UserActionDialog = ({ user }: { user: User }) => (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          variant={user.isBanned ? 'secondary' : 'destructive'}
+          className="w-full"
+        >
+          {user.isBanned ? 'Разбанить' : 'Забанить'}
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Это действие {user.isBanned ? 'разбанит' : 'забанит'} пользователя {user.name}.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Отмена</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => toggleBanStatus(user.id, user.isBanned)}
+            className={user.isBanned ? '' : 'bg-destructive text-destructive-foreground hover:bg-destructive/90'}
+          >
+            Подтвердить
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-headline font-bold">Управление пользователями</h2>
-      <div className="rounded-lg border">
+      
+      {/* Mobile View - Cards */}
+      <div className="grid gap-4 md:hidden">
+        {users.map((user) => (
+          <Card key={user.id} className="w-full">
+            <CardHeader>
+                <CardTitle className="text-lg">{user.name}</CardTitle>
+                <CardDescription>@{user.telegramId}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">Подписка:</span>
+                 <Badge
+                    variant={user.subscriptionStatus === 'active' ? 'default' : 'secondary'}
+                    className={
+                      user.subscriptionStatus === 'active'
+                        ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                        : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                    }
+                  >
+                    {user.subscriptionStatus === 'active' ? 'активна' : 'неактивна'}
+                  </Badge>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">Статус:</span>
+                <Badge variant={user.isBanned ? 'destructive' : 'outline'}>
+                    {user.isBanned ? 'Забанен' : 'Активен'}
+                </Badge>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <UserActionDialog user={user} />
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+
+      {/* Desktop View - Table */}
+      <div className="rounded-lg border hidden md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -115,7 +184,7 @@ export function UserManagement() {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  <AlertDialog>
+                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button
                         variant={user.isBanned ? 'secondary' : 'destructive'}

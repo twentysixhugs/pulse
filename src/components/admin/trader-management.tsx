@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
@@ -100,10 +101,92 @@ export function TraderManagement() {
     )
   }
 
+  const TraderActionMenu = ({ trader }: {trader: Trader}) => (
+    <AlertDialog>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon">
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => toggleTraderStatus(trader.id, trader.status)}>
+              {trader.status === 'active' ? 'Деактивировать' : 'Активировать'}
+          </DropdownMenuItem>
+          <DropdownMenuItem disabled>Редактировать посты</DropdownMenuItem>
+            <AlertDialogTrigger asChild>
+              <DropdownMenuItem className="text-destructive focus:text-destructive">
+                  Удалить трейдера
+              </DropdownMenuItem>
+            </AlertDialogTrigger>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Удалить трейдера?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Это действие нельзя отменить. Это приведет к необратимому удалению {trader.name} и всех связанных данных.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Отмена</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => deleteTrader(trader.id)}
+            className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+          >
+            Подтвердить удаление
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-headline font-bold">Управление трейдерами</h2>
-      <div className="rounded-lg border">
+      
+      {/* Mobile View */}
+      <div className="grid gap-4 md:hidden">
+        {traders.map((trader) => {
+            const category = categories.find(c => c.id === trader.category);
+            return (
+              <Card key={trader.id} className="w-full">
+                <CardHeader className="flex flex-row items-start justify-between">
+                    <div>
+                        <CardTitle className="text-lg">{trader.name}</CardTitle>
+                        <CardDescription>@{trader.telegramId}</CardDescription>
+                    </div>
+                    <div className="mt-1">
+                        <TraderActionMenu trader={trader} />
+                    </div>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                    <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Категория:</span>
+                        <span>{category?.name || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Статус:</span>
+                        <Badge
+                            variant={trader.status === 'active' ? 'default' : 'secondary'}
+                            className={
+                            trader.status === 'active'
+                                ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                                : 'bg-red-500/20 text-red-400 border-red-500/30'
+                            }
+                        >
+                            {trader.status === 'active' ? 'активен' : 'неактивен'}
+                        </Badge>
+                    </div>
+                </CardContent>
+              </Card>
+            )
+        })}
+      </div>
+
+      {/* Desktop View */}
+      <div className="rounded-lg border hidden md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -135,44 +218,7 @@ export function TraderManagement() {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  <AlertDialog>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => toggleTraderStatus(trader.id, trader.status)}>
-                            {trader.status === 'active' ? 'Деактивировать' : 'Активировать'}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem disabled>Редактировать посты</DropdownMenuItem>
-                         <AlertDialogTrigger asChild>
-                            <DropdownMenuItem className="text-destructive focus:text-destructive">
-                                Удалить трейдера
-                            </DropdownMenuItem>
-                         </AlertDialogTrigger>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-
-                     <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Удалить трейдера?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Это действие нельзя отменить. Это приведет к необратимому удалению {trader.name} и всех связанных данных.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Отмена</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => deleteTrader(trader.id)}
-                          className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
-                        >
-                          Подтвердить удаление
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <TraderActionMenu trader={trader} />
                 </TableCell>
               </TableRow>
             )})}
