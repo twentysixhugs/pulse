@@ -1,16 +1,15 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Trader,
   AlertPost,
   getTrader,
-  getAlertsByTrader,
   createAlert,
   updateAlert,
   deleteAlert,
-  getAlertsCountByTrader,
+  listenToAlertsByTrader,
 } from '@/lib/firestore';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -40,150 +39,83 @@ import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '../ui/skeleton';
 import Image from 'next/image';
 import { ImageModal } from '../user/image-modal';
-import { PaginationControl } from '../common/pagination-control';
+import { Unsubscribe } from 'firebase/firestore';
 
-const ALERTS_PER_PAGE = 20;
 
 export function TraderDashboard() {
   const { user: authUser } = useAuth();
   const [currentTrader, setCurrentTrader] = useState<Trader | undefined>();
-  const [alertsCache, setAlertsCache] = useState<Record<number, AlertPost[]>>({});
-  const [lastDocIdCache, setLastDocIdCache] = useState<Record<number, string | null>>({ 1: null });
-  const [totalAlerts, setTotalAlerts] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [alerts, setAlerts] = useState<AlertPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingPost, setEditingPost] = useState<AlertPost | undefined>(undefined);
   const [imageModalState, setImageModalState] = useState<{isOpen: boolean; imageUrl?: string; imageHint?: string; title?: string; alertId?: string}>({isOpen: false});
   
   const { toast } = useToast();
-  const totalPages = Math.ceil(totalAlerts / ALERTS_PER_PAGE);
-
-
-  const fetchAlertsForPage = useCallback(async (page: number, traderId: string) => {
-    if (alertsCache[page]) return;
-    
-    setLoading(true);
-    try {
-      const startAfterDocId = lastDocIdCache[page - 1] === undefined && page > 1 ? alertsCache[page-1]?.[ALERTS_PER_PAGE-1]?.id : lastDocIdCache[page-1];
-      const { alerts: newAlerts, lastVisibleId } = await getAlertsByTrader(traderId, startAfterDocId ?? null, ALERTS_PER_PAGE);
-      
-      setAlertsCache(prev => ({ ...prev, [page]: newAlerts }));
-      if (lastVisibleId) {
-        setLastDocIdCache(prev => ({ ...prev, [page]: lastVisibleId }));
-      }
-    } catch (error) {
-      console.error(`Failed to load alerts for page ${page}:`, error);
-      toast({ variant: 'destructive', title: "Error", description: `Could not load page ${page} data.`});
-    } finally {
-      setLoading(false);
-    }
-  }, [alertsCache, lastDocIdCache, toast]);
-
 
   useEffect(() => {
+    let unsubscribe: Unsubscribe | undefined;
+
     async function fetchData() {
         if (authUser) {
             setLoading(true);
             try {
-                const [traderData, initialAlerts, count] = await Promise.all([
-                    getTrader(authUser.uid), 
-                    getAlertsByTrader(authUser.uid, null, ALERTS_PER_PAGE),
-                    getAlertsCountByTrader(authUser.uid),
-                ]);
+                const traderData = await getTrader(authUser.uid);
                 setCurrentTrader(traderData);
-                setTotalAlerts(count);
-                setAlertsCache({ 1: initialAlerts.alerts });
-                if (initialAlerts.lastVisibleId) {
-                  setLastDocIdCache({ 1: initialAlerts.lastVisibleId });
-                }
+
+                unsubscribe = listenToAlertsByTrader(authUser.uid, (newAlerts) => {
+                    setAlerts(newAlerts);
+                    if (loading) setLoading(false);
+                }, (error) => {
+                    console.error(`Failed to listen for trader alerts:`, error);
+                    toast({ variant: 'destructive', title: "Ошибка", description: "Не удалось загрузить посты."});
+                    setLoading(false);
+                });
+
             } catch (error) {
                 console.error("Failed to load trader dashboard:", error);
-                toast({ variant: 'destructive', title: "Error", description: "Could not load dashboard data."});
-            } finally {
+                toast({ variant: 'destructive', title: "Ошибка", description: "Не удалось загрузить данные."});
                 setLoading(false);
             }
         }
     }
     fetchData();
-  }, [authUser, toast]);
 
-  useEffect(() => {
-    if (authUser && currentPage > 1 && !alertsCache[currentPage]) {
-      fetchAlertsForPage(currentPage, authUser.uid);
-    }
-  }, [authUser, currentPage, alertsCache, fetchAlertsForPage]);
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+
+  }, [authUser, toast, loading]);
 
   
   const handleSavePost = async (postData: Partial<Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'>> & {id?: string}) => {
-    if (postData.id && editingPost) { // Editing
-      await updateAlert(postData.id, { text: postData.text, screenshotUrl: postData.screenshotUrl });
-      
-      setAlertsCache(currentCache => {
-        const newCache = { ...currentCache };
-        for (const page in newCache) {
-          newCache[page] = newCache[page].map(a => a.id === postData.id ? {...a, text: postData.text, screenshotUrl: postData.screenshotUrl || a.screenshotUrl } as AlertPost : a);
+    try {
+      if (postData.id && editingPost) { // Editing
+        const { id, ...updateData } = postData;
+        await updateAlert(id, updateData);
+        toast({ title: 'Пост обновлен' });
+      } else { // Creating
+        if (currentTrader) {
+          const { id, ...restOfPostData } = postData;
+          await createAlert({...restOfPostData, traderId: currentTrader.id });
+          toast({ title: 'Пост создан' });
         }
-        return newCache;
-      });
-      setEditingPost(undefined);
-    } else { // Creating
-      if (currentTrader) {
-        const { id, ...restOfPostData } = postData;
-        const newPost = await createAlert({...restOfPostData, traderId: currentTrader.id });
-        
-        // Optimistic update: add the new post to the top of the list for page 1
-        setAlertsCache(prevCache => {
-            const pageOneAlerts = prevCache[1] || [];
-            // To prevent issues with pagination keys if we just unshift, we'll refetch page 1 in the background
-            // but for the UI, we just add it to the top.
-            // A more robust solution might involve re-validating the entire cache, but this avoids a full refresh.
-            return {
-                ...prevCache,
-                1: [newPost, ...pageOneAlerts].slice(0, ALERTS_PER_PAGE)
-            };
-        });
-
-        setTotalAlerts(count => count + 1);
-
-        // If we were on a different page, go back to page 1 to see the new post.
-        if (currentPage !== 1) {
-            setCurrentPage(1);
-        }
-
-        // We can optionally invalidate the lastDocId for page 1 if we want to ensure perfect consistency on next load,
-        // but for now, this provides a smooth UX.
-        // setLastDocIdCache(prev => ({...prev, 1: newPost.id}));
       }
+      setEditingPost(undefined);
+    } catch (error) {
+      console.error("Failed to save post", error);
+      toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось сохранить пост.'})
     }
   };
 
   const handleDeletePost = async (postId: string) => {
-    await deleteAlert(postId);
-    // Invalidate cache to refetch
-    setAlertsCache({});
-    setLastDocIdCache({ 1: null });
-    setCurrentPage(1);
-    setTotalAlerts(count => count - 1);
-
-    if (authUser) {
-        setLoading(true);
-        getAlertsByTrader(authUser.uid, null, ALERTS_PER_PAGE).then(initialAlerts => {
-            setAlertsCache({ 1: initialAlerts.alerts });
-            if (initialAlerts.lastVisibleId) {
-                setLastDocIdCache({ 1: initialAlerts.lastVisibleId });
-            }
-            setLoading(false);
-        });
+    try {
+        await deleteAlert(postId);
+        toast({ variant: 'destructive', title: 'Пост удален' });
+    } catch (error) {
+        console.error("Failed to delete post", error);
+        toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось удалить пост.'})
     }
-    toast({ variant: 'destructive', title: 'Пост удален' });
   }
-  
-  const handlePageChange = (selectedItem: { selected: number }) => {
-    const newPage = selectedItem.selected + 1;
-    if (newPage > 0 && newPage <= totalPages) {
-      setCurrentPage(newPage);
-    }
-  };
   
   const openImageModal = (alert: AlertPost) => {
     if (alert.screenshotUrl) {
@@ -197,9 +129,8 @@ export function TraderDashboard() {
     }
   };
 
-  const currentAlerts = alertsCache[currentPage] || [];
 
-  if (loading && !currentAlerts.length || !currentTrader) {
+  if (loading || !currentTrader) {
       return (
         <div className="space-y-8">
             <Skeleton className="h-96 w-full" />
@@ -213,14 +144,14 @@ export function TraderDashboard() {
       <PostEditor trader={currentTrader} onSave={handleSavePost} postToEdit={editingPost} />
       <div>
           <h2 className="text-2xl font-headline font-bold mb-4">Ваши посты</h2>
-            {loading && currentAlerts.length === 0 ? (
+            {loading && alerts.length === 0 ? (
                  <div className="space-y-4">
                     <Skeleton className="h-24 w-full" />
                     <Skeleton className="h-24 w-full" />
                  </div>
-            ) : currentAlerts.length > 0 ? (
+            ) : alerts.length > 0 ? (
                 <div className="space-y-4">
-                    {currentAlerts.map(alert => (
+                    {alerts.map(alert => (
                         <Card key={alert.id}>
                             <CardHeader className="flex flex-row justify-between items-start p-4">
                                <div className="flex-1">
@@ -280,13 +211,6 @@ export function TraderDashboard() {
                             )}
                         </Card>
                     ))}
-                    {totalPages > 1 && (
-                      <PaginationControl
-                        currentPage={currentPage}
-                        pageCount={totalPages}
-                        onPageChange={handlePageChange}
-                      />
-                    )}
                 </div>
             ) : (
                 <div className="text-center py-16 border-dashed border-2 rounded-lg">

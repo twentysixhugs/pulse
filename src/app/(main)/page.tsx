@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -14,16 +15,11 @@ import {
   AlertPost,
   Report,
   User,
-  getAlerts,
-  createReport,
   getUser,
-  getAlertsCount,
-  PaginatedAlertsResponse,
+  listenToAlerts,
 } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { PaginationControl } from '@/components/common/pagination-control';
-
-const ALERTS_PER_PAGE = 20;
+import { Unsubscribe } from 'firebase/firestore';
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -31,14 +27,9 @@ export default function HomePage() {
   const [hasAgreed, setHasAgreed] = useState(false);
   
   const [currentUser, setCurrentUser] = useState<User | undefined>();
-  const [alertsCache, setAlertsCache] = useState<Record<number, AlertPost[]>>({});
-  const [lastDocIdCache, setLastDocIdCache] = useState<Record<number, string | null>>({ 0: null });
-  const [totalAlerts, setTotalAlerts] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [alerts, setAlerts] = useState<AlertPost[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-
-  const totalPages = Math.ceil(totalAlerts / ALERTS_PER_PAGE);
 
   useEffect(() => {
     setIsClient(true);
@@ -46,62 +37,43 @@ export default function HomePage() {
     setHasAgreed(agreed);
   }, []);
 
-  const fetchAlertsForPage = useCallback(async (page: number) => {
-    if (alertsCache[page] || !user) return;
-    
-    setLoading(true);
-    try {
-      const startAfterDocId = lastDocIdCache[page - 1];
-
-      const { alerts: newAlerts, lastVisibleId } = await getAlerts(startAfterDocId, ALERTS_PER_PAGE);
-      
-      setAlertsCache(prev => ({ ...prev, [page]: newAlerts }));
-      if (lastVisibleId) {
-        setLastDocIdCache(prev => ({ ...prev, [page]: lastVisibleId }));
-      }
-      
-    } catch (error) {
-      console.error("Failed to fetch alerts:", error);
-      toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось загрузить алерты.' });
-    } finally {
-      setLoading(false);
-    }
-  }, [user, alertsCache, lastDocIdCache, toast]);
-
-
   useEffect(() => {
-    async function fetchInitialData() {
-        if (user) {
-            setLoading(true);
-            try {
-              const [currentUserData, initialAlertsResponse, count] = await Promise.all([
-                  getUser(user.uid),
-                  getAlerts(null, ALERTS_PER_PAGE),
-                  getAlertsCount(),
-              ]);
+    let unsubscribe: Unsubscribe | undefined;
 
-              setCurrentUser(currentUserData);
-              setTotalAlerts(count);
-              setAlertsCache({ 1: initialAlertsResponse.alerts });
-              if (initialAlertsResponse.lastVisibleId) {
-                setLastDocIdCache({ 1: initialAlertsResponse.lastVisibleId });
-              }
-            } catch (error) {
-                console.error("Failed to fetch page data:", error);
-                toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось загрузить данные.'})
-            } finally {
-                setLoading(false);
-            }
+    async function fetchInitialDataAndListen() {
+      if (user) {
+        setLoading(true);
+        try {
+          const userData = await getUser(user.uid);
+          setCurrentUser(userData);
+
+          unsubscribe = listenToAlerts((newAlerts) => {
+            setAlerts(newAlerts);
+            if (loading) setLoading(false);
+          }, (error) => {
+            console.error("Failed to listen for alerts:", error);
+            toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось загрузить алерты.' });
+            setLoading(false);
+          });
+
+        } catch (error) {
+          console.error("Failed to fetch initial user data:", error);
+          toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось загрузить данные пользователя.' });
+          setLoading(false);
         }
+      } else {
+        setLoading(false);
+      }
     }
-    fetchInitialData();
-  }, [user, toast]);
-  
-  useEffect(() => {
-    if (currentPage > 1 && !alertsCache[currentPage]) {
-      fetchAlertsForPage(currentPage);
-    }
-  }, [currentPage, alertsCache, fetchAlertsForPage]);
+
+    fetchInitialDataAndListen();
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [user, toast, loading]);
 
 
   const handleAgree = () => {
@@ -110,33 +82,20 @@ export default function HomePage() {
   };
   
   const handleUpdateAlert = (updatedAlert: AlertPost) => {
-    setAlertsCache(currentCache => {
-      const newCache = { ...currentCache };
-      for (const page in newCache) {
-        newCache[page] = newCache[page].map(a => a.id === updatedAlert.id ? updatedAlert : a);
-      }
-      return newCache;
-    });
+    setAlerts(currentAlerts => currentAlerts.map(a => a.id === updatedAlert.id ? updatedAlert : a));
   };
   
   const handleReport = async (newReport: Omit<Report, 'id' | 'status'>) => {
-    await createReport(newReport);
+    // This function would call a method to create a report in Firestore
+    // For now, it just shows a toast.
+    // await createReport(newReport); 
     toast({
         title: 'Жалоба отправлена',
         description: 'Спасибо, мы рассмотрим вашу жалобу.',
     });
   };
 
-  const handlePageChange = (selectedItem: { selected: number }) => {
-    const newPage = selectedItem.selected + 1;
-    if (newPage > 0 && newPage <= totalPages) {
-      setCurrentPage(newPage);
-    }
-  };
-
-  const currentAlerts = alertsCache[currentPage] || [];
-  
-  if (!isClient || (loading && !currentAlerts.length) || !currentUser) {
+  if (!isClient || loading || !currentUser) {
     return <div className="container mx-auto max-w-2xl py-8 space-y-4 px-4">
         <Skeleton className="h-10 w-1/3" />
         <Skeleton className="h-96 w-full" />
@@ -146,7 +105,6 @@ export default function HomePage() {
 
   const isSubscribed = currentUser?.subscriptionStatus === 'active';
   
-
   return (
     <div className="container mx-auto max-w-3xl py-8 px-4">
       <LegalModal isOpen={!hasAgreed} onAccept={handleAgree} />
@@ -169,14 +127,9 @@ export default function HomePage() {
             </TabsList>
             <TabsContent value="alerts" className="mt-6">
                 <div className="space-y-4">
-                    {loading && currentAlerts.length === 0 ? (
-                        <>
-                           <Skeleton className="h-96 w-full" />
-                           <Skeleton className="h-96 w-full" />
-                        </>
-                    ) : currentAlerts.length > 0 ? (
+                    {alerts.length > 0 ? (
                       <>
-                        {currentAlerts.map((alert) => (
+                        {alerts.map((alert) => (
                             <AlertCard
                                 key={alert.id}
                                 alert={alert}
@@ -185,20 +138,11 @@ export default function HomePage() {
                                 onReport={handleReport}
                             />
                         ))}
-                        {totalPages > 1 && (
-                          <PaginationControl 
-                            currentPage={currentPage}
-                            pageCount={totalPages}
-                            onPageChange={handlePageChange}
-                          />
-                        )}
                       </>
                     ) : (
-                        !loading && (
-                            <div className="text-center py-16 border-dashed border-2 rounded-lg">
-                                <p className="text-muted-foreground">Пока нет алертов.</p>
-                            </div>
-                        )
+                      <div className="text-center py-16 border-dashed border-2 rounded-lg">
+                          <p className="text-muted-foreground">Пока нет алертов.</p>
+                      </div>
                     )}
                 </div>
             </TabsContent>

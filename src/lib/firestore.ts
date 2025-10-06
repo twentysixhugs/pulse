@@ -1,3 +1,4 @@
+
 import {
   collection,
   getDocs,
@@ -19,6 +20,8 @@ import {
   Firestore,
   getCountFromServer,
   startAfter,
+  onSnapshot,
+  Unsubscribe,
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -92,13 +95,51 @@ export interface Report {
   status: ReportStatus;
 }
 
-export interface PaginatedAlertsResponse {
-    alerts: AlertPost[];
-    lastVisibleId: string | null;
+// --- Real-time Listeners ---
+
+export function listenToAlerts(
+    onNewAlerts: (alerts: AlertPost[]) => void,
+    onError: (error: Error) => void
+): Unsubscribe {
+    const alertsCol = collection(db, 'alerts');
+    const q = query(alertsCol, orderBy('timestamp', 'desc'), limit(50)); // Listen to the 50 most recent alerts
+
+    return onSnapshot(q, (snapshot) => {
+        const alerts = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                timestamp: (data.timestamp as Timestamp).toDate().toISOString(),
+            } as AlertPost;
+        });
+        onNewAlerts(alerts);
+    }, onError);
 }
 
 
-// --- Optimized Firestore data fetching functions ---
+export function listenToAlertsByTrader(
+    traderId: string,
+    onNewAlerts: (alerts: AlertPost[]) => void,
+    onError: (error: Error) => void
+): Unsubscribe {
+    const alertsCol = collection(db, 'alerts');
+    const q = query(alertsCol, where('traderId', '==', traderId), orderBy('timestamp', 'desc'), limit(50));
+
+    return onSnapshot(q, (snapshot) => {
+        const alerts = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                timestamp: (data.timestamp as Timestamp).toDate().toISOString(),
+            } as AlertPost;
+        });
+        onNewAlerts(alerts);
+    }, onError);
+}
+
+// --- Single-fetch functions ---
 
 export async function getUser(userId: string): Promise<User | undefined> {
     const userRef = doc(db, 'users', userId);
@@ -128,64 +169,6 @@ export async function getCategory(categoryId: string): Promise<Category | undefi
     return undefined;
 }
 
-export async function getAlerts(startAfterId: string | null = null, count: number = 20): Promise<PaginatedAlertsResponse> {
-    const alertsCol = collection(db, 'alerts');
-    let q;
-    if (startAfterId) {
-        const startAfterDoc = await getDoc(doc(db, 'alerts', startAfterId));
-        q = query(alertsCol, orderBy('timestamp', 'desc'), startAfter(startAfterDoc), limit(count));
-    } else {
-        q = query(alertsCol, orderBy('timestamp', 'desc'), limit(count));
-    }
-    const snapshot = await getDocs(q);
-    const alerts = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-            id: doc.id,
-            ...data,
-            timestamp: (data.timestamp as Timestamp).toDate().toISOString(),
-        } as AlertPost;
-    });
-    const lastVisibleId = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1].id : null;
-    return { alerts, lastVisibleId };
-}
-
-export async function getAlertsByTrader(traderId: string, startAfterId: string | null = null, count: number = 20): Promise<PaginatedAlertsResponse> {
-    const alertsCol = collection(db, 'alerts');
-    let q;
-    const constraints = [where('traderId', '==', traderId), orderBy('timestamp', 'desc'), limit(count)];
-    if (startAfterId) {
-        const startAfterDoc = await getDoc(doc(db, 'alerts', startAfterId));
-        q = query(alertsCol, ...constraints, startAfter(startAfterDoc));
-    } else {
-        q = query(alertsCol, ...constraints);
-    }
-    const snapshot = await getDocs(q);
-    const alerts = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-            id: doc.id,
-            ...data,
-            timestamp: (data.timestamp as Timestamp).toDate().toISOString(),
-        } as AlertPost;
-    });
-    const lastVisibleId = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1].id : null;
-    return { alerts, lastVisibleId };
-}
-
-export async function getAlertsCount(): Promise<number> {
-    const alertsCol = collection(db, 'alerts');
-    const snapshot = await getCountFromServer(alertsCol);
-    return snapshot.data().count;
-}
-
-export async function getAlertsCountByTrader(traderId: string): Promise<number> {
-    const alertsCol = collection(db, 'alerts');
-    const q = query(alertsCol, where('traderId', '==', traderId));
-    const snapshot = await getCountFromServer(q);
-    return snapshot.data().count;
-}
-
 
 // --- Functions to get full collections (use with caution, for admin panels etc.) ---
 
@@ -211,6 +194,13 @@ export async function getAllReports(): Promise<Report[]> {
   const reportsCol = collection(db, 'reports');
   const snapshot = await getDocs(reportsCol);
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Report));
+}
+
+export async function getAlerts(): Promise<AlertPost[]> {
+    const alertsCol = collection(db, 'alerts');
+    const q = query(alertsCol, orderBy('timestamp', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), timestamp: (doc.data().timestamp as Timestamp).toDate().toISOString() } as AlertPost));
 }
 
 
@@ -324,22 +314,40 @@ export async function getUserTraderReputation(userId: string, traderId: string) 
 
 export async function createAlert(post: Partial<Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'>>): Promise<AlertPost> {
     const alertsCol = collection(db, 'alerts');
-    const newPost = {
+    const newPostData = {
         ...post,
         timestamp: Timestamp.now(),
         likes: [],
         dislikes: [],
         comments: [],
     };
-    const docRef = await addDoc(alertsCol, newPost);
+    
+    // Ensure optional fields are not 'undefined'
+    if (post.screenshotUrl === undefined) {
+      delete newPostData.screenshotUrl;
+    }
+    if (post.screenshotHint === undefined) {
+      delete newPostData.screenshotHint;
+    }
+
+    const docRef = await addDoc(alertsCol, newPostData);
     const docSnap = await getDoc(docRef);
     const data = docSnap.data();
-    return { ...newPost, id: docRef.id, timestamp: (data?.timestamp as Timestamp).toDate().toISOString() } as AlertPost;
+    return { ...newPostData, id: docRef.id, timestamp: (data?.timestamp as Timestamp).toDate().toISOString() } as AlertPost;
 }
 
-export async function updateAlert(alertId: string, data: Partial<Pick<AlertPost, 'text' | 'screenshotUrl'>>) {
+export async function updateAlert(alertId: string, data: Partial<Pick<AlertPost, 'text' | 'screenshotUrl' | 'screenshotHint'>>) {
     const alertRef = doc(db, 'alerts', alertId);
-    await updateDoc(alertRef, data);
+    const updateData = {...data};
+
+    if (updateData.screenshotUrl === undefined) {
+      delete updateData.screenshotUrl;
+    }
+    if (updateData.screenshotHint === undefined) {
+        delete updateData.screenshotHint;
+    }
+
+    await updateDoc(alertRef, updateData);
 }
 
 export async function deleteAlert(alertId: string) {

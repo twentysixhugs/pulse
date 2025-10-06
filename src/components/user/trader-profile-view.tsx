@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
   AlertPost,
   Category,
@@ -8,9 +9,8 @@ import {
   User,
   Report,
   updateTraderReputation,
-  getAlertsByTrader,
-  getAlertsCountByTrader,
   getUserTraderReputation,
+  listenToAlertsByTrader,
 } from '@/lib/firestore';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -20,7 +20,7 @@ import { ThumbsUp, ThumbsDown, Check, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AlertCard } from './alert-card';
 import { Skeleton } from '../ui/skeleton';
-import { PaginationControl } from '../common/pagination-control';
+import { Unsubscribe } from 'firebase/firestore';
 
 type TraderProfileViewProps = {
   trader: Trader;
@@ -30,8 +30,6 @@ type TraderProfileViewProps = {
   onUpdateTraderRep: (updatedTrader: Trader, newRepAction: 'pos' | 'neg' | null) => void;
   onReport: (report: Omit<Report, 'id' | 'status'>) => void;
 };
-
-const ALERTS_PER_PAGE = 20;
 
 export function TraderProfileView({
   trader,
@@ -43,67 +41,23 @@ export function TraderProfileView({
 }: TraderProfileViewProps) {
   const { toast } = useToast();
   const [isSubmittingRep, setIsSubmittingRep] = useState(false);
-
-  const [alertsCache, setAlertsCache] = useState<Record<number, AlertPost[]>>({});
-  const [lastDocIdCache, setLastDocIdCache] = useState<Record<number, string | null>>({ 0: null });
-  const [totalAlerts, setTotalAlerts] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [alerts, setAlerts] = useState<AlertPost[]>([]);
   const [loadingAlerts, setLoadingAlerts] = useState(true);
-  
-  const totalPages = Math.ceil(totalAlerts / ALERTS_PER_PAGE);
   const [currentRepAction, setCurrentRepAction] = useState(userRepAction);
 
-
-  const fetchAlertsForPage = useCallback(async (page: number) => {
-    if (alertsCache[page]) return;
-    
+  useEffect(() => {
     setLoadingAlerts(true);
-    try {
-      const startAfterDocId = lastDocIdCache[page - 1];
-
-      const { alerts: newAlerts, lastVisibleId } = await getAlertsByTrader(trader.id, startAfterDocId, ALERTS_PER_PAGE);
-      
-      setAlertsCache(prev => ({ ...prev, [page]: newAlerts }));
-      if (lastVisibleId) {
-        setLastDocIdCache(prev => ({ ...prev, [page]: lastVisibleId }));
-      }
-      
-    } catch (error) {
-      console.error(`Failed to fetch alerts for trader ${trader.id}:`, error);
-      toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось загрузить посты трейдера.' });
-    } finally {
+    const unsubscribe = listenToAlertsByTrader(trader.id, (newAlerts) => {
+      setAlerts(newAlerts);
       setLoadingAlerts(false);
-    }
-  }, [trader.id, alertsCache, lastDocIdCache, toast]);
+    }, (error) => {
+      console.error(`Failed to listen to alerts for trader ${trader.id}:`, error);
+      toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось загрузить посты трейдера.' });
+      setLoadingAlerts(false);
+    });
 
-  useEffect(() => {
-    async function fetchInitialAlerts() {
-      setLoadingAlerts(true);
-      try {
-        const [initialAlerts, count] = await Promise.all([
-          getAlertsByTrader(trader.id, null, ALERTS_PER_PAGE),
-          getAlertsCountByTrader(trader.id)
-        ]);
-
-        setTotalAlerts(count);
-        setAlertsCache({ 1: initialAlerts.alerts });
-        if (initialAlerts.lastVisibleId) {
-          setLastDocIdCache({ 1: initialAlerts.lastVisibleId });
-        }
-      } catch (error) {
-        console.error("Failed to fetch initial alerts:", error);
-      } finally {
-        setLoadingAlerts(false);
-      }
-    }
-    fetchInitialAlerts();
-  }, [trader.id]);
-
-  useEffect(() => {
-    if (currentPage > 1 && !alertsCache[currentPage]) {
-      fetchAlertsForPage(currentPage);
-    }
-  }, [currentPage, alertsCache, fetchAlertsForPage]);
+    return () => unsubscribe();
+  }, [trader.id, toast]);
   
   useEffect(() => {
     async function fetchRep() {
@@ -116,20 +70,7 @@ export function TraderProfileView({
   }, [currentUser, trader]);
   
   const handleUpdateAlert = (updatedAlert: AlertPost) => {
-    setAlertsCache(currentCache => {
-      const newCache = { ...currentCache };
-      for (const page in newCache) {
-        newCache[page] = newCache[page].map(a => a.id === updatedAlert.id ? updatedAlert : a);
-      }
-      return newCache;
-    });
-  };
-
-  const handlePageChange = (selectedItem: { selected: number }) => {
-    const newPage = selectedItem.selected + 1;
-    if (newPage > 0 && newPage <= totalPages) {
-      setCurrentPage(newPage);
-    }
+    setAlerts(currentAlerts => currentAlerts.map(a => a.id === updatedAlert.id ? updatedAlert : a));
   };
 
 
@@ -184,8 +125,6 @@ export function TraderProfileView({
         setIsSubmittingRep(false);
     }
   };
-  
-  const currentAlerts = alertsCache[currentPage] || [];
 
   return (
     <div className="space-y-6">
@@ -243,14 +182,14 @@ export function TraderProfileView({
 
       <div>
         <h2 className="text-2xl font-headline font-bold mb-4">История постов</h2>
-        {loadingAlerts && currentAlerts.length === 0 ? (
+        {loadingAlerts ? (
             <div className="space-y-4">
                 <Skeleton className="h-64 w-full" />
                 <Skeleton className="h-64 w-full" />
             </div>
-        ) : currentAlerts.length > 0 ? (
+        ) : alerts.length > 0 ? (
           <div className="space-y-4">
-            {currentAlerts.map((alert) => (
+            {alerts.map((alert) => (
               <AlertCard
                 key={alert.id}
                 alert={alert}
@@ -259,13 +198,6 @@ export function TraderProfileView({
                 onReport={onReport}
               />
             ))}
-             {totalPages > 1 && (
-                <PaginationControl
-                    currentPage={currentPage}
-                    pageCount={totalPages}
-                    onPageChange={handlePageChange}
-                />
-            )}
           </div>
         ) : (
           <div className="text-center py-12 border-dashed border-2 rounded-lg">

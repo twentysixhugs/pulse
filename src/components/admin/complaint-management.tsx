@@ -8,10 +8,10 @@ import {
   Trader,
   User,
   getAllReports,
-  getAlerts,
   getAllTraders,
   getAllUsers,
-  resolveReport
+  resolveReport,
+  getAlerts
 } from '@/lib/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
