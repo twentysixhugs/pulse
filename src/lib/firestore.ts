@@ -22,6 +22,7 @@ import {
   startAfter,
   onSnapshot,
   Unsubscribe,
+  runTransaction,
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -286,30 +287,22 @@ export async function createReport(report: Omit<Report, 'id' | 'status'>): Promi
 
 
 export async function updateTraderReputation(traderId: string, userId: string, type: 'pos') {
-    const traderRef = doc(db, 'traders', traderId);
-    const userRepRef = doc(db, 'users', userId, 'traderReputation', traderId);
-    
-    const batch = writeBatch(db);
-    const userRepSnap = await getDoc(userRepRef);
-    const previousAction = userRepSnap.exists() ? userRepSnap.data().action : null;
+  const traderRef = doc(db, 'traders', traderId);
+  const userRepRef = doc(db, 'users', userId, 'traderReputation', traderId);
 
-    if (previousAction === type) { // Undoing 'pos' action
-        batch.update(traderRef, { 'reputation.positive': increment(-1) });
-        batch.delete(userRepRef);
-    } else { 
-        batch.update(traderRef, { 'reputation.positive': increment(1) });
-        batch.set(userRepRef, { action: type });
-    }
-    
-    await batch.commit();
-    
-    const updatedTraderSnap = await getDoc(traderRef);
-    const newRepSnap = await getDoc(userRepRef);
+  await runTransaction(db, async (transaction) => {
+    const userRepDoc = await transaction.get(userRepRef);
 
-    return {
-        updatedTrader: { id: updatedTraderSnap.id, ...updatedTraderSnap.data() } as Trader,
-        newRepAction: newRepSnap.exists() ? newRepSnap.data().action : null
+    if (userRepDoc.exists()) {
+      // User has already voted, so we are undoing the vote.
+      transaction.update(traderRef, { 'reputation.positive': increment(-1) });
+      transaction.delete(userRepRef);
+    } else {
+      // User has not voted yet, so we are adding the vote.
+      transaction.update(traderRef, { 'reputation.positive': increment(1) });
+      transaction.set(userRepRef, { action: type });
     }
+  });
 }
 
 
