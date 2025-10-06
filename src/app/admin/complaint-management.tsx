@@ -151,6 +151,7 @@ export function ComplaintManagement() {
                     currentUser={currentUser}
                     onUpdateAlert={() => {}}
                     onReport={() => {}}
+                    interactionsDisabled={true}
                   />
                 </CardContent>
               </Card>

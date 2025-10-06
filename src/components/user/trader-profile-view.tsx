@@ -90,15 +90,9 @@ export function TraderProfileView({
         const updatedTrader = await updateTraderReputation(trader.id, currentUser.id, actionType);
         onUpdateTraderRep(updatedTrader, isUndoing ? null : 'pos');
         
-         if (isUndoing) {
-            toast({ title: 'Ваш голос убран.' });
-        } else {
-            toast({ title: `Вы повысили рейтинг.` });
-        }
     } catch (error) {
         console.error("Failed to update reputation:", error);
         toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось обновить репутацию.'});
-        // Re-fetch may be needed here if Firestore state is not updating parent automatically
     } finally {
         setIsSubmittingRep(false);
     }
@@ -148,10 +142,12 @@ export function TraderProfileView({
           </div>
         </CardHeader>
         <CardContent className="p-6 pt-0 flex flex-col sm:flex-row gap-2">
-            <Button onClick={handleRep} variant={userRepAction === 'pos' ? "default" : "outline"} className="w-full sm:w-auto" disabled={isSubmittingRep || isTraderViewing || repLoading}>
-                {repLoading || isSubmittingRep ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Star className="mr-2 h-4 w-4" />}
-                {repLoading ? 'Загрузка...' : (userRepAction === 'pos' ? 'Убрать голос' : 'Повысить рейтинг')}
-            </Button>
+            {!isTraderViewing && (
+                 <Button onClick={handleRep} variant={userRepAction === 'pos' ? "default" : "outline"} className="w-full sm:w-auto" disabled={isSubmittingRep || repLoading}>
+                    {repLoading || isSubmittingRep ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Star className="mr-2 h-4 w-4" />}
+                    {repLoading ? 'Загрузка...' : (userRepAction === 'pos' ? 'Убрать голос' : 'Повысить рейтинг')}
+                </Button>
+            )}
         </CardContent>
       </Card>
 
@@ -171,6 +167,7 @@ export function TraderProfileView({
                 currentUser={currentUser}
                 onUpdateAlert={handleUpdateAlert}
                 onReport={onReport}
+                interactionsDisabled={isTraderViewing}
               />
             ))}
             {pageCount > 1 && (

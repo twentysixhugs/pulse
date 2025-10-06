@@ -58,6 +58,7 @@ type AlertCardProps = {
   currentUser: User;
   onUpdateAlert: (updatedAlert: AlertPost) => void;
   onReport: (report: Omit<Report, 'id' | 'status'>) => void;
+  interactionsDisabled?: boolean;
 };
 
 export function AlertCard({
@@ -65,6 +66,7 @@ export function AlertCard({
   currentUser,
   onUpdateAlert,
   onReport,
+  interactionsDisabled = false,
 }: AlertCardProps) {
   const { toast } = useToast();
   const [isImageModalOpen, setImageModalOpen] = useState(false);
@@ -75,10 +77,8 @@ export function AlertCard({
   const hasLiked = currentUser && alert.likes.includes(currentUser.id);
   const hasDisliked = currentUser && alert.dislikes.includes(currentUser.id);
 
-  const isTraderViewing = currentUser?.role === 'trader';
-
   const handleReaction = async (type: 'like' | 'dislike') => {
-    if (!currentUser || isSubmittingReaction || isTraderViewing) return;
+    if (!currentUser || isSubmittingReaction || interactionsDisabled) return;
 
     setIsSubmittingReaction(true);
 
@@ -112,7 +112,7 @@ export function AlertCard({
   };
 
   const handleAddComment = async () => {
-    if (!commentText.trim() || !currentUser || isSubmittingComment || isTraderViewing) return;
+    if (!commentText.trim() || !currentUser || isSubmittingComment || interactionsDisabled) return;
     
     setIsSubmittingComment(true);
 
@@ -145,7 +145,7 @@ export function AlertCard({
   };
 
   const handleReport = (reason: string) => {
-    if (!currentUser || isTraderViewing) return;
+    if (!currentUser || interactionsDisabled) return;
     if (!reason.trim()) {
       toast({
         variant: 'destructive',
@@ -189,7 +189,7 @@ export function AlertCard({
                   {formatDistanceToNow(new Date(alert.timestamp as string), { addSuffix: true, locale: ru })}
                 </p>
               </div>
-              <ReportDialog onConfirm={handleReport} disabled={!currentUser || isTraderViewing} />
+              <ReportDialog onConfirm={handleReport} disabled={!currentUser || interactionsDisabled} />
             </div>
           </div>
         </CardHeader>
@@ -222,7 +222,7 @@ export function AlertCard({
               className={`flex items-center gap-2 ${
                 hasLiked ? 'text-primary' : 'text-muted-foreground'
               }`}
-              disabled={!currentUser || isSubmittingReaction || isTraderViewing}
+              disabled={!currentUser || isSubmittingReaction || interactionsDisabled}
             >
               <ThumbsUp className="h-4 w-4" />
               <span>{alert.likes.length}</span>
@@ -234,7 +234,7 @@ export function AlertCard({
               className={`flex items-center gap-2 ${
                 hasDisliked ? 'text-destructive' : 'text-muted-foreground'
               }`}
-              disabled={!currentUser || isSubmittingReaction || isTraderViewing}
+              disabled={!currentUser || isSubmittingReaction || interactionsDisabled}
             >
               <ThumbsDown className="h-4 w-4" />
               <span>{alert.dislikes.length}</span>
@@ -246,7 +246,7 @@ export function AlertCard({
               setCommentText={setCommentText}
               onAddComment={handleAddComment}
               isSubmitting={isSubmittingComment}
-              isTraderViewing={isTraderViewing}
+              interactionsDisabled={interactionsDisabled}
             />
           </div>
         </CardFooter>
@@ -265,7 +265,7 @@ export function AlertCard({
   );
 }
 
-function CommentDialog({ alert, currentUser, commentText, setCommentText, onAddComment, isSubmitting, isTraderViewing }: any) {
+function CommentDialog({ alert, currentUser, commentText, setCommentText, onAddComment, isSubmitting, interactionsDisabled }: any) {
     return (
         <Dialog>
             <DialogTrigger asChild>
@@ -299,14 +299,14 @@ function CommentDialog({ alert, currentUser, commentText, setCommentText, onAddC
                 <DialogFooter>
                     <div className="flex items-center w-full space-x-2">
                         <Input
-                            placeholder={isTraderViewing ? "Вы не можете оставлять комментарии" : "Добавьте комментарий..."}
+                            placeholder={interactionsDisabled ? "Вы не можете оставлять комментарии" : "Добавьте комментарий..."}
                             value={commentText}
                             onChange={(e) => setCommentText(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && onAddComment()}
-                            disabled={!currentUser || isSubmitting || isTraderViewing}
+                            disabled={!currentUser || isSubmitting || interactionsDisabled}
                             className="text-sm"
                         />
-                        <Button onClick={onAddComment} disabled={!currentUser || !commentText.trim() || isSubmitting || isTraderViewing} size="icon" className="shrink-0">
+                        <Button onClick={onAddComment} disabled={!currentUser || !commentText.trim() || isSubmitting || interactionsDisabled} size="icon" className="shrink-0">
                             {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                             <span className="sr-only">Отправить</span>
                         </Button>

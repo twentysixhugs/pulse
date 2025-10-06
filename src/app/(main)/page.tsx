@@ -147,6 +147,7 @@ export default function HomePage() {
                                 currentUser={currentUser}
                                 onUpdateAlert={handleUpdateAlert}
                                 onReport={handleReport}
+                                interactionsDisabled={currentUser.role === 'trader'}
                             />
                         ))}
                          {pageCount > 1 && (
