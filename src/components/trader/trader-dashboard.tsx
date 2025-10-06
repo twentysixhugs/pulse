@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -11,11 +12,11 @@ import {
   deleteAlert,
   listenToAlertsByTrader,
 } from '@/lib/firestore';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { PostEditor } from './post-editor';
 import { Button } from '../ui/button';
-import { MoreVertical, Edit, Trash2, ZoomIn } from 'lucide-react';
+import { MoreVertical, Edit, Trash2, ZoomIn, ThumbsUp, ThumbsDown, MessageSquare } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -61,6 +62,11 @@ export function TraderDashboard() {
             try {
                 const traderData = await getTrader(authUser.uid);
                 setCurrentTrader(traderData);
+
+                if (!traderData) {
+                  setLoading(false);
+                  return;
+                }
 
                 unsubscribe = listenToAlertsByTrader(authUser.uid, (newAlerts) => {
                     setAlerts(newAlerts);
@@ -159,7 +165,7 @@ export function TraderDashboard() {
             ) : alerts.length > 0 ? (
                 <div className="space-y-4">
                     {alerts.map(alert => (
-                        <Card key={alert.id}>
+                        <Card key={alert.id} className="w-full overflow-hidden">
                             <CardHeader className="flex flex-row justify-between items-start p-4">
                                <div className="flex-1">
                                  <p className="text-sm text-muted-foreground">{format(new Date(alert.timestamp as string), 'd MMMM yyyy, HH:mm', { locale: ru })}</p>
@@ -216,6 +222,22 @@ export function TraderDashboard() {
                                     </div>
                                 </CardContent>
                             )}
+                             <CardFooter className="flex justify-start p-2 px-4 border-t">
+                                <div className="flex gap-4 text-sm text-muted-foreground">
+                                    <div className="flex items-center gap-1.5">
+                                        <ThumbsUp className="h-4 w-4 text-green-500" />
+                                        <span>{alert.likes.length}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <ThumbsDown className="h-4 w-4 text-red-500" />
+                                        <span>{alert.dislikes.length}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <MessageSquare className="h-4 w-4" />
+                                        <span>{alert.comments.length}</span>
+                                    </div>
+                                </div>
+                             </CardFooter>
                         </Card>
                     ))}
                 </div>
