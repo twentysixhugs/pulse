@@ -1,3 +1,4 @@
+
 'use client';
 import ReactPaginate from 'react-paginate';
 import { ChevronLeft, ChevronRight } from 'lucide-react';

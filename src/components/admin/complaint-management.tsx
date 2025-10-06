@@ -52,7 +52,7 @@ export function ComplaintManagement() {
           getAllUsers()
         ]);
         setReports(reportsData);
-        setAlerts(alertsData);
+        setAlerts(alertsData.alerts);
         setTraders(tradersData);
         setUsers(usersData);
       } catch (error) {

@@ -21,6 +21,9 @@ import { useToast } from '@/hooks/use-toast';
 import { AlertCard } from './alert-card';
 import { Skeleton } from '../ui/skeleton';
 import { Unsubscribe } from 'firebase/firestore';
+import { PaginationControl } from '../common/pagination-control';
+
+const ALERTS_PER_PAGE = 5;
 
 type TraderProfileViewProps = {
   trader: Trader;
@@ -44,20 +47,30 @@ export function TraderProfileView({
   const [alerts, setAlerts] = useState<AlertPost[]>([]);
   const [loadingAlerts, setLoadingAlerts] = useState(true);
   const [currentRepAction, setCurrentRepAction] = useState(userRepAction);
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalAlerts, setTotalAlerts] = useState(0);
 
   useEffect(() => {
     setLoadingAlerts(true);
-    const unsubscribe = listenToAlertsByTrader(trader.id, (newAlerts) => {
-      setAlerts(newAlerts);
-      setLoadingAlerts(false);
-    }, (error) => {
-      console.error(`Failed to listen to alerts for trader ${trader.id}:`, error);
-      toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось загрузить посты трейдера.' });
-      setLoadingAlerts(false);
-    });
+    const unsubscribe = listenToAlertsByTrader(
+      trader.id,
+      ({ alerts: newAlerts, totalCount }) => {
+        setAlerts(newAlerts);
+        setTotalAlerts(totalCount);
+        setLoadingAlerts(false);
+      },
+      (error) => {
+        console.error(`Failed to listen to alerts for trader ${trader.id}:`, error);
+        toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось загрузить посты трейдера.' });
+        setLoadingAlerts(false);
+      },
+      currentPage,
+      ALERTS_PER_PAGE
+    );
 
     return () => unsubscribe();
-  }, [trader.id, toast]);
+  }, [trader.id, toast, currentPage]);
   
   useEffect(() => {
     async function fetchRep() {
@@ -125,6 +138,12 @@ export function TraderProfileView({
         setIsSubmittingRep(false);
     }
   };
+
+  const handlePageChange = ({ selected }: { selected: number }) => {
+    setCurrentPage(selected + 1);
+  };
+  
+  const pageCount = Math.ceil(totalAlerts / ALERTS_PER_PAGE);
 
   return (
     <div className="space-y-6">
@@ -198,6 +217,13 @@ export function TraderProfileView({
                 onReport={onReport}
               />
             ))}
+            {pageCount > 1 && (
+                <PaginationControl
+                    pageCount={pageCount}
+                    currentPage={currentPage}
+                    onPageChange={handlePageChange}
+                />
+            )}
           </div>
         ) : (
           <div className="text-center py-12 border-dashed border-2 rounded-lg">

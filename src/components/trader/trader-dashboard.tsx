@@ -50,7 +50,9 @@ import Image from 'next/image';
 import { ImageModal } from '../user/image-modal';
 import { Unsubscribe } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { PaginationControl } from '../common/pagination-control';
 
+const ALERTS_PER_PAGE = 5;
 
 function CommentsModal({ alert }: { alert: AlertPost }) {
     return (
@@ -101,44 +103,54 @@ export function TraderDashboard() {
   
   const { toast } = useToast();
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalAlerts, setTotalAlerts] = useState(0);
+
   useEffect(() => {
+    if (!authUser) return;
+
     let unsubscribe: Unsubscribe | undefined;
 
     async function fetchData() {
-        if (authUser) {
-            setLoading(true);
-            try {
-                const traderData = await getTrader(authUser.uid);
-                setCurrentTrader(traderData);
+      setLoading(true);
+      try {
+        const traderData = await getTrader(authUser.uid);
+        setCurrentTrader(traderData);
 
-                if (!traderData) {
-                  setLoading(false);
-                  return;
-                }
-
-                unsubscribe = listenToAlertsByTrader(authUser.uid, (newAlerts) => {
-                    setAlerts(newAlerts);
-                    setLoading(false);
-                }, (error) => {
-                    console.error(`Failed to listen for trader alerts:`, error);
-                    toast({ variant: 'destructive', title: "Ошибка", description: "Не удалось загрузить посты."});
-                    setLoading(false);
-                });
-
-            } catch (error) {
-                console.error("Failed to load trader dashboard:", error);
-                toast({ variant: 'destructive', title: "Ошибка", description: "Не удалось загрузить данные."});
-                setLoading(false);
-            }
+        if (!traderData) {
+          setLoading(false);
+          return;
         }
+
+        unsubscribe = listenToAlertsByTrader(
+          authUser.uid,
+          ({ alerts: newAlerts, totalCount }) => {
+            setAlerts(newAlerts);
+            setTotalAlerts(totalCount);
+            setLoading(false);
+          },
+          (error) => {
+            console.error(`Failed to listen for trader alerts:`, error);
+            toast({ variant: 'destructive', title: "Ошибка", description: "Не удалось загрузить посты."});
+            setLoading(false);
+          },
+          currentPage,
+          ALERTS_PER_PAGE
+        );
+
+      } catch (error) {
+        console.error("Failed to load trader dashboard:", error);
+        toast({ variant: 'destructive', title: "Ошибка", description: "Не удалось загрузить данные."});
+        setLoading(false);
+      }
     }
+
     fetchData();
 
     return () => {
       if (unsubscribe) unsubscribe();
     };
-
-  }, [authUser, toast]);
+  }, [authUser, toast, currentPage]);
 
   
   const handleSavePost = async (postData: Partial<Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'>> & {id?: string}) => {
@@ -146,11 +158,7 @@ export function TraderDashboard() {
       if (postData.id && editingPost) { // Editing
         const { id, ...updateData } = postData;
         
-        const dataToSend = {...updateData};
-        if (dataToSend.screenshotUrl === undefined) delete (dataToSend as any).screenshotUrl;
-        if (dataToSend.screenshotHint === undefined) delete (dataToSend as any).screenshotHint;
-
-        await updateAlert(id, dataToSend);
+        await updateAlert(id, updateData);
         toast({ title: 'Пост обновлен' });
       } else { // Creating
         if (currentTrader) {
@@ -194,9 +202,15 @@ export function TraderDashboard() {
       });
     }
   };
+  
+  const handlePageChange = ({ selected }: { selected: number }) => {
+    setCurrentPage(selected + 1);
+  };
+  
+  const pageCount = Math.ceil(totalAlerts / ALERTS_PER_PAGE);
 
 
-  if (loading || !currentTrader) {
+  if (!currentTrader) {
       return (
         <div className="space-y-8">
             <Skeleton className="h-96 w-full" />
@@ -210,10 +224,10 @@ export function TraderDashboard() {
       <PostEditor trader={currentTrader} onSave={handleSavePost} postToEdit={editingPost} />
       <div>
           <h2 className="text-2xl font-headline font-bold mb-4">Ваши алерты</h2>
-            {loading && alerts.length === 0 ? (
+            {loading ? (
                  <div className="space-y-4">
-                    <Skeleton className="h-24 w-full" />
-                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-48 w-full" />
+                    <Skeleton className="h-48 w-full" />
                  </div>
             ) : alerts.length > 0 ? (
                 <div className="space-y-4">
@@ -301,6 +315,13 @@ export function TraderDashboard() {
                              </CardFooter>
                         </Card>
                     ))}
+                    {pageCount > 1 && (
+                      <PaginationControl
+                          pageCount={pageCount}
+                          currentPage={currentPage}
+                          onPageChange={handlePageChange}
+                      />
+                    )}
                 </div>
             ) : (
                 <div className="text-center py-16 border-dashed border-2 rounded-lg">

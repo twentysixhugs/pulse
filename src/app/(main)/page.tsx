@@ -20,6 +20,9 @@ import {
 } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Unsubscribe } from 'firebase/firestore';
+import { PaginationControl } from '@/components/common/pagination-control';
+
+const ALERTS_PER_PAGE = 5;
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -31,6 +34,9 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalAlerts, setTotalAlerts] = useState(0);
+
   useEffect(() => {
     setIsClient(true);
     const agreed = localStorage.getItem('pulsescalp-legal-agreed') === 'true';
@@ -38,42 +44,36 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    let unsubscribe: Unsubscribe | undefined;
-
-    async function fetchInitialDataAndListen() {
-      if (user) {
-        setLoading(true);
-        try {
-          const userData = await getUser(user.uid);
-          setCurrentUser(userData);
-
-          unsubscribe = listenToAlerts((newAlerts) => {
-            setAlerts(newAlerts);
-            setLoading(false);
-          }, (error) => {
-            console.error("Failed to listen for alerts:", error);
-            toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось загрузить алерты.' });
-            setLoading(false);
-          });
-
-        } catch (error) {
-          console.error("Failed to fetch initial user data:", error);
-          toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось загрузить данные пользователя.' });
-          setLoading(false);
-        }
-      } else {
-        setLoading(false);
-      }
+    if (!user) {
+      setLoading(false);
+      return;
     }
 
-    fetchInitialDataAndListen();
+    setLoading(true);
+    getUser(user.uid)
+      .then(setCurrentUser)
+      .catch(error => {
+        console.error("Failed to fetch initial user data:", error);
+        toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось загрузить данные пользователя.' });
+      });
 
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
-  }, [user, toast]);
+    const unsubscribe = listenToAlerts(
+      ({ alerts: newAlerts, totalCount }) => {
+        setAlerts(newAlerts);
+        setTotalAlerts(totalCount);
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Failed to listen for alerts:", error);
+        toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось загрузить алерты.' });
+        setLoading(false);
+      },
+      currentPage,
+      ALERTS_PER_PAGE
+    );
+
+    return () => unsubscribe();
+  }, [user, toast, currentPage]);
 
 
   const handleAgree = () => {
@@ -95,7 +95,13 @@ export default function HomePage() {
     });
   };
 
-  if (!isClient || loading || !currentUser) {
+  const handlePageChange = ({ selected }: { selected: number }) => {
+    setCurrentPage(selected + 1);
+  };
+  
+  const pageCount = Math.ceil(totalAlerts / ALERTS_PER_PAGE);
+
+  if (!isClient || !currentUser) {
     return <div className="container mx-auto max-w-2xl py-8 space-y-4 px-4">
         <Skeleton className="h-10 w-1/3" />
         <Skeleton className="h-96 w-full" />
@@ -127,7 +133,12 @@ export default function HomePage() {
             </TabsList>
             <TabsContent value="alerts" className="mt-6">
                 <div className="space-y-4">
-                    {alerts.length > 0 ? (
+                    {loading ? (
+                       <div className="space-y-4">
+                         <Skeleton className="h-96 w-full" />
+                         <Skeleton className="h-96 w-full" />
+                       </div>
+                    ) : alerts.length > 0 ? (
                       <>
                         {alerts.map((alert) => (
                             <AlertCard
@@ -138,6 +149,13 @@ export default function HomePage() {
                                 onReport={handleReport}
                             />
                         ))}
+                         {pageCount > 1 && (
+                            <PaginationControl
+                                pageCount={pageCount}
+                                currentPage={currentPage}
+                                onPageChange={handlePageChange}
+                            />
+                         )}
                       </>
                     ) : (
                       <div className="text-center py-16 border-dashed border-2 rounded-lg">

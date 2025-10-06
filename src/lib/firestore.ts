@@ -98,45 +98,65 @@ export interface Report {
 // --- Real-time Listeners ---
 
 export function listenToAlerts(
-    onNewAlerts: (alerts: AlertPost[]) => void,
-    onError: (error: Error) => void
+  onData: ({ alerts, totalCount }: { alerts: AlertPost[], totalCount: number }) => void,
+  onError: (error: Error) => void,
+  page: number,
+  alertsPerPage: number
 ): Unsubscribe {
-    const alertsCol = collection(db, 'alerts');
-    const q = query(alertsCol, orderBy('timestamp', 'desc'), limit(50)); // Listen to the 50 most recent alerts
+  const alertsCol = collection(db, 'alerts');
+  const q = query(alertsCol, orderBy('timestamp', 'desc'));
 
-    return onSnapshot(q, (snapshot) => {
-        const alerts = snapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                ...data,
-                timestamp: (data.timestamp as Timestamp).toDate().toISOString(),
-            } as AlertPost;
-        });
-        onNewAlerts(alerts);
-    }, onError);
+  const unsubscribe = onSnapshot(q, async (snapshot) => {
+    try {
+      const totalCount = snapshot.size;
+      
+      const paginatedDocs = snapshot.docs.slice((page - 1) * alertsPerPage, page * alertsPerPage);
+
+      const alerts = paginatedDocs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          timestamp: (data.timestamp as Timestamp).toDate().toISOString(),
+        } as AlertPost;
+      });
+
+      onData({ alerts, totalCount });
+    } catch(e: any) {
+        onError(e);
+    }
+  }, onError);
+
+  return unsubscribe;
 }
 
 
 export function listenToAlertsByTrader(
-    traderId: string,
-    onNewAlerts: (alerts: AlertPost[]) => void,
-    onError: (error: Error) => void
+  traderId: string,
+  onData: ({ alerts, totalCount }: { alerts: AlertPost[], totalCount: number }) => void,
+  onError: (error: Error) => void,
+  page: number,
+  alertsPerPage: number,
 ): Unsubscribe {
-    const alertsCol = collection(db, 'alerts');
-    const q = query(alertsCol, where('traderId', '==', traderId), orderBy('timestamp', 'desc'), limit(50));
+  const alertsCol = collection(db, 'alerts');
+  const q = query(alertsCol, where('traderId', '==', traderId), orderBy('timestamp', 'desc'));
 
-    return onSnapshot(q, (snapshot) => {
-        const alerts = snapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                ...data,
-                timestamp: (data.timestamp as Timestamp).toDate().toISOString(),
-            } as AlertPost;
-        });
-        onNewAlerts(alerts);
-    }, onError);
+  return onSnapshot(q, (snapshot) => {
+    const totalCount = snapshot.size;
+
+    const paginatedDocs = snapshot.docs.slice((page - 1) * alertsPerPage, page * alertsPerPage);
+    
+    const alerts = paginatedDocs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            timestamp: (data.timestamp as Timestamp).toDate().toISOString(),
+        } as AlertPost;
+    });
+    
+    onData({ alerts, totalCount });
+  }, onError);
 }
 
 // --- Single-fetch functions ---
@@ -196,11 +216,12 @@ export async function getAllReports(): Promise<Report[]> {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Report));
 }
 
-export async function getAlerts(): Promise<AlertPost[]> {
+export async function getAlerts(): Promise<{alerts: AlertPost[], totalCount: number}> {
     const alertsCol = collection(db, 'alerts');
     const q = query(alertsCol, orderBy('timestamp', 'desc'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), timestamp: (doc.data().timestamp as Timestamp).toDate().toISOString() } as AlertPost));
+    const alerts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), timestamp: (doc.data().timestamp as Timestamp).toDate().toISOString() } as AlertPost));
+    return { alerts, totalCount: snapshot.size };
 }
 
 
@@ -322,12 +343,11 @@ export async function createAlert(post: Partial<Omit<AlertPost, 'id' | 'timestam
         comments: [],
     };
     
-    // Ensure optional fields are not 'undefined'
-    if (post.screenshotUrl === undefined) {
-      delete newPostData.screenshotUrl;
+    if (newPostData.screenshotUrl === undefined) {
+      delete (newPostData as any).screenshotUrl;
     }
-    if (post.screenshotHint === undefined) {
-      delete newPostData.screenshotHint;
+    if (newPostData.screenshotHint === undefined) {
+        delete (newPostData as any).screenshotHint;
     }
 
     const docRef = await addDoc(alertsCol, newPostData);
@@ -341,10 +361,10 @@ export async function updateAlert(alertId: string, data: Partial<Pick<AlertPost,
     const updateData = {...data};
 
     if (updateData.screenshotUrl === undefined) {
-      delete updateData.screenshotUrl;
+      delete (updateData as any).screenshotUrl;
     }
     if (updateData.screenshotHint === undefined) {
-        delete updateData.screenshotHint;
+        delete (updateData as any).screenshotHint;
     }
 
     await updateDoc(alertRef, updateData);
