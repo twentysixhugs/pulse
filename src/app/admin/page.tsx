@@ -7,16 +7,16 @@ import { Users, GanttChartSquare, ShieldAlert } from "lucide-react";
 export default function AdminPage() {
     return (
         <Tabs defaultValue="users" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="users">
+            <TabsList className="flex flex-wrap h-auto">
+                <TabsTrigger value="users" className="flex-1">
                     <Users className="mr-2 h-4 w-4" />
                     Пользователи
                 </TabsTrigger>
-                <TabsTrigger value="traders">
+                <TabsTrigger value="traders" className="flex-1">
                     <GanttChartSquare className="mr-2 h-4 w-4" />
                     Трейдеры
                 </TabsTrigger>
-                <TabsTrigger value="complaints">
+                <TabsTrigger value="complaints" className="flex-1">
                     <ShieldAlert className="mr-2 h-4 w-4" />
                     Жалобы
                 </TabsTrigger>
