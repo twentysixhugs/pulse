@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { AuthContext, AuthUser } from '@/hooks/use-auth';
 import { ALL_DUMMY_USERS } from '@/lib/dummy-auth';
