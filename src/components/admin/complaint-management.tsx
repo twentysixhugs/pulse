@@ -31,6 +31,7 @@ import {
   } from '@/components/ui/alert-dialog';
 import { Skeleton } from '../ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
+import { db } from '@/lib/firebase';
 
 export function ComplaintManagement() {
   const [reports, setReports] = useState<Report[]>([]);
@@ -39,7 +40,7 @@ export function ComplaintManagement() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const { user: adminUser, db } = useAuth();
+  const { user: adminUser } = useAuth();
 
   useEffect(() => {
     async function fetchData() {
@@ -66,7 +67,6 @@ export function ComplaintManagement() {
   }, [toast]);
 
   const handleResolveReport = async (reportId: string) => {
-    if (!db) return;
     // Optimistic update
     setReports((currentReports) => currentReports.filter((report) => report.id !== reportId));
     
