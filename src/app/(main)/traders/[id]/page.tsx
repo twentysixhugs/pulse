@@ -94,8 +94,8 @@ export default function TraderProfilePage() {
           category={category}
           currentUser={currentUser}
           userRepAction={userRepAction}
-          onUpdateTraderRep={(trader, rep) => {
-              setTrader(trader);
+          onUpdateTraderRep={(updatedTrader, rep) => {
+              setTrader(updatedTrader);
               setUserRepAction(rep);
           }}
           onReport={handleReport}
