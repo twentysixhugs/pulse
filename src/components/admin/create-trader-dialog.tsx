@@ -81,107 +81,107 @@ export function CreateTraderDialog({ isOpen, onClose, onSave, categories }: Crea
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Создать нового трейдера</DialogTitle>
           <DialogDescription>
             Введите данные для создания нового профиля трейдера.
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Имя</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Иван Петров" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input placeholder="trader@example.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="telegramId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>ID в Telegram</FormLabel>
-                  <FormControl>
-                    <Input placeholder="ivan_petrov" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
+        <div className="overflow-y-auto max-h-[80vh] p-1">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4 pr-3">
+              <FormField
                 control={form.control}
-                name="category"
+                name="name"
                 render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Категория</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Выберите специализацию" />
-                        </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                        {categories.map(cat => (
-                            <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                        ))}
-                        </SelectContent>
-                    </Select>
+                  <FormItem>
+                    <FormLabel>Имя</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Иван Петров" {...field} />
+                    </FormControl>
                     <FormMessage />
-                    </FormItem>
+                  </FormItem>
                 )}
-            />
-             <FormField
-              control={form.control}
-              name="specialization"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Описание профиля</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Специалист по BTC и ETH" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div>
-                 <FormLabel>Пароль</FormLabel>
-                 <div className="flex items-center gap-2 mt-2">
-                    <Input value={generatedPassword} readOnly placeholder="Нажмите 'Сгенерировать'"/>
-                    <Button type="button" variant="outline" size="icon" onClick={generatePassword}><RefreshCw className="h-4 w-4" /></Button>
-                    <Button type="button" variant="outline" size="icon" onClick={() => copyToClipboard(generatedPassword)} disabled={!generatedPassword}><Copy className="h-4 w-4" /></Button>
-                 </div>
-            </div>
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="trader@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="telegramId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>ID в Telegram</FormLabel>
+                    <FormControl>
+                      <Input placeholder="ivan_petrov" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                      <FormItem>
+                      <FormLabel>Категория</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                          <SelectTrigger>
+                              <SelectValue placeholder="Выберите специализацию" />
+                          </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                          {categories.map(cat => (
+                              <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                          ))}
+                          </SelectContent>
+                      </Select>
+                      <FormMessage />
+                      </FormItem>
+                  )}
+              />
+              <FormField
+                control={form.control}
+                name="specialization"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Описание профиля</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Специалист по BTC и ETH" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div>
+                  <FormLabel>Пароль</FormLabel>
+                  <div className="flex items-center gap-2 mt-2">
+                      <Input value={generatedPassword} readOnly placeholder="Нажмите 'Сгенерировать'"/>
+                      <Button type="button" variant="outline" size="icon" onClick={generatePassword}><RefreshCw className="h-4 w-4" /></Button>
+                      <Button type="button" variant="outline" size="icon" onClick={() => copyToClipboard(generatedPassword)} disabled={!generatedPassword}><Copy className="h-4 w-4" /></Button>
+                  </div>
+              </div>
 
-            <DialogFooter className='pt-4'>
-                <Button type="button" variant="outline" onClick={onClose}>Отмена</Button>
-                <Button type="submit">Создать</Button>
-            </DialogFooter>
-          </form>
-        </Form>
+              <DialogFooter className='pt-4'>
+                  <Button type="button" variant="outline" onClick={onClose}>Отмена</Button>
+                  <Button type="submit">Создать</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </div>
       </DialogContent>
     </Dialog>
   );
 }
-
-    
