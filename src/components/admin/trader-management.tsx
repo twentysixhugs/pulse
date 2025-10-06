@@ -31,6 +31,7 @@ import { SearchInput } from './search-input';
 import { useDebounce } from '@/hooks/use-debounce';
 import { PaginationControl } from '../common/pagination-control';
 import { CreateTraderDialog } from './create-trader-dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 
 const ITEMS_PER_PAGE = 20;
 
