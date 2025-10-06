@@ -49,7 +49,7 @@ export default function HomePage() {
 
           unsubscribe = listenToAlerts((newAlerts) => {
             setAlerts(newAlerts);
-            if (loading) setLoading(false);
+            setLoading(false);
           }, (error) => {
             console.error("Failed to listen for alerts:", error);
             toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось загрузить алерты.' });
@@ -73,7 +73,7 @@ export default function HomePage() {
         unsubscribe();
       }
     };
-  }, [user, toast, loading]);
+  }, [user, toast]);
 
 
   const handleAgree = () => {

@@ -64,7 +64,7 @@ export function TraderDashboard() {
 
                 unsubscribe = listenToAlertsByTrader(authUser.uid, (newAlerts) => {
                     setAlerts(newAlerts);
-                    if (loading) setLoading(false);
+                    setLoading(false);
                 }, (error) => {
                     console.error(`Failed to listen for trader alerts:`, error);
                     toast({ variant: 'destructive', title: "Ошибка", description: "Не удалось загрузить посты."});
@@ -84,7 +84,7 @@ export function TraderDashboard() {
       if (unsubscribe) unsubscribe();
     };
 
-  }, [authUser, toast, loading]);
+  }, [authUser, toast]);
 
   
   const handleSavePost = async (postData: Partial<Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'>> & {id?: string}) => {
@@ -96,7 +96,14 @@ export function TraderDashboard() {
       } else { // Creating
         if (currentTrader) {
           const { id, ...restOfPostData } = postData;
-          await createAlert({...restOfPostData, traderId: currentTrader.id });
+          const newPost = {
+              ...restOfPostData,
+              traderId: currentTrader.id,
+              traderName: currentTrader.name,
+              traderProfilePicUrl: currentTrader.profilePicUrl,
+              traderProfilePicHint: currentTrader.profilePicHint,
+          };
+          await createAlert(newPost);
           toast({ title: 'Пост создан' });
         }
       }
