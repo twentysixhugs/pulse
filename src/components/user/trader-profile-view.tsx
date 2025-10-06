@@ -51,6 +51,8 @@ export function TraderProfileView({
   const [currentPage, setCurrentPage] = useState(1);
   const [totalAlerts, setTotalAlerts] = useState(0);
 
+  const isTraderViewing = currentUser?.role === 'trader';
+
   useEffect(() => {
     setLoadingAlerts(true);
     const unsubscribe = listenToAlertsByTrader(
@@ -88,7 +90,7 @@ export function TraderProfileView({
 
 
   const handleRep = async (type: 'pos' | 'neg') => {
-    if (isSubmittingRep) return;
+    if (isSubmittingRep || isTraderViewing) return;
     setIsSubmittingRep(true);
 
     const originalTraderState = { ...trader, reputation: { ...trader.reputation }};
@@ -188,11 +190,11 @@ export function TraderProfileView({
           </div>
         </CardHeader>
         <CardContent className="p-6 pt-0 flex flex-col sm:flex-row gap-2">
-            <Button onClick={() => handleRep('pos')} variant={currentRepAction === 'pos' ? "default" : "outline"} className="w-full sm:w-auto" disabled={isSubmittingRep}>
+            <Button onClick={() => handleRep('pos')} variant={currentRepAction === 'pos' ? "default" : "outline"} className="w-full sm:w-auto" disabled={isSubmittingRep || isTraderViewing}>
                 {isSubmittingRep && currentRepAction !== 'neg' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (currentRepAction === 'pos' && <Check className="mr-2 h-4 w-4" />)}
                 +Rep
             </Button>
-             <Button onClick={() => handleRep('neg')} variant={currentRepAction === 'neg' ? "destructive" : "outline"} className="w-full sm:w-auto" disabled={isSubmittingRep}>
+             <Button onClick={() => handleRep('neg')} variant={currentRepAction === 'neg' ? "destructive" : "outline"} className="w-full sm:w-auto" disabled={isSubmittingRep || isTraderViewing}>
                 {isSubmittingRep && currentRepAction !== 'pos' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (currentRepAction === 'neg' && <Check className="mr-2 h-4 w-4" />)}
                 -Rep
             </Button>

@@ -75,8 +75,10 @@ export function AlertCard({
   const hasLiked = currentUser && alert.likes.includes(currentUser.id);
   const hasDisliked = currentUser && alert.dislikes.includes(currentUser.id);
 
+  const isTraderViewing = currentUser?.role === 'trader';
+
   const handleReaction = async (type: 'like' | 'dislike') => {
-    if (!currentUser || isSubmittingReaction) return;
+    if (!currentUser || isSubmittingReaction || isTraderViewing) return;
 
     setIsSubmittingReaction(true);
 
@@ -110,7 +112,7 @@ export function AlertCard({
   };
 
   const handleAddComment = async () => {
-    if (!commentText.trim() || !currentUser || isSubmittingComment) return;
+    if (!commentText.trim() || !currentUser || isSubmittingComment || isTraderViewing) return;
     
     setIsSubmittingComment(true);
 
@@ -143,7 +145,7 @@ export function AlertCard({
   };
 
   const handleReport = (reason: string) => {
-    if (!currentUser) return;
+    if (!currentUser || isTraderViewing) return;
     if (!reason.trim()) {
       toast({
         variant: 'destructive',
@@ -187,7 +189,7 @@ export function AlertCard({
                   {formatDistanceToNow(new Date(alert.timestamp as string), { addSuffix: true, locale: ru })}
                 </p>
               </div>
-              <ReportDialog onConfirm={handleReport} disabled={!currentUser} />
+              <ReportDialog onConfirm={handleReport} disabled={!currentUser || isTraderViewing} />
             </div>
           </div>
         </CardHeader>
@@ -220,7 +222,7 @@ export function AlertCard({
               className={`flex items-center gap-2 ${
                 hasLiked ? 'text-primary' : 'text-muted-foreground'
               }`}
-              disabled={!currentUser || isSubmittingReaction}
+              disabled={!currentUser || isSubmittingReaction || isTraderViewing}
             >
               <ThumbsUp className="h-4 w-4" />
               <span>{alert.likes.length}</span>
@@ -232,7 +234,7 @@ export function AlertCard({
               className={`flex items-center gap-2 ${
                 hasDisliked ? 'text-destructive' : 'text-muted-foreground'
               }`}
-              disabled={!currentUser || isSubmittingReaction}
+              disabled={!currentUser || isSubmittingReaction || isTraderViewing}
             >
               <ThumbsDown className="h-4 w-4" />
               <span>{alert.dislikes.length}</span>
@@ -244,6 +246,7 @@ export function AlertCard({
               setCommentText={setCommentText}
               onAddComment={handleAddComment}
               isSubmitting={isSubmittingComment}
+              isTraderViewing={isTraderViewing}
             />
           </div>
         </CardFooter>
@@ -262,7 +265,7 @@ export function AlertCard({
   );
 }
 
-function CommentDialog({ alert, currentUser, commentText, setCommentText, onAddComment, isSubmitting }: any) {
+function CommentDialog({ alert, currentUser, commentText, setCommentText, onAddComment, isSubmitting, isTraderViewing }: any) {
     return (
         <Dialog>
             <DialogTrigger asChild>
@@ -296,14 +299,14 @@ function CommentDialog({ alert, currentUser, commentText, setCommentText, onAddC
                 <DialogFooter>
                     <div className="flex items-center w-full space-x-2">
                         <Input
-                            placeholder="Добавьте комментарий..."
+                            placeholder={isTraderViewing ? "Вы не можете оставлять комментарии" : "Добавьте комментарий..."}
                             value={commentText}
                             onChange={(e) => setCommentText(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && onAddComment()}
-                            disabled={!currentUser || isSubmitting}
+                            disabled={!currentUser || isSubmitting || isTraderViewing}
                             className="text-sm"
                         />
-                        <Button onClick={onAddComment} disabled={!currentUser || !commentText.trim() || isSubmitting} size="icon" className="shrink-0">
+                        <Button onClick={onAddComment} disabled={!currentUser || !commentText.trim() || isSubmitting || isTraderViewing} size="icon" className="shrink-0">
                             {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                             <span className="sr-only">Отправить</span>
                         </Button>
