@@ -46,7 +46,9 @@ export function UserManagement() {
         setLoading(true);
         try {
             const usersData = await getAllUsers();
-            setUsers(usersData);
+            // Filter for regular users only
+            const regularUsers = usersData.filter(user => user.role === 'user');
+            setUsers(regularUsers);
         } catch (error) {
             console.error("Failed to fetch users:", error);
             toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось загрузить пользователей.' });
@@ -80,8 +82,15 @@ export function UserManagement() {
   if (loading) {
       return (
           <div className="space-y-4">
-              <Skeleton className="h-8 w-1/3 mb-4" />
-              <Skeleton className="h-48 w-full" />
+              <h2 className="text-2xl font-headline font-bold">Управление пользователями</h2>
+              <div className="space-y-4">
+                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-20 w-full" />
+              </div>
+              <div className="rounded-lg border hidden md:block">
+                <Skeleton className="h-48 w-full" />
+              </div>
           </div>
       )
   }
