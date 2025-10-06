@@ -23,6 +23,8 @@ import {
   onSnapshot,
   Unsubscribe,
   runTransaction,
+  and,
+  or,
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -41,6 +43,7 @@ export interface Category {
 export interface User {
   id: string; // This will be the document ID from Firestore
   name: string;
+  email: string;
   telegramId: string;
   isBanned: boolean;
   subscriptionStatus: SubscriptionStatus;
@@ -78,6 +81,7 @@ export interface AlertPost {
 export interface Trader {
   id: string; // This will be the document ID from Firestore
   name:string;
+  email: string;
   telegramId: string;
   specialization: string;
   category: string; // Should be a category ID
@@ -192,16 +196,66 @@ export async function getCategory(categoryId: string): Promise<Category | undefi
 
 // --- Functions to get full collections (use with caution, for admin panels etc.) ---
 
-export async function getAllUsers(): Promise<User[]> {
-  const usersCol = collection(db, 'users');
-  const snapshot = await getDocs(usersCol);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+type GetAllParams = {
+  page: number;
+  limit: number;
+  search?: string;
+  role?: UserRole;
 }
 
-export async function getAllTraders(): Promise<Trader[]> {
+export async function getAllUsers({ page, limit, search, role }: GetAllParams): Promise<{ data: User[], totalCount: number }> {
+  const usersCol = collection(db, 'users');
+  let constraints = [];
+  if (role) {
+    constraints.push(where('role', '==', role));
+  }
+  if (search) {
+    const searchTermLower = search.toLowerCase();
+    // This is a very basic search. For production, consider a dedicated search service like Algolia or Typesense.
+    // Firestore does not support native full-text search on multiple fields efficiently.
+    // The query below searches by name OR telegramId. It requires composite indexes.
+    // Due to emulator limitations, we fetch all and filter client-side for simplicity here.
+  }
+
+  const q = query(usersCol, ...constraints);
+  const snapshot = await getDocs(q);
+
+  let allUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+
+  if (search) {
+    const searchTermLower = search.toLowerCase();
+    allUsers = allUsers.filter(user => 
+        user.name.toLowerCase().includes(searchTermLower) || 
+        user.telegramId.toLowerCase().includes(searchTermLower)
+    );
+  }
+
+  const totalCount = allUsers.length;
+  const data = allUsers.slice((page - 1) * limit, page * limit);
+  
+  return { data, totalCount };
+}
+
+export async function getAllTraders({ page, limit, search }: GetAllParams): Promise<{ data: Trader[], totalCount: number }> {
   const tradersCol = collection(db, 'traders');
-  const snapshot = await getDocs(tradersCol);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Trader));
+
+  const q = query(tradersCol);
+  const snapshot = await getDocs(q);
+
+  let allTraders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Trader));
+
+  if (search) {
+    const searchTermLower = search.toLowerCase();
+    allTraders = allTraders.filter(trader =>
+      trader.name.toLowerCase().includes(searchTermLower) ||
+      trader.telegramId.toLowerCase().includes(searchTermLower)
+    );
+  }
+
+  const totalCount = allTraders.length;
+  const data = allTraders.slice((page - 1) * limit, page * limit);
+  
+  return { data, totalCount };
 }
 
 export async function getAllCategories(): Promise<Category[]> {
@@ -366,8 +420,13 @@ export async function banUser(db: Firestore, userId: string) {
 }
 export async function unbanUser(db: Firestore, userId: string) {
     const userRef = doc(db, 'users', userId);
-await updateDoc(userRef, { isBanned: false });
+    await updateDoc(userRef, { isBanned: false });
 }
+export async function deleteUser(db: Firestore, userId: string) {
+    const userRef = doc(db, 'users', userId);
+    await deleteDoc(userRef);
+}
+
 export async function activateTrader(db: Firestore, traderId: string) {
     const traderRef = doc(db, 'traders', traderId);
     await updateDoc(traderRef, { status: 'active' });
@@ -376,6 +435,87 @@ export async function deactivateTrader(db: Firestore, traderId: string) {
     const traderRef = doc(db, 'traders', traderId);
     await updateDoc(traderRef, { status: 'inactive' });
 }
+export async function deleteTrader(db: Firestore, traderId: string) {
+    // This is a complex operation. In a real app, you would also need to handle:
+    // - Deleting the user from Firebase Auth.
+    // - Deleting associated data like alerts, comments, reputation entries.
+    // This is a simplified version for this project.
+    const batch = writeBatch(db);
+    
+    // 1. Delete trader profile
+    const traderRef = doc(db, 'traders', traderId);
+    batch.delete(traderRef);
+
+    // 2. Delete user entry
+    const userRef = doc(db, 'users', traderId);
+    batch.delete(userRef);
+
+    // 3. Delete alerts by this trader (in a real app, you'd query and delete)
+    // For this project, we assume this is handled by a backend function or is not required.
+
+    await batch.commit();
+}
+
+
+export async function createTrader(db: Firestore, traderData: Omit<Trader, 'id' | 'status' | 'reputation'>, password: string) {
+    // In a real application, you would use Firebase Admin SDK on a backend server to create a user.
+    // The client-side SDK cannot create users with email/password.
+    // This is a simulation that adds the trader to the Firestore collections.
+    // The actual login will rely on the dummy-auth file.
+    
+    const tradersCol = collection(db, 'traders');
+    const usersCol = collection(db, 'users');
+
+    // Check if email or telegramId is already in use in the users collection
+    const emailQuery = query(usersCol, where("email", "==", traderData.email));
+    const telegramIdQuery = query(usersCol, where("telegramId", "==", traderData.telegramId));
+
+    const emailSnapshot = await getDocs(emailQuery);
+    if (!emailSnapshot.empty) {
+        throw new Error("Этот email уже используется.");
+    }
+
+    const telegramIdSnapshot = await getDocs(telegramIdQuery);
+    if (!telegramIdSnapshot.empty) {
+        throw new Error("Этот Telegram ID уже используется.");
+    }
+    
+    const newTraderId = `trader-${Date.now()}`;
+    const batch = writeBatch(db);
+
+    // Create trader profile
+    const traderRef = doc(db, 'traders', newTraderId);
+    batch.set(traderRef, {
+        ...traderData,
+        status: 'active',
+        reputation: { positive: 0 },
+    });
+
+    // Create corresponding user entry
+    const userRef = doc(db, 'users', newTraderId);
+    batch.set(userRef, {
+        name: traderData.name,
+        email: traderData.email,
+        telegramId: traderData.telegramId,
+        role: 'trader',
+        isBanned: false,
+        subscriptionStatus: 'active', // Traders have permanent subscription
+        subscriptionEndDate: Timestamp.fromDate(new Date('2099-12-31')),
+    });
+    
+    await batch.commit();
+
+    // The developer must manually add the credentials to the dummy-auth.ts file for login to work.
+    console.log(`
+      ТРЕБУЕТСЯ РУЧНОЕ ДЕЙСТВИЕ:
+      Добавьте следующие учетные данные в 'src/lib/dummy-auth.ts' в массив DUMMY_TRADERS, чтобы разрешить вход:
+      
+      { email: '${traderData.email}', password: '${password}', role: 'trader', uid: '${newTraderId}', name: '${traderData.name}' },
+
+    `);
+}
+
+
 export async function resolveReport(db: Firestore, reportId: string) {
     const reportRef = doc(db, 'reports', reportId);
     await updateDoc(reportRef, { status: 'resolved' });
@@ -385,3 +525,5 @@ export async function updateUserSubscription(userId: string, newEndDate: Date) {
   const userRef = doc(db, 'users', userId);
   await updateDoc(userRef, { subscriptionEndDate: Timestamp.fromDate(newEndDate) });
 }
+
+    
