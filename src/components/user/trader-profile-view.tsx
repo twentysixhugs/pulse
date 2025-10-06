@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ThumbsUp, ThumbsDown, Check, Loader2 } from 'lucide-react';
+import { ThumbsUp, Star, Loader2, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AlertCard } from './alert-card';
 import { Skeleton } from '../ui/skeleton';
@@ -89,46 +89,35 @@ export function TraderProfileView({
   };
 
 
-  const handleRep = async (type: 'pos' | 'neg') => {
+  const handleRep = async () => {
     if (isSubmittingRep || isTraderViewing) return;
     setIsSubmittingRep(true);
 
     const originalTraderState = { ...trader, reputation: { ...trader.reputation }};
     const originalRepAction = currentRepAction;
+    const actionType = 'pos'; // We only handle positive reputation now
 
     // Optimistic update
-    const isUndoing = originalRepAction === type;
-    const isSwitching = originalRepAction && originalRepAction !== type;
+    const isUndoing = originalRepAction === actionType;
     
     let optimisticTrader = { ...trader, reputation: { ...trader.reputation }};
-    let optimisticRepAction: 'pos' | 'neg' | null = type;
+    let optimisticRepAction: 'pos' | 'neg' | null = isUndoing ? null : actionType;
 
     if (isUndoing) {
-        optimisticRepAction = null;
-        if (type === 'pos') optimisticTrader.reputation.positive--;
-        else optimisticTrader.reputation.negative--;
-    } else if (isSwitching) {
-        if (type === 'pos') {
-            optimisticTrader.reputation.positive++;
-            optimisticTrader.reputation.negative--;
-        } else {
-            optimisticTrader.reputation.positive--;
-            optimisticTrader.reputation.negative++;
-        }
+        optimisticTrader.reputation.positive--;
     } else { // New action
-        if (type === 'pos') optimisticTrader.reputation.positive++;
-        else optimisticTrader.reputation.negative++;
+        optimisticTrader.reputation.positive++;
     }
 
     onUpdateTraderRep(optimisticTrader, optimisticRepAction);
     setCurrentRepAction(optimisticRepAction);
 
     try {
-        await updateTraderReputation(trader.id, currentUser.id, type);
+        await updateTraderReputation(trader.id, currentUser.id, actionType);
          if (isUndoing) {
-            toast({ title: 'Репутация удалена.' });
+            toast({ title: 'Ваш голос убран.' });
         } else {
-            toast({ title: `Вы поставили ${type === 'pos' ? '+Rep' : '-Rep'}.` });
+            toast({ title: `Вы повысили рейтинг.` });
         }
     } catch (error) {
         console.error("Failed to update reputation:", error);
@@ -176,27 +165,18 @@ export function TraderProfileView({
             </div>
             <div className="mt-4 flex items-center gap-4">
               <Badge variant="outline">{category?.name || 'Без категории'}</Badge>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1 text-green-500">
-                  <ThumbsUp className="h-4 w-4" />
-                  <span className="font-medium">{trader.reputation.positive}</span>
-                </div>
-                <div className="flex items-center gap-1 text-red-500">
-                  <ThumbsDown className="h-4 w-4" />
-                  <span className="font-medium">{trader.reputation.negative}</span>
-                </div>
+              <div className="flex items-center gap-2">
+                  <Star className="h-5 w-5 text-yellow-400" />
+                  <span className="font-bold text-lg">{trader.reputation.positive}</span>
+                  <span className="text-sm text-muted-foreground">Рейтинг</span>
               </div>
             </div>
           </div>
         </CardHeader>
         <CardContent className="p-6 pt-0 flex flex-col sm:flex-row gap-2">
-            <Button onClick={() => handleRep('pos')} variant={currentRepAction === 'pos' ? "default" : "outline"} className="w-full sm:w-auto" disabled={isSubmittingRep || isTraderViewing}>
-                {isSubmittingRep && currentRepAction !== 'neg' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (currentRepAction === 'pos' && <Check className="mr-2 h-4 w-4" />)}
-                +Rep
-            </Button>
-             <Button onClick={() => handleRep('neg')} variant={currentRepAction === 'neg' ? "destructive" : "outline"} className="w-full sm:w-auto" disabled={isSubmittingRep || isTraderViewing}>
-                {isSubmittingRep && currentRepAction !== 'pos' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (currentRepAction === 'neg' && <Check className="mr-2 h-4 w-4" />)}
-                -Rep
+            <Button onClick={handleRep} variant={currentRepAction === 'pos' ? "default" : "outline"} className="w-full sm:w-auto" disabled={isSubmittingRep || isTraderViewing}>
+                {isSubmittingRep ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Star className="mr-2 h-4 w-4" />}
+                {currentRepAction === 'pos' ? 'Убрать голос' : 'Повысить рейтинг'}
             </Button>
         </CardContent>
       </Card>

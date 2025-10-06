@@ -294,21 +294,11 @@ export async function updateTraderReputation(traderId: string, userId: string, t
     const userRepSnap = await getDoc(userRepRef);
     const previousAction = userRepSnap.exists() ? userRepSnap.data().action : null;
 
-    if (previousAction === type) { // Undoing action
-        const fieldToDecrement = type === 'pos' ? 'reputation.positive' : 'reputation.negative';
-        batch.update(traderRef, { [fieldToDecrement]: increment(-1) });
+    if (previousAction === type) { // Undoing 'pos' action
+        batch.update(traderRef, { 'reputation.positive': increment(-1) });
         batch.delete(userRepRef);
-    } else if (previousAction) { // Switching action
-        const fieldToIncrement = type === 'pos' ? 'reputation.positive' : 'reputation.negative';
-        const fieldToDecrement = type === 'pos' ? 'reputation.negative' : 'reputation.positive';
-        batch.update(traderRef, {
-            [fieldToIncrement]: increment(1),
-            [fieldToDecrement]: increment(-1)
-        });
-        batch.set(userRepRef, { action: type });
-    } else { // New action
-        const fieldToIncrement = type === 'pos' ? 'reputation.positive' : 'reputation.negative';
-        batch.update(traderRef, { [fieldToIncrement]: increment(1) });
+    } else { // It's always a 'pos' action now, so this handles adding a new vote. Dislikes are deprecated.
+        batch.update(traderRef, { 'reputation.positive': increment(1) });
         batch.set(userRepRef, { action: type });
     }
     
