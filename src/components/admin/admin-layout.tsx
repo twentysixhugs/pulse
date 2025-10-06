@@ -15,7 +15,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-4">
             <Logo />
             <span className="text-sm font-medium text-muted-foreground">/</span>
-            <h1 className="text-lg font-headline font-semibold">Панель администратора</h1>
+            <h1 className="text-lg font-headline font-semibold">Админ</h1>
           </div>
           <div className="flex items-center gap-2">
              <span className="text-sm text-muted-foreground hidden sm:inline">
