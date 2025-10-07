@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User } from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,21 +26,21 @@ type EditSubscriptionDialogProps = {
 };
 
 export function EditSubscriptionDialog({ isOpen, onClose, user, onSave }: EditSubscriptionDialogProps) {
-  const [days, setDays] = useState<number>(30);
+  const [days, setDays] = useState<number>(0);
 
-  const handleSave = (numDays: number) => {
-    let newEndDate;
-    const currentEndDate = user.subscriptionEndDate 
-        ? (user.subscriptionEndDate as Timestamp).toDate() 
-        : new Date();
-    
-    // If subscription is already expired, start counting from today
-    if (differenceInDays(currentEndDate, new Date()) < 0) {
-         newEndDate = addDays(new Date(), numDays);
+  useEffect(() => {
+    if (user && user.subscriptionEndDate) {
+        const endDate = (user.subscriptionEndDate as Timestamp).toDate();
+        const daysLeft = differenceInDays(endDate, new Date());
+        setDays(daysLeft > 0 ? daysLeft : 0);
     } else {
-        newEndDate = addDays(currentEndDate, numDays);
+        setDays(0);
     }
+  }, [user]);
 
+
+  const handleSave = () => {
+    const newEndDate = addDays(new Date(), days);
     onSave(user.id, newEndDate);
   };
 
@@ -63,24 +63,26 @@ export function EditSubscriptionDialog({ isOpen, onClose, user, onSave }: EditSu
         </DialogHeader>
         <div className="space-y-4 py-4">
             <div className='space-y-2'>
-                 <Label htmlFor="days">Количество дней</Label>
-                 <Input 
-                    id="days"
-                    type="number"
-                    value={days}
-                    onChange={(e) => setDays(Math.abs(parseInt(e.target.value, 10)))}
-                 />
+                 <Label htmlFor="days">Осталось дней</Label>
+                 <div className="flex items-center gap-2">
+                    <Button variant="outline" size="icon" onClick={() => setDays(d => Math.max(0, d - 1))}>
+                        <Minus className="h-4 w-4" />
+                    </Button>
+                    <Input 
+                        id="days"
+                        type="number"
+                        value={days}
+                        onChange={(e) => setDays(Math.max(0, parseInt(e.target.value, 10)) || 0)}
+                        className="text-center"
+                    />
+                     <Button variant="outline" size="icon" onClick={() => setDays(d => d + 1)}>
+                        <Plus className="h-4 w-4" />
+                    </Button>
+                 </div>
             </div>
-            <div className="flex gap-2">
-                 <Button onClick={() => handleSave(days)} className="flex-1">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Добавить
-                 </Button>
-                 <Button onClick={() => handleSave(-days)} className="flex-1" variant="outline">
-                    <Minus className="mr-2 h-4 w-4" />
-                    Убрать
-                 </Button>
-            </div>
+             <Button onClick={handleSave} className="w-full">
+                Обновить
+             </Button>
              <Button onClick={handleReset} variant="destructive" className="w-full">
                 <RefreshCcw className="mr-2 h-4 w-4" />
                 Сбросить подписку (сделать неактивной)
