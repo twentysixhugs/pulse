@@ -1,4 +1,5 @@
 
+
 import {
   collection,
   getDocs,
@@ -580,9 +581,14 @@ export async function getMetrics(period: 'today' | '7d'): Promise<Metrics> {
   const newUsers = newUsersSnap.data().count;
 
   // Total Subscribed Users
-  const totalSubscribedQuery = query(usersRef, where('subscriptionStatus', '==', 'active'), where('subscriptionEndDate', '>=', now));
-  const totalSubscribedSnap = await getCountFromServer(totalSubscribedQuery);
-  const totalSubscribedUsers = totalSubscribedSnap.data().count;
+  const totalSubscribedQuery = query(usersRef, where('subscriptionStatus', '==', 'active'));
+  const totalSubscribedDocs = await getDocs(totalSubscribedQuery);
+  const totalSubscribedUsers = totalSubscribedDocs.docs.filter(doc => {
+      const user = doc.data() as User;
+      if (!user.subscriptionEndDate) return false;
+      const endDate = (user.subscriptionEndDate as Timestamp).toDate();
+      return endDate >= now;
+  }).length;
   
   // Newly Subscribed Users
   const newlySubscribedQuery = query(usersRef, where('firstSubscribedAt', '>=', startDate));
@@ -613,3 +619,4 @@ export async function getMetrics(period: 'today' | '7d'): Promise<Metrics> {
     traderPosts,
   };
 }
+
