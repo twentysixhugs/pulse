@@ -203,7 +203,7 @@ export function UserManagement() {
                 <AlertDialogHeader>
                     <AlertDialogTitle>Удалить пользователя?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        Это действие нельзя отменить. Это приведет к необратимому удалению {user.name} и всех связанных с ним данных.
+                        Это действие нельзя отменить. Это удалит пользователя {user.name} из базы данных.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
