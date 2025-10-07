@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { RefreshCcw } from 'lucide-react';
 import { addDays, differenceInDays } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
+import { Input } from '../ui/input';
 
 type EditSubscriptionDialogProps = {
   isOpen: boolean;
@@ -25,7 +26,7 @@ type EditSubscriptionDialogProps = {
 };
 
 export function EditSubscriptionDialog({ isOpen, onClose, user, onSave }: EditSubscriptionDialogProps) {
-  const [days, setDays] = useState<number>(0);
+  const [days, setDays] = useState<number | string>(0);
 
   useEffect(() => {
     if (user && user.subscriptionEndDate) {
@@ -37,9 +38,23 @@ export function EditSubscriptionDialog({ isOpen, onClose, user, onSave }: EditSu
     }
   }, [user]);
 
+  const handleDayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value === '') {
+        setDays('');
+        return;
+    }
+    const num = parseInt(value, 10);
+    if (!isNaN(num) && num >= 0) {
+        setDays(num);
+    }
+  };
 
   const handleSave = () => {
-    const newEndDate = addDays(new Date(), days);
+    const numDays = typeof days === 'number' ? days : parseInt(days, 10);
+    if (isNaN(numDays)) return;
+
+    const newEndDate = addDays(new Date(), numDays);
     onSave(user.id, newEndDate);
   };
 
@@ -62,14 +77,18 @@ export function EditSubscriptionDialog({ isOpen, onClose, user, onSave }: EditSu
         </DialogHeader>
         <div className="space-y-4 py-4">
             <div className='space-y-3'>
-                 <Label>Осталось дней</Label>
-                 <div className="flex items-center justify-between rounded-lg border p-3">
-                    <span className="text-2xl font-bold">{days}</span>
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={() => setDays(d => d + 7)}>+7 д</Button>
-                        <Button variant="outline" size="sm" onClick={() => setDays(d => d + 30)}>+30 д</Button>
-                        <Button variant="outline" size="sm" onClick={() => setDays(d => d + 90)}>+90 д</Button>
-                    </div>
+                 <Label>Установить количество дней</Label>
+                 <Input 
+                    type="text" 
+                    value={days}
+                    onChange={handleDayChange}
+                    className="text-center text-2xl font-bold h-14"
+                    placeholder='0'
+                 />
+                 <div className="flex items-center justify-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setDays(d => Number(d) + 7)}>+7 д</Button>
+                    <Button variant="outline" size="sm" onClick={() => setDays(d => Number(d) + 30)}>+30 д</Button>
+                    <Button variant="outline" size="sm" onClick={() => setDays(d => Number(d) + 90)}>+90 д</Button>
                  </div>
             </div>
              <Button onClick={handleSave} className="w-full">
