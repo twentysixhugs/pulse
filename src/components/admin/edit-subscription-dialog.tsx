@@ -12,9 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RefreshCcw, Plus, Minus } from 'lucide-react';
+import { RefreshCcw } from 'lucide-react';
 import { addDays, differenceInDays } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
 
@@ -62,22 +61,15 @@ export function EditSubscriptionDialog({ isOpen, onClose, user, onSave }: EditSu
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
-            <div className='space-y-2'>
-                 <Label htmlFor="days">Осталось дней</Label>
-                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="icon" onClick={() => setDays(d => Math.max(0, d - 1))}>
-                        <Minus className="h-4 w-4" />
-                    </Button>
-                    <Input 
-                        id="days"
-                        type="number"
-                        value={days}
-                        onChange={(e) => setDays(Math.max(0, parseInt(e.target.value, 10)) || 0)}
-                        className="text-center"
-                    />
-                     <Button variant="outline" size="icon" onClick={() => setDays(d => d + 1)}>
-                        <Plus className="h-4 w-4" />
-                    </Button>
+            <div className='space-y-3'>
+                 <Label>Осталось дней</Label>
+                 <div className="flex items-center justify-between rounded-lg border p-3">
+                    <span className="text-2xl font-bold">{days}</span>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setDays(d => d + 7)}>+7 д</Button>
+                        <Button variant="outline" size="sm" onClick={() => setDays(d => d + 30)}>+30 д</Button>
+                        <Button variant="outline" size="sm" onClick={() => setDays(d => d + 90)}>+90 д</Button>
+                    </div>
                  </div>
             </div>
              <Button onClick={handleSave} className="w-full">
