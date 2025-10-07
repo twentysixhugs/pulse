@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -248,7 +249,7 @@ export function UserManagement() {
                     <div>
                         <div className="flex items-center gap-2 mb-1">
                           <CardTitle className="text-base">{user.name}</CardTitle>
-                          {user.isBanned && <Badge variant="destructive" className="text-xs">Забанен</Badge>}
+                          {user.isBanned && <Badge variant="destructive" className="bg-red-500/20 text-red-400 border-red-500/30">Забанен</Badge>}
                         </div>
                         <a href={`https://t.me/${user.telegramId}`} target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:underline">
                             @{user.telegramId}
@@ -269,7 +270,7 @@ export function UserManagement() {
                                 : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
                             }`}
                         >
-                            {user.subscriptionStatus === 'active' ? 'активна' : 'неактивна'}
+                            {user.subscriptionStatus === 'active' ? 'Активна' : 'Неактивна'}
                         </Badge>
                      </div>
                 </CardContent>
@@ -298,7 +299,7 @@ export function UserManagement() {
                                   @{user.telegramId}
                               </a>
                           </div>
-                          {user.isBanned && <Badge variant="destructive">Забанен</Badge>}
+                          {user.isBanned && <Badge variant="destructive" className="bg-red-500/20 text-red-400 border-red-500/30">Забанен</Badge>}
                         </div>
                     </TableCell>
                     <TableCell>
@@ -310,7 +311,7 @@ export function UserManagement() {
                             : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
                         }
                       >
-                        {user.subscriptionStatus === 'active' ? 'активна' : 'неактивна'}
+                        {user.subscriptionStatus === 'active' ? 'Активна' : 'Неактивна'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
@@ -334,6 +335,8 @@ export function UserManagement() {
     </div>
   );
 }
+
+    
 
     
 
