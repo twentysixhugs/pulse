@@ -16,7 +16,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { MoreVertical, PlusCircle } from 'lucide-react';
 import {
@@ -198,27 +197,27 @@ export function TraderManagement() {
           {traders.map((trader) => {
               const category = categories.find(c => c.id === trader.category);
               return (
-                <Card key={trader.id} className="w-full">
-                  <CardHeader className="flex flex-row items-start justify-between p-4">
+                <Card key={trader.id} className="w-full overflow-hidden">
+                  <CardHeader className="bg-muted/50 p-4 flex flex-row items-start justify-between">
                       <div>
-                          <CardTitle className="text-lg">{trader.name}</CardTitle>
+                          <CardTitle className="text-base">{trader.name}</CardTitle>
                           <CardDescription>
-                            <a href={`https://t.me/${trader.telegramId}`} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                            <a href={`https://t.me/${trader.telegramId}`} target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:underline">
                               @{trader.telegramId}
                             </a>
                           </CardDescription>
                       </div>
-                      <div className="-mt-1 -mr-1">
+                      <div className="-mt-2 -mr-2">
                           <TraderActionMenu trader={trader} />
                       </div>
                   </CardHeader>
-                  <CardContent className="space-y-3 text-sm p-4 pt-0">
-                      <p className='text-muted-foreground break-all'>{trader.specialization}</p>
-                      <div className="flex justify-between items-center">
+                  <CardContent className="space-y-3 text-sm p-4 pt-4 flex flex-col">
+                      <p className='text-muted-foreground break-all text-sm'>{trader.specialization}</p>
+                      <div className="flex justify-between items-center text-sm">
                           <span className="text-muted-foreground">Категория:</span>
                           <span>{category?.name || 'N/A'}</span>
                       </div>
-                      <div className="flex justify-between items-center">
+                      <div className="flex justify-between items-center text-sm">
                           <span className="text-muted-foreground">Статус:</span>
                           <Badge
                               variant={trader.status === 'active' ? 'default' : 'secondary'}
@@ -300,5 +299,3 @@ export function TraderManagement() {
     </div>
   );
 }
-
-    

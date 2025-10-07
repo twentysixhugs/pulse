@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
@@ -24,7 +24,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Skeleton } from '../ui/skeleton';
 import { MoreVertical } from 'lucide-react';
@@ -208,32 +207,38 @@ export function UserManagement() {
           {/* Mobile View - Cards */}
           <div className="grid gap-4 md:hidden">
             {users.map((user) => (
-              <Card key={user.id} className="w-full">
-                <CardContent className="p-4 flex items-center justify-between">
-                    <div className="flex-1 space-y-2">
-                        <div>
-                            <p className="font-semibold text-base">{user.name}</p>
-                            <a href={`https://t.me/${user.telegramId}`} target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:underline">
-                                @{user.telegramId}
-                            </a>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Badge
-                                variant={user.subscriptionStatus === 'active' ? 'default' : 'secondary'}
-                                className={`text-xs ${
-                                user.subscriptionStatus === 'active'
-                                    ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                                    : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-                                }`}
-                            >
-                                {user.subscriptionStatus === 'active' ? 'Подписка' : 'Нет подписки'}
-                            </Badge>
-                            <Badge variant={user.isBanned ? 'destructive' : 'outline'} className="text-xs">
-                                {user.isBanned ? 'Забанен' : 'Активен'}
-                            </Badge>
-                        </div>
+              <Card key={user.id} className="w-full overflow-hidden">
+                <CardHeader className="bg-muted/50 p-4 flex flex-row items-start justify-between">
+                    <div>
+                        <CardTitle className="text-base">{user.name}</CardTitle>
+                        <a href={`https://t.me/${user.telegramId}`} target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:underline">
+                            @{user.telegramId}
+                        </a>
                     </div>
-                    <UserActionMenu user={user} />
+                    <div className="-mt-2 -mr-2">
+                        <UserActionMenu user={user} />
+                    </div>
+                </CardHeader>
+                <CardContent className="p-4 pt-4 text-sm flex flex-col gap-3">
+                     <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Подписка:</span>
+                         <Badge
+                            variant={user.subscriptionStatus === 'active' ? 'default' : 'secondary'}
+                            className={`text-xs ${
+                            user.subscriptionStatus === 'active'
+                                ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                                : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                            }`}
+                        >
+                            {user.subscriptionStatus === 'active' ? 'активна' : 'неактивна'}
+                        </Badge>
+                     </div>
+                     <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Статус:</span>
+                        <Badge variant={user.isBanned ? 'destructive' : 'outline'} className="text-xs">
+                            {user.isBanned ? 'Забанен' : 'Активен'}
+                        </Badge>
+                     </div>
                 </CardContent>
               </Card>
             ))}
@@ -297,5 +302,3 @@ export function UserManagement() {
     </div>
   );
 }
-
-    
