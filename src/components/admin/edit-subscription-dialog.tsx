@@ -84,13 +84,15 @@ export function EditSubscriptionDialog({ isOpen, onClose, user, onSave }: EditSu
           <DialogTitle>Редактировать подписку</DialogTitle>
           <DialogDescription>
             Управление подпиской для пользователя {user.name}.
-            <div className='text-xs mt-2 space-y-1'>
+          </DialogDescription>
+        </DialogHeader>
+        <div className='text-sm text-muted-foreground -mt-4'>
+            <div className='text-xs space-y-1'>
                 <div>Текущая дата окончания: {currentEndDate ? format(currentEndDate, 'PPP', { locale: ru }) : 'Нет'}</div>
                 <div>Новая дата окончания: {format(newEndDate, 'PPP', { locale: ru })}</div>
             </div>
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
+        </div>
+        <div className="space-y-4">
             <div className='space-y-3'>
                  <Label>Установить количество дней</Label>
                  <Input 
