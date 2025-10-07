@@ -152,7 +152,8 @@ export function UserManagement() {
         return { text: 'Просрочена', style: expiredStyle };
     }
     
-    return { text: `Активна (${daysLeft} д.)`, style: activeStyle };
+    const displayDays = daysLeft + 1;
+    return { text: `Активна (${displayDays} д.)`, style: activeStyle };
   };
 
   const handleSubscriptionUpdate = async (userId: string, newEndDate: Date) => {

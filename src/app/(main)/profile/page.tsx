@@ -88,13 +88,16 @@ export default function ProfilePage() {
     if (daysLeft < 0) {
       return { daysLeft: 0, color: 'bg-red-500/20 text-red-400 border-red-500/30', text: 'Просрочена' };
     }
+    
+    const displayDays = daysLeft + 1;
+
     if (daysLeft < 5) {
-      return { daysLeft, color: 'bg-red-500/20 text-red-400 border-red-500/30', text: `Осталось ${daysLeft} д.` };
+      return { daysLeft, color: 'bg-red-500/20 text-red-400 border-red-500/30', text: `Осталось ${displayDays} д.` };
     }
     if (daysLeft < 10) {
-      return { daysLeft, color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', text: `Осталось ${daysLeft} д.` };
+      return { daysLeft, color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', text: `Осталось ${displayDays} д.` };
     }
-    return { daysLeft, color: 'bg-green-500/20 text-green-400 border-green-500/30', text: `Осталось ${daysLeft} д.` };
+    return { daysLeft, color: 'bg-green-500/20 text-green-400 border-green-500/30', text: `Осталось ${displayDays} д.` };
   };
 
   const subscriptionInfo = getSubscriptionInfo();
