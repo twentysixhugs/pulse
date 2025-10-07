@@ -5,10 +5,14 @@
 
 export const DUMMY_USERS = [
   { email: 'user@example.com', password: 'password', role: 'user', uid: 'user-1', name: 'Иван Петров' },
+  { email: 'user2@example.com', password: 'password', role: 'user', uid: 'user-2', name: 'Елена Сидорова' },
+  { email: 'user3@example.com', password: 'password', role: 'user', uid: 'user-3', name: 'Сергей Кузнецов' },
 ];
 
 export const DUMMY_TRADERS = [
   { email: 'trader@example.com', password: 'password', role: 'trader', uid: 'trader-1', name: 'Алекс \'КриптоКороль\' Иванов' },
+  { email: 'trader2@example.com', password: 'password', role: 'trader', uid: 'trader-2', name: 'Сара \'ФорексКоролева\' Миллер' },
+  { email: 'trader3@example.com', password: 'password', role: 'trader', uid: 'trader-3', name: 'Бен \'СэнсэйАкций\' Картер' },
 ];
 
 export const DUMMY_ADMINS = [
