@@ -28,7 +28,9 @@ type EditSubscriptionDialogProps = {
 
 export function EditSubscriptionDialog({ isOpen, onClose, user, onSave }: EditSubscriptionDialogProps) {
   const [days, setDays] = useState<number | string>(0);
-  const [newEndDate, setNewEndDate] = useState<Date>(new Date());
+  const [newEndDate, setNewEndDate] = useState<Date | null>(new Date());
+  const [newEndDateString, setNewEndDateString] = useState<string>('');
+
 
   useEffect(() => {
     if (user) {
@@ -41,12 +43,27 @@ export function EditSubscriptionDialog({ isOpen, onClose, user, onSave }: EditSu
   }, [user]);
 
   useEffect(() => {
-    const numDays = typeof days === 'number' ? days : parseInt(String(days), 10);
-    if (!isNaN(numDays)) {
-        const calculatedDate = addDays(new Date(), numDays > 0 ? numDays - 1 : -1);
-        setNewEndDate(calculatedDate);
+    try {
+        const numDays = typeof days === 'number' ? days : parseInt(String(days), 10);
+        if (isNaN(numDays)) {
+            setNewEndDate(null);
+            setNewEndDateString('Invalid time');
+            return;
+        }
+
+        if (numDays === 0) {
+            setNewEndDate(null);
+            setNewEndDateString('Нет');
+        } else {
+            const calculatedDate = addDays(new Date(), numDays - 1);
+            setNewEndDate(calculatedDate);
+            setNewEndDateString(format(calculatedDate, 'PPP', { locale: ru }));
+        }
+    } catch (e) {
+        setNewEndDate(null);
+        setNewEndDateString('Invalid time');
     }
-  }, [days]);
+}, [days]);
 
   const handleDayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -63,7 +80,7 @@ export function EditSubscriptionDialog({ isOpen, onClose, user, onSave }: EditSu
 
   const handleSave = () => {
     const numDays = typeof days === 'number' ? days : parseInt(String(days), 10);
-    if (isNaN(numDays)) return;
+    if (isNaN(numDays) || numDays < 0) return;
 
     const finalEndDate = addDays(new Date(), numDays > 0 ? numDays - 1 : -1);
     onSave(user.id, finalEndDate);
@@ -89,7 +106,7 @@ export function EditSubscriptionDialog({ isOpen, onClose, user, onSave }: EditSu
         <div className='text-sm text-muted-foreground -mt-4'>
             <div className='text-xs space-y-1'>
                 <div>Текущая дата окончания: {currentEndDate ? format(currentEndDate, 'PPP', { locale: ru }) : 'Нет'}</div>
-                <div>Новая дата окончания: {format(newEndDate, 'PPP', { locale: ru })}</div>
+                <div>Новая дата окончания: {newEndDateString}</div>
             </div>
         </div>
         <div className="space-y-4">
