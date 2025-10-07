@@ -1,9 +1,8 @@
 
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { User, getAllUsers, banUser, unbanUser, deleteUser as deleteUserFromDB } from '@/lib/firestore';
+import { User, getAllUsers, banUser, unbanUser, deleteUser as deleteUserFromDB, updateUserSubscription } from '@/lib/firestore';
 import {
   Table,
   TableBody,
@@ -27,7 +26,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Skeleton } from '../ui/skeleton';
-import { MoreVertical } from 'lucide-react';
+import { MoreVertical, Pencil } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,8 +39,9 @@ import { SearchInput } from './search-input';
 import { useDebounce } from '@/hooks/use-debounce';
 import { PaginationControl } from '../common/pagination-control';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { differenceInDays } from 'date-fns';
+import { differenceInDays, addDays } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
+import { EditSubscriptionDialog } from './edit-subscription-dialog';
 
 
 const ITEMS_PER_PAGE = 20;
@@ -54,6 +54,7 @@ export function UserManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [subscriptionFilter, setSubscriptionFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [banFilter, setBanFilter] = useState<'all' | 'banned' | 'not_banned'>('all');
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const { toast } = useToast();
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -154,6 +155,24 @@ export function UserManagement() {
     return { text: `Активна (${daysLeft} д.)`, style: activeStyle };
   };
 
+  const handleSubscriptionUpdate = async (userId: string, newEndDate: Date) => {
+    try {
+      await updateUserSubscription(userId, newEndDate);
+      toast({
+        title: "Подписка обновлена",
+      });
+      fetchData(); // Refetch to show updated data
+      setEditingUser(null);
+    } catch (error) {
+      console.error("Failed to update subscription", error);
+      toast({
+        variant: "destructive",
+        title: "Ошибка обновления",
+        description: "Не удалось обновить дату подписки.",
+      });
+    }
+  };
+
   const UserActionMenu = ({ user }: { user: User }) => {
     const [isBanAlertOpen, setBanAlertOpen] = useState(false);
     const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
@@ -167,7 +186,10 @@ export function UserManagement() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem disabled>Посмотреть детали</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setEditingUser(user)}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Редактировать подписку
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => setBanAlertOpen(true)} className={user.isBanned ? '' : 'text-destructive focus:text-destructive'}>
               {user.isBanned ? 'Разбанить' : 'Забанить'}
@@ -349,6 +371,16 @@ export function UserManagement() {
           )}
         </>
       )}
+      {editingUser && (
+        <EditSubscriptionDialog
+          user={editingUser}
+          isOpen={!!editingUser}
+          onClose={() => setEditingUser(null)}
+          onSave={handleSubscriptionUpdate}
+        />
+      )}
     </div>
   );
 }
+
+    
