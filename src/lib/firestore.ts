@@ -543,24 +543,26 @@ export async function updateUserSubscription(userId: string, newEndDate: Date) {
   const now = new Date();
   
   const userSnap = await getDoc(userRef);
-  const userData = userSnap.data() as User | undefined;
+  if (!userSnap.exists()) return;
+  const userData = userSnap.data() as User;
 
-  let isNewSubscription = true;
-  if(userData?.subscriptionEndDate) {
-    const currentEndDate = (userData.subscriptionEndDate as Timestamp).toDate();
-    if (currentEndDate > now) {
-      isNewSubscription = false;
-    }
-  }
+  const currentEndDate = userData.subscriptionEndDate ? (userData.subscriptionEndDate as Timestamp).toDate() : now;
+  const isExpired = currentEndDate < now;
 
   const updates: any = { 
-    subscriptionEndDate: Timestamp.fromDate(newEndDate)
+    subscriptionEndDate: Timestamp.fromDate(newEndDate),
+    subscriptionStatus: 'active',
   };
 
-  if (isNewSubscription) {
-    updates.subscriptionStatus = 'active';
-    updates.firstSubscribedAt = Timestamp.now();
+  if (isExpired) {
+    // This is a new subscription or resubscription after expiry
+    if (!userData.firstSubscribedAt) {
+      updates.firstSubscribedAt = Timestamp.now();
+    } else {
+      updates.lastRenewedAt = Timestamp.now();
+    }
   } else {
+    // This is an extension/renewal of an active subscription
     updates.lastRenewedAt = Timestamp.now();
   }
   
@@ -577,28 +579,28 @@ export async function getMetrics(period: 'today' | '7d'): Promise<Metrics> {
   const usersRef = collection(db, 'users');
   const alertsRef = collection(db, 'alerts');
 
-  // New Users
+  // New Users (registrations)
   const newUsersQuery = query(usersRef, where('createdAt', '>=', startDate));
   const newUsersSnap = await getCountFromServer(newUsersQuery);
   const newUsers = newUsersSnap.data().count;
 
-  // Total Subscribed Users
+  // Total Active Subscriptions
   const totalSubscribedQuery = query(usersRef, where('subscriptionStatus', '==', 'active'), where('subscriptionEndDate', '>=', now));
   const totalSubscribedSnap = await getCountFromServer(totalSubscribedQuery);
   const totalSubscribedUsers = totalSubscribedSnap.data().count;
   
-  // Newly Subscribed Users
+  // New Subscriptions (first time ever)
   const newlySubscribedQuery = query(usersRef, where('firstSubscribedAt', '>=', startDate));
   const newlySubscribedSnap = await getCountFromServer(newlySubscribedQuery);
   const newlySubscribedUsers = newlySubscribedSnap.data().count;
   
-  // Renewed Subscriptions
+  // Renewed Subscriptions (had a sub before)
   const renewedQuery = query(usersRef, where('lastRenewedAt', '>=', startDate));
   const renewedSnap = await getCountFromServer(renewedQuery);
   const renewedSubscriptions = renewedSnap.data().count;
   
   // Expired Subscriptions
-  const expiredQuery = query(usersRef, where('subscriptionEndDate', '>=', startDate), where('subscriptionEndDate', '<', now));
+  const expiredQuery = query(usersRef, where('subscriptionStatus', '==', 'active'), where('subscriptionEndDate', '>=', startDate), where('subscriptionEndDate', '<', now));
   const expiredSnap = await getCountFromServer(expiredQuery);
   const expiredSubscriptions = expiredSnap.data().count;
 
