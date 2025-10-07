@@ -246,7 +246,10 @@ export function UserManagement() {
               <Card key={user.id} className="w-full overflow-hidden">
                 <CardHeader className="bg-muted/50 p-4 flex flex-row items-start justify-between">
                     <div>
-                        <CardTitle className="text-base">{user.name}</CardTitle>
+                        <div className="flex items-center gap-2 mb-1">
+                          <CardTitle className="text-base">{user.name}</CardTitle>
+                          {user.isBanned && <Badge variant="destructive" className="text-xs">Забанен</Badge>}
+                        </div>
                         <a href={`https://t.me/${user.telegramId}`} target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:underline">
                             @{user.telegramId}
                         </a>
@@ -269,12 +272,6 @@ export function UserManagement() {
                             {user.subscriptionStatus === 'active' ? 'активна' : 'неактивна'}
                         </Badge>
                      </div>
-                     <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Статус:</span>
-                        <Badge variant={user.isBanned ? 'destructive' : 'outline'} className="text-xs">
-                            {user.isBanned ? 'Забанен' : 'Активен'}
-                        </Badge>
-                     </div>
                 </CardContent>
               </Card>
             ))}
@@ -287,7 +284,6 @@ export function UserManagement() {
                 <TableRow>
                   <TableHead>Имя</TableHead>
                   <TableHead>Подписка</TableHead>
-                  <TableHead>Статус</TableHead>
                   <TableHead className="text-right">Действия</TableHead>
                 </TableRow>
               </TableHeader>
@@ -295,10 +291,15 @@ export function UserManagement() {
                 {users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">
-                        <div>{user.name}</div>
-                        <a href={`https://t.me/${user.telegramId}`} target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:underline">
-                            @{user.telegramId}
-                        </a>
+                        <div className="flex items-center gap-2">
+                          <div>
+                              <div>{user.name}</div>
+                              <a href={`https://t.me/${user.telegramId}`} target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:underline">
+                                  @{user.telegramId}
+                              </a>
+                          </div>
+                          {user.isBanned && <Badge variant="destructive">Забанен</Badge>}
+                        </div>
                     </TableCell>
                     <TableCell>
                       <Badge
@@ -310,11 +311,6 @@ export function UserManagement() {
                         }
                       >
                         {user.subscriptionStatus === 'active' ? 'активна' : 'неактивна'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={user.isBanned ? 'destructive' : 'outline'}>
-                        {user.isBanned ? 'Забанен' : 'Активен'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
@@ -338,5 +334,7 @@ export function UserManagement() {
     </div>
   );
 }
+
+    
 
     
