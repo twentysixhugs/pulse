@@ -203,9 +203,9 @@ export function UserManagement() {
     <div className="space-y-4 px-4 md:px-0">
       <h2 className="text-2xl font-headline font-bold">Управление пользователями</h2>
       <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex gap-4">
             <Select value={subscriptionFilter} onValueChange={(value) => setSubscriptionFilter(value as any)}>
-                <SelectTrigger>
+                <SelectTrigger className='w-auto'>
                     <SelectValue placeholder="Фильтр по подписке" />
                 </SelectTrigger>
                 <SelectContent>
@@ -215,7 +215,7 @@ export function UserManagement() {
                 </SelectContent>
             </Select>
             <Select value={banFilter} onValueChange={(value) => setBanFilter(value as any)}>
-                <SelectTrigger>
+                <SelectTrigger className='w-auto'>
                     <SelectValue placeholder="Фильтр по статусу" />
                 </SelectTrigger>
                 <SelectContent>
