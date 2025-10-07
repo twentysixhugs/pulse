@@ -14,7 +14,8 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { RefreshCcw } from 'lucide-react';
-import { addDays, differenceInCalendarDays } from 'date-fns';
+import { addDays, differenceInCalendarDays, format } from 'date-fns';
+import { ru } from 'date-fns/locale';
 import { Timestamp } from 'firebase/firestore';
 import { Input } from '../ui/input';
 
@@ -27,16 +28,25 @@ type EditSubscriptionDialogProps = {
 
 export function EditSubscriptionDialog({ isOpen, onClose, user, onSave }: EditSubscriptionDialogProps) {
   const [days, setDays] = useState<number | string>(0);
+  const [newEndDate, setNewEndDate] = useState<Date>(new Date());
 
   useEffect(() => {
     if (user && user.subscriptionEndDate) {
         const endDate = (user.subscriptionEndDate as Timestamp).toDate();
         const daysLeft = differenceInCalendarDays(endDate, new Date());
-        setDays(daysLeft >= 0 ? daysLeft + 1 : 0);
+        setDays(daysLeft >= 0 ? daysLeft : 0);
     } else {
         setDays(0);
     }
   }, [user]);
+
+  useEffect(() => {
+    const numDays = typeof days === 'number' ? days : parseInt(String(days), 10);
+    if (!isNaN(numDays)) {
+        const calculatedDate = addDays(new Date(), numDays > 0 ? numDays - 1 : -1);
+        setNewEndDate(calculatedDate);
+    }
+  }, [days]);
 
   const handleDayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -44,27 +54,28 @@ export function EditSubscriptionDialog({ isOpen, onClose, user, onSave }: EditSu
         setDays('');
         return;
     }
-    const num = parseInt(value, 10);
-    if (!isNaN(num) && num >= 0) {
+    // Allow only whole numbers
+    if (/^\d*$/.test(value)) {
+        const num = parseInt(value, 10);
         setDays(num);
     }
   };
 
   const handleSave = () => {
-    const numDays = typeof days === 'number' ? days : parseInt(days, 10);
+    const numDays = typeof days === 'number' ? days : parseInt(String(days), 10);
     if (isNaN(numDays)) return;
 
-    const newEndDate = addDays(new Date(), numDays > 0 ? numDays - 1 : -1);
-    onSave(user.id, newEndDate);
+    const finalEndDate = addDays(new Date(), numDays > 0 ? numDays - 1 : -1);
+    onSave(user.id, finalEndDate);
   };
 
   const handleReset = () => {
-    const newEndDate = new Date();
-    newEndDate.setDate(newEndDate.getDate() - 1); // Set to yesterday to make it expired
-    onSave(user.id, newEndDate);
+    const resetDate = new Date();
+    resetDate.setDate(resetDate.getDate() - 1); // Set to yesterday to make it expired
+    onSave(user.id, resetDate);
   }
   
-  const currentEndDate = user.subscriptionEndDate ? (user.subscriptionEndDate as Timestamp).toDate().toLocaleDateString('ru-RU') : 'Нет';
+  const currentEndDate = user.subscriptionEndDate ? (user.subscriptionEndDate as Timestamp).toDate() : null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -72,7 +83,11 @@ export function EditSubscriptionDialog({ isOpen, onClose, user, onSave }: EditSu
         <DialogHeader>
           <DialogTitle>Редактировать подписку</DialogTitle>
           <DialogDescription>
-            Управление подпиской для пользователя {user.name}. Текущая дата окончания: {currentEndDate}
+            Управление подпиской для пользователя {user.name}.
+            <div className='text-xs mt-2 space-y-1'>
+                <p>Текущая дата окончания: {currentEndDate ? format(currentEndDate, 'PPP', { locale: ru }) : 'Нет'}</p>
+                <p>Новая дата окончания: {format(newEndDate, 'PPP', { locale: ru })}</p>
+            </div>
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
