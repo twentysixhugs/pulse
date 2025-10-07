@@ -136,18 +136,21 @@ export function UserManagement() {
   const pageCount = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
   const getSubscriptionInfo = (user: User) => {
+    const inactiveStyle = 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+    const activeStyle = 'bg-green-500/20 text-green-400 border-green-500/30';
+
     if (user.subscriptionStatus !== 'active' || !user.subscriptionEndDate) {
-        return 'Неактивна';
+        return { text: 'Неактивна', style: inactiveStyle };
     }
     
     const endDate = (user.subscriptionEndDate as Timestamp).toDate();
     const daysLeft = differenceInDays(endDate, new Date());
     
     if (daysLeft < 0) {
-        return 'Просрочена';
+        return { text: 'Просрочена', style: inactiveStyle };
     }
     
-    return `Активна (${daysLeft} д.)`;
+    return { text: `Активна (${daysLeft} д.)`, style: activeStyle };
   };
 
   const UserActionMenu = ({ user }: { user: User }) => {
@@ -260,7 +263,9 @@ export function UserManagement() {
         <>
           {/* Mobile View - Cards */}
           <div className="grid gap-4 md:hidden">
-            {users.map((user) => (
+            {users.map((user) => {
+              const subscriptionInfo = getSubscriptionInfo(user);
+              return (
               <Card key={user.id} className="w-full overflow-hidden">
                 <CardHeader className="bg-muted/50 p-4 flex flex-row items-start justify-between">
                     <div>
@@ -280,19 +285,15 @@ export function UserManagement() {
                      <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Подписка:</span>
                          <Badge
-                            variant={user.subscriptionStatus === 'active' ? 'default' : 'secondary'}
-                            className={`text-xs ${
-                            user.subscriptionStatus === 'active'
-                                ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                                : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-                            }`}
+                            variant={subscriptionInfo.text === 'Неактивна' || subscriptionInfo.text === 'Просрочена' ? 'secondary' : 'default'}
+                            className={`text-xs ${subscriptionInfo.style}`}
                         >
-                            {getSubscriptionInfo(user)}
+                            {subscriptionInfo.text}
                         </Badge>
                      </div>
                 </CardContent>
               </Card>
-            ))}
+            )})}
           </div>
 
           {/* Desktop View - Table */}
@@ -306,7 +307,9 @@ export function UserManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
+                {users.map((user) => {
+                  const subscriptionInfo = getSubscriptionInfo(user);
+                  return (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
@@ -321,21 +324,17 @@ export function UserManagement() {
                     </TableCell>
                     <TableCell>
                       <Badge
-                        variant={user.subscriptionStatus === 'active' ? 'default' : 'secondary'}
-                        className={
-                          user.subscriptionStatus === 'active'
-                            ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                            : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-                        }
+                        variant={subscriptionInfo.text === 'Неактивна' || subscriptionInfo.text === 'Просрочена' ? 'secondary' : 'default'}
+                        className={subscriptionInfo.style}
                       >
-                        {getSubscriptionInfo(user)}
+                        {subscriptionInfo.text}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <UserActionMenu user={user} />
                     </TableCell>
                   </TableRow>
-                ))}
+                )})}
               </TableBody>
             </Table>
           </div>
@@ -352,11 +351,3 @@ export function UserManagement() {
     </div>
   );
 }
-
-    
-
-    
-
-    
-
-    
