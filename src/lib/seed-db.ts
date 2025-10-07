@@ -35,9 +35,13 @@ export async function seedDatabase(db: Firestore) {
   // --- USERS ---
   Object.entries(seedData.users).forEach(([id, data]) => {
     const docRef = doc(db, 'users', id);
-    const userData: { [key: string]: any } = { ...data };
+    const userData: { [key: string]: any } = { ...data, createdAt: Timestamp.now() };
     if (userData.subscriptionEndDate) {
-      userData.subscriptionEndDate = Timestamp.fromDate(new Date((userData.subscriptionEndDate as any).value));
+      const subDate = new Date((userData.subscriptionEndDate as any).value);
+      userData.subscriptionEndDate = Timestamp.fromDate(subDate);
+      if (userData.subscriptionStatus === 'active' && subDate > new Date()) {
+          userData.firstSubscribedAt = Timestamp.fromDate(new Date(subDate.getTime() - 30 * 24 * 60 * 60 * 1000)); // Assume first sub was 30 days before expiry
+      }
     }
     batch.set(docRef, userData);
   });

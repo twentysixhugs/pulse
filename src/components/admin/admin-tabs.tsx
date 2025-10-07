@@ -6,7 +6,7 @@ import { UserManagement } from "@/components/admin/user-management";
 import { TraderManagement } from "@/components/admin/trader-management";
 import { ComplaintManagement } from "@/components/admin/complaint-management";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, GanttChartSquare, ShieldAlert } from "lucide-react";
+import { Users, GanttChartSquare, ShieldAlert, LineChart } from "lucide-react";
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Select,
@@ -15,12 +15,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { MetricsManagement } from './metrics-management';
 
 
 const TABS = [
     { value: "users", label: "Пользователи", icon: Users },
     { value: "traders", label: "Трейдеры", icon: GanttChartSquare },
     { value: "complaints", label: "Жалобы", icon: ShieldAlert },
+    { value: "metrics", label: "Метрики", icon: LineChart },
 ];
 
 
@@ -51,6 +53,7 @@ export function AdminTabs() {
                     {activeTab === 'users' && <UserManagement />}
                     {activeTab === 'traders' && <TraderManagement />}
                     {activeTab === 'complaints' && <ComplaintManagement />}
+                    {activeTab === 'metrics' && <MetricsManagement />}
                 </div>
             </div>
         )
@@ -58,7 +61,7 @@ export function AdminTabs() {
 
     return (
         <Tabs defaultValue="users" value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="flex flex-wrap h-auto">
                  {TABS.map(tab => (
                     <TabsTrigger key={tab.value} value={tab.value} className="flex-1">
                         <tab.icon className="mr-2 h-4 w-4" />
@@ -74,6 +77,9 @@ export function AdminTabs() {
             </TabsContent>
             <TabsContent value="complaints" className="mt-6">
                 <ComplaintManagement />
+            </TabsContent>
+            <TabsContent value="metrics" className="mt-6">
+                <MetricsManagement />
             </TabsContent>
         </Tabs>
     );

@@ -24,9 +24,15 @@ export default function ProfilePage() {
     async function fetchUser() {
       if (authUser) {
         setLoading(true);
-        const foundUser = await getUser(authUser.uid);
-        setCurrentUser(foundUser);
-        setLoading(false);
+        try {
+            const foundUser = await getUser(authUser.uid);
+            setCurrentUser(foundUser);
+        } catch(e) {
+            console.error(e);
+        }
+        finally {
+            setLoading(false);
+        }
       }
     }
     fetchUser();
@@ -129,7 +135,7 @@ export default function ProfilePage() {
              <div>
                 <h3 className="text-sm font-medium text-muted-foreground">Статус подписки</h3>
                  <Badge
-                    variant={currentUser.subscriptionStatus === 'active' ? 'default' : 'secondary'}
+                    variant={currentUser.subscriptionStatus === 'active' && subscriptionInfo.text !== 'Просрочена' ? 'default' : 'secondary'}
                     className={`mt-1 ${subscriptionInfo.color}`}
                   >
                     {currentUser.subscriptionStatus === 'active' ? subscriptionInfo.text : 'Неактивна'}

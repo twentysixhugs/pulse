@@ -25,6 +25,8 @@ import {
   runTransaction,
   and,
   or,
+  startAt,
+  endAt,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
@@ -49,6 +51,7 @@ export interface User {
   isBanned: boolean;
   subscriptionStatus: SubscriptionStatus;
   subscriptionEndDate?: string | Timestamp; // ISO string or Firestore Timestamp
+  createdAt?: Timestamp; // Add createdAt for tracking new users
   role: UserRole;
 }
 
@@ -99,6 +102,17 @@ export interface Report {
   reason: string;
   status: ReportStatus;
 }
+
+
+export type Metrics = {
+  newUsers: number;
+  totalSubscribedUsers: number;
+  newlySubscribedUsers: number;
+  renewedSubscriptions: number;
+  expiredSubscriptions: number;
+  traderPosts: number;
+};
+
 
 // --- Real-time Listeners ---
 
@@ -509,6 +523,7 @@ export async function createTrader(db: Firestore, traderData: Omit<Trader, 'id' 
         isBanned: false,
         subscriptionStatus: 'active', // Traders have permanent subscription
         subscriptionEndDate: Timestamp.fromDate(new Date('2099-12-31')),
+        createdAt: Timestamp.now(),
     });
     
     await batch.commit();
@@ -522,5 +537,79 @@ export async function resolveReport(db: Firestore, reportId: string) {
 
 export async function updateUserSubscription(userId: string, newEndDate: Date) {
   const userRef = doc(db, 'users', userId);
-  await updateDoc(userRef, { subscriptionEndDate: Timestamp.fromDate(newEndDate) });
+  const now = new Date();
+  
+  const userSnap = await getDoc(userRef);
+  const userData = userSnap.data() as User | undefined;
+
+  let isNewSubscription = true;
+  if(userData?.subscriptionEndDate) {
+    const currentEndDate = (userData.subscriptionEndDate as Timestamp).toDate();
+    if (currentEndDate > now) {
+      isNewSubscription = false;
+    }
+  }
+
+  const updates: any = { 
+    subscriptionEndDate: Timestamp.fromDate(newEndDate)
+  };
+
+  if (isNewSubscription) {
+    updates.subscriptionStatus = 'active';
+    updates.firstSubscribedAt = Timestamp.now();
+  } else {
+    updates.lastRenewedAt = Timestamp.now();
+  }
+  
+  await updateDoc(userRef, updates);
+}
+
+// --- Metrics ---
+
+export async function getMetrics(period: 'today' | '7d'): Promise<Metrics> {
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startDate = period === 'today' ? startOfDay : new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  
+  const usersRef = collection(db, 'users');
+  const alertsRef = collection(db, 'alerts');
+
+  // New Users
+  const newUsersQuery = query(usersRef, where('createdAt', '>=', startDate));
+  const newUsersSnap = await getCountFromServer(newUsersQuery);
+  const newUsers = newUsersSnap.data().count;
+
+  // Total Subscribed Users
+  const totalSubscribedQuery = query(usersRef, where('subscriptionStatus', '==', 'active'), where('subscriptionEndDate', '>=', now));
+  const totalSubscribedSnap = await getCountFromServer(totalSubscribedQuery);
+  const totalSubscribedUsers = totalSubscribedSnap.data().count;
+  
+  // Newly Subscribed Users
+  const newlySubscribedQuery = query(usersRef, where('firstSubscribedAt', '>=', startDate));
+  const newlySubscribedSnap = await getCountFromServer(newlySubscribedQuery);
+  const newlySubscribedUsers = newlySubscribedSnap.data().count;
+  
+  // Renewed Subscriptions
+  const renewedQuery = query(usersRef, where('lastRenewedAt', '>=', startDate));
+  const renewedSnap = await getCountFromServer(renewedQuery);
+  const renewedSubscriptions = renewedSnap.data().count;
+  
+  // Expired Subscriptions
+  const expiredQuery = query(usersRef, where('subscriptionEndDate', '>=', startDate), where('subscriptionEndDate', '<', now));
+  const expiredSnap = await getCountFromServer(expiredQuery);
+  const expiredSubscriptions = expiredSnap.data().count;
+
+  // Trader Posts
+  const postsQuery = query(alertsRef, where('timestamp', '>=', startDate));
+  const postsSnap = await getCountFromServer(postsQuery);
+  const traderPosts = postsSnap.data().count;
+
+  return {
+    newUsers,
+    totalSubscribedUsers,
+    newlySubscribedUsers,
+    renewedSubscriptions,
+    expiredSubscriptions,
+    traderPosts,
+  };
 }
