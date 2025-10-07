@@ -77,7 +77,7 @@ export default function ProfilePage() {
 
 
   const getSubscriptionInfo = () => {
-    if (!currentUser || !currentUser.subscriptionEndDate) {
+    if (!currentUser || !currentUser.subscriptionEndDate || currentUser.subscriptionStatus !== 'active') {
       return { daysLeft: 0, color: 'bg-red-500/20 text-red-400 border-red-500/30', text: 'Неактивна' };
     }
 
@@ -87,9 +87,6 @@ export default function ProfilePage() {
 
     if (daysLeft < 0) {
       return { daysLeft: 0, color: 'bg-red-500/20 text-red-400 border-red-500/30', text: 'Просрочена' };
-    }
-     if (daysLeft === 0) {
-      return { daysLeft, color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', text: 'Истекает сегодня' };
     }
     if (daysLeft < 5) {
       return { daysLeft, color: 'bg-red-500/20 text-red-400 border-red-500/30', text: `Осталось ${daysLeft} д.` };
@@ -141,7 +138,7 @@ export default function ProfilePage() {
                     variant={currentUser.subscriptionStatus === 'active' && subscriptionInfo.text !== 'Просрочена' ? 'default' : 'secondary'}
                     className={`mt-1 ${subscriptionInfo.color}`}
                   >
-                    {currentUser.subscriptionStatus === 'active' ? subscriptionInfo.text : 'Неактивна'}
+                    {subscriptionInfo.text}
                   </Badge>
             </div>
             <div className="border-t pt-4">

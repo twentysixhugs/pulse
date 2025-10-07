@@ -568,22 +568,24 @@ export async function updateUserSubscription(userId: string, newEndDate: Date) {
   const userData = userSnap.data() as User;
 
   const currentEndDate = userData.subscriptionEndDate ? (userData.subscriptionEndDate as Timestamp).toDate() : now;
-  const isExpired = currentEndDate < now;
+  const isCurrentlyActive = userData.subscriptionStatus === 'active' && currentEndDate >= now;
 
   const updates: any = { 
     subscriptionEndDate: Timestamp.fromDate(newEndDate),
-    subscriptionStatus: 'active',
+    subscriptionStatus: newEndDate >= now ? 'active' : 'inactive',
   };
 
-  if (isExpired) {
+  const isBecomingActive = !isCurrentlyActive && newEndDate >= now;
+
+  if (isBecomingActive) {
     // This is a new subscription or resubscription after expiry
     if (!userData.firstSubscribedAt) {
       updates.firstSubscribedAt = Timestamp.now();
     } else {
       updates.lastRenewedAt = Timestamp.now();
     }
-  } else {
-    // This is an extension/renewal of an active subscription
+  } else if (newEndDate > currentEndDate) {
+    // This is an extension/renewal of an already active subscription
     updates.lastRenewedAt = Timestamp.now();
   }
   
@@ -639,5 +641,3 @@ export async function getMetrics(period: 'today' | '7d'): Promise<Metrics> {
     traderPosts,
   };
 }
-
-    

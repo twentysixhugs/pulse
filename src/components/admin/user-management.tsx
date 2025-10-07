@@ -151,10 +151,6 @@ export function UserManagement() {
     if (daysLeft < 0) {
         return { text: 'Просрочена', style: expiredStyle };
     }
-
-    if (daysLeft === 0) {
-        return { text: 'Истекает сегодня', style: inactiveStyle };
-    }
     
     return { text: `Активна (${daysLeft} д.)`, style: activeStyle };
   };
@@ -386,5 +382,3 @@ export function UserManagement() {
     </div>
   );
 }
-
-    
