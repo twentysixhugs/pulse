@@ -16,6 +16,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { MoreVertical, PlusCircle } from 'lucide-react';
 import {
@@ -126,46 +127,53 @@ export function TraderManagement() {
     setCurrentPage(selected + 1);
   };
   
-  const TraderActionMenu = ({ trader }: {trader: Trader}) => (
-    <AlertDialog>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon">
-            <MoreVertical className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => toggleTraderStatus(trader.id, trader.status)}>
-              {trader.status === 'active' ? 'Деактивировать' : 'Активировать'}
-          </DropdownMenuItem>
-          <DropdownMenuItem disabled>Редактировать посты</DropdownMenuItem>
-            <AlertDialogTrigger asChild>
-              <DropdownMenuItem className="text-destructive focus:text-destructive">
-                  Удалить трейдера
-              </DropdownMenuItem>
-            </AlertDialogTrigger>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Удалить трейдера?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Это действие нельзя отменить. Это приведет к необратимому удалению {trader.name} и всех связанных данных.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Отмена</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={() => deleteTrader(trader.id)}
-            className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
-          >
-            Подтвердить удаление
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
+  const TraderActionMenu = ({ trader }: {trader: Trader}) => {
+    const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
+  
+    return (
+      <>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => toggleTraderStatus(trader.id, trader.status)}>
+                {trader.status === 'active' ? 'Деактивировать' : 'Активировать'}
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled>Редактировать посты</DropdownMenuItem>
+            <DropdownMenuItem 
+              className="text-destructive focus:text-destructive"
+              onClick={() => setDeleteAlertOpen(true)}
+            >
+              Удалить трейдера
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+  
+        <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Удалить трейдера?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Это действие нельзя отменить. Это приведет к необратимому удалению {trader.name} и всех связанных данных.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Отмена</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteTrader(trader.id)}
+                className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+              >
+                Подтвердить удаление
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
+    );
+  };
 
   return (
     <div className="space-y-4 px-4 md:px-0">
