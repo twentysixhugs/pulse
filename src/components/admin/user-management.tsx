@@ -38,6 +38,7 @@ import { db } from '@/lib/firebase';
 import { SearchInput } from './search-input';
 import { useDebounce } from '@/hooks/use-debounce';
 import { PaginationControl } from '../common/pagination-control';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 
 const ITEMS_PER_PAGE = 20;
@@ -48,6 +49,8 @@ export function UserManagement() {
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
+  const [subscriptionFilter, setSubscriptionFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [banFilter, setBanFilter] = useState<'all' | 'banned' | 'not_banned'>('all');
   const { toast } = useToast();
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -60,6 +63,8 @@ export function UserManagement() {
         limit: ITEMS_PER_PAGE,
         search: debouncedSearchTerm,
         role: 'user', // Fetch only regular users
+        subscriptionStatus: subscriptionFilter,
+        banStatus: banFilter,
       });
 
       // Sort users: active -> inactive -> banned
@@ -82,7 +87,7 @@ export function UserManagement() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, debouncedSearchTerm, toast]);
+  }, [currentPage, debouncedSearchTerm, toast, subscriptionFilter, banFilter]);
 
   useEffect(() => {
     fetchData();
@@ -197,7 +202,29 @@ export function UserManagement() {
   return (
     <div className="space-y-4 px-4 md:px-0">
       <h2 className="text-2xl font-headline font-bold">Управление пользователями</h2>
-      <div>
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+            <Select value={subscriptionFilter} onValueChange={(value) => setSubscriptionFilter(value as any)}>
+                <SelectTrigger>
+                    <SelectValue placeholder="Фильтр по подписке" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Все подписки</SelectItem>
+                    <SelectItem value="active">Активная</SelectItem>
+                    <SelectItem value="inactive">Неактивная</SelectItem>
+                </SelectContent>
+            </Select>
+            <Select value={banFilter} onValueChange={(value) => setBanFilter(value as any)}>
+                <SelectTrigger>
+                    <SelectValue placeholder="Фильтр по статусу" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Все статусы</SelectItem>
+                    <SelectItem value="banned">Забанен</SelectItem>
+                    <SelectItem value="not_banned">Не забанен</SelectItem>
+                </SelectContent>
+            </Select>
+        </div>
         <SearchInput placeholder="Поиск по имени или Telegram ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
       </div>
       
@@ -312,3 +339,4 @@ export function UserManagement() {
   );
 }
 
+    

@@ -219,40 +219,61 @@ type GetAllUsersParams = {
   limit?: number;
   search?: string;
   role?: UserRole;
+  subscriptionStatus?: 'all' | 'active' | 'inactive';
+  banStatus?: 'all' | 'banned' | 'not_banned';
 }
 
 export async function getAllUsers(params: GetAllUsersParams = {}): Promise<{ data: User[], totalCount: number }> {
-  const { page = 1, limit = Number.MAX_SAFE_INTEGER, search, role } = params;
-  const usersCol = collection(db, 'users');
+  const { 
+    page = 1, 
+    limit = Number.MAX_SAFE_INTEGER, 
+    search, 
+    role,
+    subscriptionStatus = 'all',
+    banStatus = 'all'
+  } = params;
   
-  let q = query(usersCol);
+  const usersCol = collection(db, 'users');
+  let allUsers: User[] = [];
 
-  // Firestore does not support robust text search on its own.
-  // For a real-world app, a third-party search service like Algolia or Typesense is recommended.
-  // Here, we fetch all users (or filter by role) and then filter by search term on the client side.
-  // This is inefficient for large datasets.
+  // This is inefficient. For a real app, use a dedicated search service like Algolia or Typesense,
+  // or structure your data to allow for more complex Firestore queries.
+  const snapshot = await getDocs(query(usersCol));
+  allUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
 
-  const snapshot = await getDocs(q);
-
-  let allUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+  // Apply filters in memory
+  let filteredUsers = allUsers;
 
   if (role) {
-    allUsers = allUsers.filter(user => user.role === role);
+    filteredUsers = filteredUsers.filter(user => user.role === role);
+  }
+  
+  if (subscriptionStatus !== 'all') {
+    filteredUsers = filteredUsers.filter(user => user.subscriptionStatus === subscriptionStatus);
+  }
+
+  if (banStatus !== 'all') {
+    if (banStatus === 'banned') {
+        filteredUsers = filteredUsers.filter(user => user.isBanned);
+    } else { // 'not_banned'
+        filteredUsers = filteredUsers.filter(user => !user.isBanned);
+    }
   }
 
   if (search) {
     const searchTermLower = search.toLowerCase();
-    allUsers = allUsers.filter(user => 
+    filteredUsers = filteredUsers.filter(user => 
         user.name.toLowerCase().includes(searchTermLower) || 
         (user.telegramId && user.telegramId.toLowerCase().includes(searchTermLower))
     );
   }
 
-  const totalCount = allUsers.length;
-  const data = allUsers.slice((page - 1) * limit, page * limit);
+  const totalCount = filteredUsers.length;
+  const data = filteredUsers.slice((page - 1) * limit, page * limit);
   
   return { data, totalCount };
 }
+
 
 type GetAllTradersParams = {
   page?: number;
@@ -618,3 +639,5 @@ export async function getMetrics(period: 'today' | '7d'): Promise<Metrics> {
     traderPosts,
   };
 }
+
+    
