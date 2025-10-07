@@ -295,7 +295,7 @@ export function UserManagement() {
                     <div>
                         <div className="flex items-center gap-2 mb-1">
                           <CardTitle className="text-base">{user.name}</CardTitle>
-                          {user.isBanned && <Badge variant="destructive" className="bg-red-500/20 text-red-400 border-red-500/30">Забанен</Badge>}
+                          {user.isBanned && <Badge variant="destructive" className="bg-red-500/20 text-red-400 border-red-500/30 cursor-default hover:bg-red-500/20">Забанен</Badge>}
                         </div>
                         <a href={`https://t.me/${user.telegramId}`} target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:underline">
                             @{user.telegramId}
@@ -310,7 +310,7 @@ export function UserManagement() {
                         <span className="text-muted-foreground">Подписка:</span>
                          <Badge
                             variant={subscriptionInfo.text === 'Неактивна' || subscriptionInfo.text === 'Просрочена' ? 'secondary' : 'default'}
-                            className={`text-xs ${subscriptionInfo.style}`}
+                            className={`text-xs ${subscriptionInfo.style} cursor-default`}
                         >
                             {subscriptionInfo.text}
                         </Badge>
@@ -343,13 +343,13 @@ export function UserManagement() {
                                   @{user.telegramId}
                               </a>
                           </div>
-                          {user.isBanned && <Badge variant="destructive" className="bg-red-500/20 text-red-400 border-red-500/30">Забанен</Badge>}
+                          {user.isBanned && <Badge variant="destructive" className="bg-red-500/20 text-red-400 border-red-500/30 cursor-default hover:bg-red-500/20">Забанен</Badge>}
                         </div>
                     </TableCell>
                     <TableCell>
                       <Badge
                         variant={subscriptionInfo.text === 'Неактивна' || subscriptionInfo.text === 'Просрочена' ? 'secondary' : 'default'}
-                        className={subscriptionInfo.style}
+                        className={`${subscriptionInfo.style} cursor-default`}
                       >
                         {subscriptionInfo.text}
                       </Badge>
