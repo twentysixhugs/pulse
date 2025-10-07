@@ -61,9 +61,9 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             </span>
              <AlertDialog>
                 <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm" disabled={isSeeding}>
-                        {isSeeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
-                        Заполнить базу
+                    <Button variant="outline" size="icon" disabled={isSeeding}>
+                        {isSeeding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
+                        <span className="sr-only">Заполнить базу</span>
                     </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
@@ -88,7 +88,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <main className="flex-1">
-        <div className="container py-8 px-4">{children}</div>
+        <div className="container py-8">{children}</div>
       </main>
     </div>
   );
