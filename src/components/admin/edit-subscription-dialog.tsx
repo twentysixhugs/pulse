@@ -31,10 +31,10 @@ export function EditSubscriptionDialog({ isOpen, onClose, user, onSave }: EditSu
   const [newEndDate, setNewEndDate] = useState<Date>(new Date());
 
   useEffect(() => {
-    if (user && user.subscriptionEndDate) {
-        const endDate = (user.subscriptionEndDate as Timestamp).toDate();
+    if (user) {
+        const endDate = user.subscriptionEndDate ? (user.subscriptionEndDate as Timestamp).toDate() : new Date();
         const daysLeft = differenceInCalendarDays(endDate, new Date());
-        setDays(daysLeft >= 0 ? daysLeft : 0);
+        setDays(daysLeft >= 0 ? daysLeft + 1 : 0);
     } else {
         setDays(0);
     }
@@ -85,8 +85,8 @@ export function EditSubscriptionDialog({ isOpen, onClose, user, onSave }: EditSu
           <DialogDescription>
             Управление подпиской для пользователя {user.name}.
             <div className='text-xs mt-2 space-y-1'>
-                <p>Текущая дата окончания: {currentEndDate ? format(currentEndDate, 'PPP', { locale: ru }) : 'Нет'}</p>
-                <p>Новая дата окончания: {format(newEndDate, 'PPP', { locale: ru })}</p>
+                <div>Текущая дата окончания: {currentEndDate ? format(currentEndDate, 'PPP', { locale: ru }) : 'Нет'}</div>
+                <div>Новая дата окончания: {format(newEndDate, 'PPP', { locale: ru })}</div>
             </div>
           </DialogDescription>
         </DialogHeader>
