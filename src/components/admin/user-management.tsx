@@ -61,7 +61,20 @@ export function UserManagement() {
         search: debouncedSearchTerm,
         role: 'user', // Fetch only regular users
       });
-      setUsers(data);
+
+      // Sort users: active -> inactive -> banned
+      const sortedData = data.sort((a, b) => {
+        if (a.isBanned && !b.isBanned) return 1;
+        if (!a.isBanned && b.isBanned) return -1;
+        if (a.isBanned && b.isBanned) return 0;
+
+        if (a.subscriptionStatus === 'active' && b.subscriptionStatus !== 'active') return -1;
+        if (a.subscriptionStatus !== 'active' && b.subscriptionStatus === 'active') return 1;
+        
+        return 0;
+      });
+      
+      setUsers(sortedData);
       setTotalCount(totalCount);
     } catch (error) {
       console.error("Failed to fetch users:", error);
@@ -77,17 +90,13 @@ export function UserManagement() {
 
   const toggleBanStatus = async (userId: string, isBanned: boolean) => {
     const action = isBanned ? unbanUser : banUser;
-    const newBanStatus = !isBanned;
-
+    
     try {
       await action(db, userId);
-      setUsers((currentUsers) =>
-        currentUsers.map((user) =>
-          user.id === userId ? { ...user, isBanned: newBanStatus } : user
-        )
-      );
+      // Refetch data to apply new sorting
+      fetchData();
       toast({
-        title: `Пользователь ${newBanStatus ? 'забанен' : 'разбанен'}.`,
+        title: `Пользователь ${!isBanned ? 'забанен' : 'разбанен'}.`,
       });
     } catch (err) {
       console.error(err);
@@ -302,3 +311,4 @@ export function UserManagement() {
     </div>
   );
 }
+
