@@ -138,6 +138,7 @@ export function UserManagement() {
   const getSubscriptionInfo = (user: User) => {
     const inactiveStyle = 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
     const activeStyle = 'bg-green-500/20 text-green-400 border-green-500/30';
+    const expiredStyle = 'bg-red-500/20 text-red-400 border-red-500/30';
 
     if (user.subscriptionStatus !== 'active' || !user.subscriptionEndDate) {
         return { text: 'Неактивна', style: inactiveStyle };
@@ -147,7 +148,7 @@ export function UserManagement() {
     const daysLeft = differenceInDays(endDate, new Date());
     
     if (daysLeft < 0) {
-        return { text: 'Просрочена', style: inactiveStyle };
+        return { text: 'Просрочена', style: expiredStyle };
     }
     
     return { text: `Активна (${daysLeft} д.)`, style: activeStyle };
@@ -211,7 +212,7 @@ export function UserManagement() {
                         onClick={() => deleteUser(user.id)}
                         className='flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90'
                     >
-                        Подтвердить удаление
+                        Подтвердить
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
