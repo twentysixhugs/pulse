@@ -169,32 +169,32 @@ export function TraderManagement() {
   );
 
   return (
-    <div className="space-y-4">
-       <div className="flex flex-col sm:flex-row gap-2 justify-between items-center px-4 md:px-0">
+    <div className="space-y-4 px-4 md:px-0">
+       <div className="flex flex-col sm:flex-row gap-2 justify-between items-center">
           <h2 className="text-2xl font-headline font-bold self-start">Управление трейдерами</h2>
           <Button onClick={() => setCreateDialogOpen(true)} className='w-full sm:w-auto'>
               <PlusCircle className="mr-2 h-4 w-4" />
               Создать трейдера
           </Button>
        </div>
-      <div className="px-4 md:px-0">
+      <div>
         <SearchInput placeholder="Поиск по имени или Telegram ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
       </div>
       
       {loading ? (
-         <div className="space-y-4 px-4 md:px-0">
+         <div className="space-y-4">
             <Skeleton className="h-20 w-full" />
             <Skeleton className="h-20 w-full" />
             <Skeleton className="h-20 w-full" />
         </div>
       ) : traders.length === 0 ? (
-        <div className="text-center py-16 border-dashed border-2 rounded-lg mx-4 md:mx-0">
+        <div className="text-center py-16 border-dashed border-2 rounded-lg">
           <p className="text-muted-foreground">Трейдеры не найдены.</p>
         </div>
       ) : (
       <>
         {/* Mobile View */}
-        <div className="grid gap-4 md:hidden px-4">
+        <div className="grid gap-4 md:hidden">
           {traders.map((trader) => {
               const category = categories.find(c => c.id === trader.category);
               return (

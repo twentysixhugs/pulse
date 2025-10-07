@@ -89,9 +89,9 @@ export function ComplaintManagement() {
 
   if (loading) {
       return (
-        <div className="space-y-4">
-            <h2 className="text-2xl font-headline font-bold px-4 md:px-0">Очередь жалоб</h2>
-            <div className="space-y-4 px-4 md:px-0">
+        <div className="space-y-4 px-4 md:px-0">
+            <h2 className="text-2xl font-headline font-bold">Очередь жалоб</h2>
+            <div className="space-y-4">
               <Skeleton className="h-64 w-full" />
               <Skeleton className="h-64 w-full" />
             </div>
@@ -100,10 +100,10 @@ export function ComplaintManagement() {
   }
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-2xl font-headline font-bold px-4 md:px-0">Очередь жалоб</h2>
+    <div className="space-y-4 px-4 md:px-0">
+      <h2 className="text-2xl font-headline font-bold">Очередь жалоб</h2>
       {pendingReports.length > 0 && currentUser ? (
-        <div className="space-y-6 px-4 md:px-0">
+        <div className="space-y-6">
           {pendingReports.map((report) => {
             const alert = alerts.find((a) => a.id === report.alertId);
             const reporter = users.find(u => u.id === report.reporterId);
@@ -161,7 +161,7 @@ export function ComplaintManagement() {
           })}
         </div>
       ) : (
-        <div className="text-center py-16 border-dashed border-2 rounded-lg mx-4 md:mx-0">
+        <div className="text-center py-16 border-dashed border-2 rounded-lg">
           <p className="text-muted-foreground">Очередь жалоб пуста.</p>
         </div>
       )}

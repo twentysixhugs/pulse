@@ -187,26 +187,26 @@ export function UserManagement() {
   };
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-2xl font-headline font-bold px-4 md:px-0">Управление пользователями</h2>
-      <div className="px-4 md:px-0">
+    <div className="space-y-4 px-4 md:px-0">
+      <h2 className="text-2xl font-headline font-bold">Управление пользователями</h2>
+      <div>
         <SearchInput placeholder="Поиск по имени или Telegram ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
       </div>
       
       {loading ? (
-        <div className="space-y-4 px-4 md:px-0">
+        <div className="space-y-4">
             <Skeleton className="h-20 w-full" />
             <Skeleton className="h-20 w-full" />
             <Skeleton className="h-20 w-full" />
         </div>
       ) : users.length === 0 ? (
-        <div className="text-center py-16 border-dashed border-2 rounded-lg mx-4 md:mx-0">
+        <div className="text-center py-16 border-dashed border-2 rounded-lg">
           <p className="text-muted-foreground">Пользователи не найдены.</p>
         </div>
       ) : (
         <>
           {/* Mobile View - Cards */}
-          <div className="grid gap-4 md:hidden px-4">
+          <div className="grid gap-4 md:hidden">
             {users.map((user) => (
               <Card key={user.id} className="w-full">
                 <CardContent className="p-4 flex items-center justify-between">
