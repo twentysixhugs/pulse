@@ -88,6 +88,9 @@ export default function ProfilePage() {
     if (daysLeft < 0) {
       return { daysLeft: 0, color: 'bg-red-500/20 text-red-400 border-red-500/30', text: 'Просрочена' };
     }
+     if (daysLeft === 0) {
+      return { daysLeft, color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', text: 'Истекает сегодня' };
+    }
     if (daysLeft < 5) {
       return { daysLeft, color: 'bg-red-500/20 text-red-400 border-red-500/30', text: `Осталось ${daysLeft} д.` };
     }

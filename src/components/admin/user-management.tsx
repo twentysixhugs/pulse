@@ -120,7 +120,7 @@ export function UserManagement() {
       toast({
         variant: 'destructive',
         title: 'Пользователь удален',
-        description: `${userName} был(а) навсегда удален(а).`
+        description: `Пользователь ${userName} будет удалён из базы данных.`
       });
       // Refetch data after deletion
       await fetchData();
@@ -150,6 +150,10 @@ export function UserManagement() {
     
     if (daysLeft < 0) {
         return { text: 'Просрочена', style: expiredStyle };
+    }
+
+    if (daysLeft === 0) {
+        return { text: 'Истекает сегодня', style: inactiveStyle };
     }
     
     return { text: `Активна (${daysLeft} д.)`, style: activeStyle };

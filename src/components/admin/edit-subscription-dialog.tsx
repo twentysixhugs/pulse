@@ -32,7 +32,7 @@ export function EditSubscriptionDialog({ isOpen, onClose, user, onSave }: EditSu
     if (user && user.subscriptionEndDate) {
         const endDate = (user.subscriptionEndDate as Timestamp).toDate();
         const daysLeft = differenceInCalendarDays(endDate, new Date());
-        setDays(daysLeft > 0 ? daysLeft : 0);
+        setDays(daysLeft >= 0 ? daysLeft + 1 : 0);
     } else {
         setDays(0);
     }
@@ -54,7 +54,7 @@ export function EditSubscriptionDialog({ isOpen, onClose, user, onSave }: EditSu
     const numDays = typeof days === 'number' ? days : parseInt(days, 10);
     if (isNaN(numDays)) return;
 
-    const newEndDate = addDays(new Date(), numDays);
+    const newEndDate = addDays(new Date(), numDays > 0 ? numDays - 1 : -1);
     onSave(user.id, newEndDate);
   };
 
