@@ -40,6 +40,8 @@ import { SearchInput } from './search-input';
 import { useDebounce } from '@/hooks/use-debounce';
 import { PaginationControl } from '../common/pagination-control';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { differenceInDays } from 'date-fns';
+import { Timestamp } from 'firebase/firestore';
 
 
 const ITEMS_PER_PAGE = 20;
@@ -132,6 +134,21 @@ export function UserManagement() {
   };
   
   const pageCount = Math.ceil(totalCount / ITEMS_PER_PAGE);
+
+  const getSubscriptionInfo = (user: User) => {
+    if (user.subscriptionStatus !== 'active' || !user.subscriptionEndDate) {
+        return 'Неактивна';
+    }
+    
+    const endDate = (user.subscriptionEndDate as Timestamp).toDate();
+    const daysLeft = differenceInDays(endDate, new Date());
+    
+    if (daysLeft < 0) {
+        return 'Просрочена';
+    }
+    
+    return `Активна (${daysLeft} д.)`;
+  };
 
   const UserActionMenu = ({ user }: { user: User }) => {
     const [isBanAlertOpen, setBanAlertOpen] = useState(false);
@@ -270,7 +287,7 @@ export function UserManagement() {
                                 : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
                             }`}
                         >
-                            {user.subscriptionStatus === 'active' ? 'Активна' : 'Неактивна'}
+                            {getSubscriptionInfo(user)}
                         </Badge>
                      </div>
                 </CardContent>
@@ -311,7 +328,7 @@ export function UserManagement() {
                             : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
                         }
                       >
-                        {user.subscriptionStatus === 'active' ? 'Активна' : 'Неактивна'}
+                        {getSubscriptionInfo(user)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
@@ -335,6 +352,8 @@ export function UserManagement() {
     </div>
   );
 }
+
+    
 
     
 
