@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft, Minus, Plus, RefreshCcw } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import { differenceInDays, addDays } from 'date-fns';
+import { differenceInCalendarDays, addDays } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Timestamp } from 'firebase/firestore';
 
@@ -50,7 +50,7 @@ export default function ProfilePage() {
             ? (currentUser.subscriptionEndDate as Timestamp).toDate() 
             : new Date();
       
-        if (differenceInDays(currentEndDate, new Date()) < 0) {
+        if (differenceInCalendarDays(currentEndDate, new Date()) < 0) {
              newEndDate = addDays(new Date(), days);
         } else {
             newEndDate = addDays(currentEndDate, days);
@@ -83,7 +83,7 @@ export default function ProfilePage() {
 
     const today = new Date();
     const endDate = (currentUser.subscriptionEndDate as Timestamp).toDate();
-    const daysLeft = differenceInDays(endDate, today);
+    const daysLeft = differenceInCalendarDays(endDate, today);
 
     if (daysLeft < 0) {
       return { daysLeft: 0, color: 'bg-red-500/20 text-red-400 border-red-500/30', text: 'Просрочена' };

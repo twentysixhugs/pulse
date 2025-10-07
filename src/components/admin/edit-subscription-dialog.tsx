@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { RefreshCcw } from 'lucide-react';
-import { addDays, differenceInDays } from 'date-fns';
+import { addDays, differenceInCalendarDays } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
 import { Input } from '../ui/input';
 
@@ -31,7 +31,7 @@ export function EditSubscriptionDialog({ isOpen, onClose, user, onSave }: EditSu
   useEffect(() => {
     if (user && user.subscriptionEndDate) {
         const endDate = (user.subscriptionEndDate as Timestamp).toDate();
-        const daysLeft = differenceInDays(endDate, new Date());
+        const daysLeft = differenceInCalendarDays(endDate, new Date());
         setDays(daysLeft > 0 ? daysLeft : 0);
     } else {
         setDays(0);

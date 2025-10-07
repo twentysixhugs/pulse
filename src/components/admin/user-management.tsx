@@ -39,7 +39,7 @@ import { SearchInput } from './search-input';
 import { useDebounce } from '@/hooks/use-debounce';
 import { PaginationControl } from '../common/pagination-control';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { differenceInDays, addDays } from 'date-fns';
+import { differenceInCalendarDays, addDays } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
 import { EditSubscriptionDialog } from './edit-subscription-dialog';
 
@@ -146,7 +146,7 @@ export function UserManagement() {
     }
     
     const endDate = (user.subscriptionEndDate as Timestamp).toDate();
-    const daysLeft = differenceInDays(endDate, new Date());
+    const daysLeft = differenceInCalendarDays(endDate, new Date());
     
     if (daysLeft < 0) {
         return { text: 'Просрочена', style: expiredStyle };
