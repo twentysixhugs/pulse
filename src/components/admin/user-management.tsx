@@ -186,12 +186,12 @@ export function UserManagement() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Отмена</AlertDialogCancel>
+              <AlertDialogCancel className="flex-1">Отмена</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => toggleBanStatus(user.id, user.isBanned)}
-                className={user.isBanned ? '' : 'bg-destructive text-destructive-foreground hover:bg-destructive/90'}
+                className={`flex-1 ${user.isBanned ? '' : 'bg-destructive text-destructive-foreground hover:bg-destructive/90'}`}
               >
-                Подтвердить
+                {user.isBanned ? 'Разбанить' : 'Забанить'}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -206,10 +206,10 @@ export function UserManagement() {
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel>Отмена</AlertDialogCancel>
+                    <AlertDialogCancel className="flex-1">Отмена</AlertDialogCancel>
                     <AlertDialogAction
                         onClick={() => deleteUser(user.id)}
-                        className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                        className='flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90'
                     >
                         Подтвердить удаление
                     </AlertDialogAction>
