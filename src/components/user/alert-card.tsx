@@ -224,7 +224,8 @@ export function AlertCard({
               }`}
               disabled={!currentUser || isSubmittingReaction || interactionsDisabled}
             >
-              <ThumbsUp className="h-4 w-4" />
+              {isSubmittingReaction && <Loader2 className="h-4 w-4 animate-spin" />}
+              {!isSubmittingReaction && <ThumbsUp className="h-4 w-4" />}
               <span>{alert.likes.length}</span>
             </Button>
             <Button
@@ -236,7 +237,8 @@ export function AlertCard({
               }`}
               disabled={!currentUser || isSubmittingReaction || interactionsDisabled}
             >
-              <ThumbsDown className="h-4 w-4" />
+              {isSubmittingReaction && <Loader2 className="h-4 w-4 animate-spin" />}
+              {!isSubmittingReaction && <ThumbsDown className="h-4 w-4" />}
               <span>{alert.dislikes.length}</span>
             </Button>
             <CommentDialog
