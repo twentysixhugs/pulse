@@ -82,18 +82,22 @@ export function TraderProfileView({
   const handleRep = async () => {
     if (isSubmittingRep || isTraderViewing || repLoading) return;
     setIsSubmittingRep(true);
-
-    const actionType = 'pos'; 
+  
+    const actionType = 'pos';
     const isUndoing = userRepAction === actionType;
-
+  
     try {
-        const updatedTrader = await updateTraderReputation(trader.id, currentUser.id, actionType);
-        
+      // The Firestore function now returns the updated trader and the new reputation state
+      const { updatedTrader, newRepAction } = await updateTraderReputation(trader.id, currentUser.id, actionType);
+      
+      // Call the prop function to update the parent component's state
+      onUpdateTraderRep(updatedTrader, newRepAction);
+  
     } catch (error) {
-        console.error("Failed to update reputation:", error);
-        toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось обновить репутацию.'});
+      console.error("Failed to update reputation:", error);
+      toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось обновить репутацию.' });
     } finally {
-        setIsSubmittingRep(false);
+      setIsSubmittingRep(false);
     }
   };
 

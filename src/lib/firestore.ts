@@ -387,9 +387,15 @@ export async function createReport(report: Omit<Report, 'id' | 'status'>): Promi
 }
 
 
-export async function updateTraderReputation(traderId: string, userId: string, type: 'pos'): Promise<Trader> {
+export async function updateTraderReputation(
+    traderId: string,
+    userId: string,
+    type: 'pos'
+  ): Promise<{ updatedTrader: Trader; newRepAction: 'pos' | null }> {
     const traderRef = doc(db, 'traders', traderId);
     const userRepRef = doc(db, 'users', userId, 'traderReputation', traderId);
+  
+    let newRepAction: 'pos' | null = null;
   
     await runTransaction(db, async (transaction) => {
       const userRepDoc = await transaction.get(userRepRef);
@@ -398,15 +404,19 @@ export async function updateTraderReputation(traderId: string, userId: string, t
         // User is undoing their positive vote
         transaction.update(traderRef, { 'reputation.positive': increment(-1) });
         transaction.delete(userRepRef);
+        newRepAction = null;
       } else {
         // User is adding a positive vote
         transaction.update(traderRef, { 'reputation.positive': increment(1) });
         transaction.set(userRepRef, { action: 'pos' });
+        newRepAction = 'pos';
       }
     });
   
     const updatedTraderDoc = await getDoc(traderRef);
-    return { id: updatedTraderDoc.id, ...updatedTraderDoc.data() } as Trader;
+    const updatedTrader = { id: updatedTraderDoc.id, ...updatedTraderDoc.data() } as Trader;
+  
+    return { updatedTrader, newRepAction };
   }
   
   

@@ -29,7 +29,7 @@ export default function TraderProfilePage() {
   const [trader, setTrader] = useState<Trader | undefined>(undefined);
   const [category, setCategory] = useState<Category | undefined>(undefined);
   const [currentUser, setCurrentUser] = useState<User | undefined>();
-  const [userRepAction, setUserRepAction] = useState<'pos' | null>(null);
+  const [userRepAction, setUserRepAction] = useState<'pos' | null | undefined>(undefined);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -73,6 +73,7 @@ export default function TraderProfilePage() {
   useEffect(() => {
     async function fetchRep() {
       if (currentUser && trader) {
+        setUserRepAction(undefined); // Set to loading state
         const rep = await getUserTraderReputation(currentUser.id, trader.id);
         setUserRepAction(rep);
       }
