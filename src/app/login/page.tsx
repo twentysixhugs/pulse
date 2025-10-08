@@ -27,8 +27,10 @@ export default function LoginPage() {
       await login({ email, password });
       // The AuthProvider will handle redirection
     } catch (error: any) {
-        let errorMessage = 'Неправильный email или пароль. Пожалуйста, попробуйте снова.';
-        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        let errorMessage = 'Произошла неизвестная ошибка.';
+        if (error.message === "Ваш аккаунт забанен.") {
+            errorMessage = "Доступ запрещен. Ваш аккаунт был заблокирован.";
+        } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
             errorMessage = 'Неправильный email или пароль.';
         } else if (error.code === 'auth/invalid-email') {
             errorMessage = 'Неверный формат email.';

@@ -16,13 +16,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const auth = getAuth(app);
 
-  const fetchUserRole = useCallback(async (firebaseUser: FirebaseUser): Promise<AuthUser | null> => {
+  const fetchUserWithRole = useCallback(async (firebaseUser: FirebaseUser): Promise<{authUser: AuthUser, isBanned: boolean} | null> => {
     const userDoc = await getUser(firebaseUser.uid);
     if (userDoc) {
         return {
-            uid: firebaseUser.uid,
-            role: userDoc.role,
-            name: userDoc.name,
+            authUser: {
+                uid: firebaseUser.uid,
+                role: userDoc.role,
+                name: userDoc.name,
+            },
+            isBanned: userDoc.isBanned,
         };
     }
     return null;
@@ -37,17 +40,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        const authUser = await fetchUserRole(firebaseUser);
-        if (authUser) {
-            setUser(authUser);
+        const result = await fetchUserWithRole(firebaseUser);
+        if (result) {
+            if (result.isBanned) {
+                await logout();
+                return;
+            }
+
+            setUser(result.authUser);
             if (pathname === '/login') {
-                if (authUser?.role === 'admin') router.push('/admin');
-                else if (authUser?.role === 'trader') router.push('/trader');
+                if (result.authUser?.role === 'admin') router.push('/admin');
+                else if (result.authUser?.role === 'trader') router.push('/trader');
                 else router.push('/');
             }
         } else {
-            // User exists in Auth but not in Firestore DB. This can happen if DB was seeded after user was created.
-            // Log them out to prevent infinite loop.
+            // User exists in Auth but not in Firestore DB. This can happen if DB was cleared.
             await logout();
         }
       } else {
@@ -57,20 +64,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [auth, pathname, router, fetchUserRole, logout]);
+  }, [auth, pathname, router, fetchUserWithRole, logout]);
 
   const login = async (credentials: any) => {
     const { email, password } = credentials;
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const authUser = await fetchUserRole(userCredential.user);
-    setUser(authUser);
-    
-    if (authUser) {
-      let targetPath = '/';
-      if (authUser.role === 'admin') targetPath = '/admin';
-      if (authUser.role === 'trader') targetPath = '/trader';
-      router.push(targetPath);
+    const result = await fetchUserWithRole(userCredential.user);
+
+    if (!result) {
+        await logout(); // Sign out if no profile found
+        throw new Error("Профиль пользователя не найден в базе данных.");
     }
+    
+    if (result.isBanned) {
+        await logout(); // Sign out if banned
+        throw new Error("Ваш аккаунт забанен.");
+    }
+
+    setUser(result.authUser);
+    
+    let targetPath = '/';
+    if (result.authUser.role === 'admin') targetPath = '/admin';
+    if (result.authUser.role === 'trader') targetPath = '/trader';
+    router.push(targetPath);
   };
 
 
