@@ -28,17 +28,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return null;
   }, []);
 
+  const logout = useCallback(async () => {
+    await firebaseSignOut(auth);
+    setUser(null);
+    router.push('/login');
+  }, [auth, router]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         const authUser = await fetchUserRole(firebaseUser);
-        setUser(authUser);
-
-        if (pathname === '/login') {
-            if (authUser?.role === 'admin') router.push('/admin');
-            else if (authUser?.role === 'trader') router.push('/trader');
-            else router.push('/');
+        if (authUser) {
+            setUser(authUser);
+            if (pathname === '/login') {
+                if (authUser?.role === 'admin') router.push('/admin');
+                else if (authUser?.role === 'trader') router.push('/trader');
+                else router.push('/');
+            }
+        } else {
+            // User exists in Auth but not in Firestore DB. This can happen if DB was seeded after user was created.
+            // Log them out to prevent infinite loop.
+            await logout();
         }
       } else {
         setUser(null);
@@ -47,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [auth, pathname, router, fetchUserRole]);
+  }, [auth, pathname, router, fetchUserRole, logout]);
 
   const login = async (credentials: any) => {
     const { email, password } = credentials;
@@ -63,11 +73,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const logout = async () => {
-    await firebaseSignOut(auth);
-    setUser(null);
-    router.push('/login');
-  };
 
   useEffect(() => {
     if (loading) return;

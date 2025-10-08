@@ -26,6 +26,13 @@ async function isCollectionEmpty(db: Firestore, collectionPath: string): Promise
 // Be aware that this will populate your Firebase Authentication panel.
 export async function seedDatabase(db: Firestore) {
   const auth = getAuth(app);
+
+  const isUsersEmpty = await isCollectionEmpty(db, 'users');
+  if (!isUsersEmpty) {
+    const message = 'База данных уже заполнена. Очистите пользователей в Firebase Authentication и коллекции в Firestore, чтобы запустить заполнение заново.';
+    console.warn(message);
+    return { message };
+  }
   
   const collectionsToClear = ['users', 'traders', 'alerts', 'categories', 'reports'];
   for (const collectionPath of collectionsToClear) {
@@ -45,8 +52,6 @@ export async function seedDatabase(db: Firestore) {
   const allSeedUsers = [
     // from seed.json users with role 'user' or 'admin'
     ...Object.entries(seedData.users).map(([id, data]) => ({ seedId: id, ...data, email: `${data.telegramId}@example.com`, password: 'password' })),
-    // from seed.json traders (who are also users)
-    ...Object.entries(seedData.traders).map(([id, data]) => ({ seedId: id, role: 'trader', ...data, email: `${data.telegramId}@example.com`, password: 'password' })),
   ].filter((user, index, self) => index === self.findIndex((u) => u.email === user.email)); // a-la unique by email
   
   
