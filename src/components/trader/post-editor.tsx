@@ -126,7 +126,7 @@ export function PostEditor({ trader, postToEdit, onSave }: PostEditorProps) {
                 <FormItem>
                   <FormControl>
                     <Textarea
-                      placeholder=""
+                      placeholder="например, Btc подходит к историческим хаям, есть круглое+ плотность за уровнем (поэтому основная ликвидность за плотностью), буду входить в ее разъедание, а не в пересечение уровней"
                       rows={5}
                       {...field}
                     />
