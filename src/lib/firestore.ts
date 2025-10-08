@@ -387,48 +387,38 @@ export async function createReport(report: Omit<Report, 'id' | 'status'>): Promi
 }
 
 
-export async function updateTraderReputation(traderId: string, userId: string, type: 'pos' | 'neg'): Promise<Trader> {
-  const traderRef = doc(db, 'traders', traderId);
-  const userRepRef = doc(db, 'users', userId, 'traderReputation', traderId);
-
-  await runTransaction(db, async (transaction) => {
-    const userRepDoc = await transaction.get(userRepRef);
-
-    if (userRepDoc.exists() && userRepDoc.data().action === type) {
-      // User is undoing their vote
-      const fieldToDecrement = type === 'pos' ? 'reputation.positive' : 'reputation.negative';
-      transaction.update(traderRef, { [fieldToDecrement]: increment(-1) });
-      transaction.delete(userRepRef);
-    } else if (userRepDoc.exists()) {
-      // User is changing their vote
-      const oldField = userRepDoc.data().action === 'pos' ? 'reputation.positive' : 'reputation.negative';
-      const newField = type === 'pos' ? 'reputation.positive' : 'reputation.negative';
-      transaction.update(traderRef, { 
-        [oldField]: increment(-1),
-        [newField]: increment(1)
-      });
-      transaction.set(userRepRef, { action: type });
-    } else {
-      // User is voting for the first time
-      const fieldToIncrement = type === 'pos' ? 'reputation.positive' : 'reputation.negative';
-      transaction.update(traderRef, { [fieldToIncrement]: increment(1) });
-      transaction.set(userRepRef, { action: type });
-    }
-  });
-
-  const updatedTraderDoc = await getDoc(traderRef);
-  return { id: updatedTraderDoc.id, ...updatedTraderDoc.data() } as Trader;
-}
-
-
-export async function getUserTraderReputation(userId: string, traderId: string): Promise<'pos' | 'neg' | null> {
+export async function updateTraderReputation(traderId: string, userId: string, type: 'pos'): Promise<Trader> {
+    const traderRef = doc(db, 'traders', traderId);
     const userRepRef = doc(db, 'users', userId, 'traderReputation', traderId);
-    const docSnap = await getDoc(userRepRef);
-    if (docSnap.exists()) {
-        return docSnap.data().action as 'pos' | 'neg' | null;
-    }
-    return null;
-}
+  
+    await runTransaction(db, async (transaction) => {
+      const userRepDoc = await transaction.get(userRepRef);
+  
+      if (userRepDoc.exists()) {
+        // User is undoing their positive vote
+        transaction.update(traderRef, { 'reputation.positive': increment(-1) });
+        transaction.delete(userRepRef);
+      } else {
+        // User is adding a positive vote
+        transaction.update(traderRef, { 'reputation.positive': increment(1) });
+        transaction.set(userRepRef, { action: 'pos' });
+      }
+    });
+  
+    const updatedTraderDoc = await getDoc(traderRef);
+    return { id: updatedTraderDoc.id, ...updatedTraderDoc.data() } as Trader;
+  }
+  
+  
+  export async function getUserTraderReputation(userId: string, traderId: string): Promise<'pos' | null> {
+      const userRepRef = doc(db, 'users', userId, 'traderReputation', traderId);
+      const docSnap = await getDoc(userRepRef);
+      if (docSnap.exists()) {
+          return docSnap.data().action as 'pos' | null;
+      }
+      return null;
+  }
+  
 
 export async function createAlert(post: Partial<Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'>>): Promise<AlertPost> {
     const alertsCol = collection(db, 'alerts');

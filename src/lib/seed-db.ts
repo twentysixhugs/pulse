@@ -43,32 +43,28 @@ export async function seedDatabase(db: Firestore) {
 
   // --- CREATE AUTH USERS ---
   const allSeedUsers = [
-    // from seed.json users with role 'user'
-    ...Object.entries(seedData.users).filter(([, u]) => u.role === 'user').map(([id, data]) => ({ id, ...data, email: `${data.telegramId}@example.com`, password: 'password' })),
-     // from seed.json users with role 'admin'
-    ...Object.entries(seedData.users).filter(([, u]) => u.role === 'admin').map(([id, data]) => ({ id, ...data, email: `${data.telegramId}@example.com`, password: 'password' })),
+    // from seed.json users with role 'user' or 'admin'
+    ...Object.entries(seedData.users).map(([id, data]) => ({ seedId: id, ...data, email: `${data.telegramId}@example.com`, password: 'password' })),
     // from seed.json traders (who are also users)
-    ...Object.entries(seedData.traders).map(([id, data]) => ({ id, ...data, email: `${data.telegramId}@example.com`, password: 'password' })),
-  ];
+    ...Object.entries(seedData.traders).map(([id, data]) => ({ seedId: id, role: 'trader', ...data, email: `${data.telegramId}@example.com`, password: 'password' })),
+  ].filter((user, index, self) => index === self.findIndex((u) => u.email === user.email)); // a-la unique by email
+  
   
   // To map old seed IDs to new Firebase Auth UIDs
   const idMap: { [oldId: string]: string } = {};
 
   for (const user of allSeedUsers) {
     try {
-        // Use an email based on telegramId for uniqueness
         const email = `${user.telegramId.toLowerCase()}@example.com`;
         const userCredential = await createUserWithEmailAndPassword(auth, email, 'password');
         const newUid = userCredential.user.uid;
-        idMap[user.id] = newUid;
+        idMap[user.seedId] = newUid;
     } catch (e: any) {
         if (e.code === 'auth/email-already-in-use') {
-            // This is expected if you run seed multiple times.
-            // We need to find the existing user to get their UID.
-            // This part is complex and would require admin SDK. For client-side, we'll skip creating a new user and assume old mappings might work if unchanged.
             console.warn(`User with email ${user.telegramId.toLowerCase()}@example.com already exists. Seeding might be incomplete if UIDs change.`);
-            // A simple approach is to keep the old ID, hoping it matches an existing auth user.
-            idMap[user.id] = user.id;
+            // This case should ideally be handled by fetching the existing user's UID,
+            // which requires admin privileges not available on the client.
+            // For this project, we'll just log it.
         } else {
             console.error(`Error creating auth user for ${user.telegramId}:`, e.message);
         }
@@ -89,7 +85,6 @@ export async function seedDatabase(db: Firestore) {
     const docRef = doc(db, 'users', newUid);
     const userData: { [key: string]: any } = { ...data, createdAt: Timestamp.now() };
 
-    // Set email based on telegramId
     userData.email = `${data.telegramId.toLowerCase()}@example.com`;
 
     if (userData.subscriptionEndDate) {
@@ -105,22 +100,8 @@ export async function seedDatabase(db: Firestore) {
   // --- TRADERS (in Firestore) ---
   Object.entries(seedData.traders).forEach(([id, data]) => {
     const newUid = idMap[id];
-    if (!newUid) return; // Skip if auth user creation failed
+    if (!newUid) return;
 
-    // Create user entry for the trader
-    const userRef = doc(db, 'users', newUid);
-    const traderUserRecord = {
-        name: data.name,
-        telegramId: data.telegramId,
-        email: `${data.telegramId.toLowerCase()}@example.com`,
-        role: 'trader',
-        isBanned: false,
-        subscriptionStatus: 'active',
-        subscriptionEndDate: Timestamp.fromDate(new Date('2099-12-31')),
-        createdAt: Timestamp.now(),
-    };
-    batch.set(userRef, traderUserRecord);
-    
     // Create trader profile
     const traderRef = doc(db, 'traders', newUid);
     const traderData = {
@@ -151,13 +132,10 @@ export async function seedDatabase(db: Firestore) {
     const docRef = doc(collection(db, 'alerts')); // Create with new auto-ID
     batch.set(docRef, alertData as any);
   });
-
+  
   // --- REPORTS ---
-  Object.entries(seedData.reports).forEach(([id, data]) => {
-    // Reports might become invalid due to alert IDs changing. For simplicity, we will skip seeding them.
-    // If needed, we'd have to map old alert IDs to new ones.
-  });
-
+  // Reports are skipped as their alertIds would need complex mapping.
+  
   await batch.commit();
   console.log('ID Map:', idMap);
   return { message: 'База данных успешно заполнена! Были созданы реальные пользователи. Используйте email вида `telegramId@example.com` и пароль `password` для входа.' };
