@@ -100,7 +100,7 @@ export function TraderManagement() {
       toast({
         variant: 'destructive',
         title: 'Трейдер удален',
-        description: `${traderName} был(а) навсегда удален(а).`
+        description: `${traderName} был(а) удален(а) из базы. Пользователя нужно удалить из Firebase Auth вручную.`
       });
       await fetchData(); // Refresh list
     } catch (error) {

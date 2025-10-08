@@ -27,14 +27,9 @@ async function isCollectionEmpty(db: Firestore, collectionPath: string): Promise
 export async function seedDatabase(db: Firestore) {
   const auth = getAuth(app);
 
-  const isUsersEmpty = await isCollectionEmpty(db, 'users');
-  if (!isUsersEmpty) {
-    const message = 'База данных уже заполнена. Очистите пользователей в Firebase Authentication и коллекции в Firestore, чтобы запустить заполнение заново.';
-    console.warn(message);
-    return { message };
-  }
-  
   const collectionsToClear = ['users', 'traders', 'alerts', 'categories', 'reports'];
+  
+  // Clear existing collections in Firestore
   for (const collectionPath of collectionsToClear) {
       const q = query(collection(db, collectionPath));
       const snapshot = await getDocs(q);
@@ -42,6 +37,7 @@ export async function seedDatabase(db: Firestore) {
           const deleteBatch = writeBatch(db);
           snapshot.docs.forEach(d => deleteBatch.delete(d.ref));
           await deleteBatch.commit();
+          console.log(`Cleared collection: ${collectionPath}`);
       }
   }
 
@@ -50,7 +46,7 @@ export async function seedDatabase(db: Firestore) {
 
   // --- CREATE AUTH USERS ---
   const allSeedUsers = [
-    // from seed.json users with role 'user' or 'admin'
+    // from seed.json users with role 'user' or 'admin' or 'trader'
     ...Object.entries(seedData.users).map(([id, data]) => ({ seedId: id, ...data, email: `${data.telegramId}@example.com`, password: 'password' })),
   ].filter((user, index, self) => index === self.findIndex((u) => u.email === user.email)); // a-la unique by email
   
@@ -58,6 +54,7 @@ export async function seedDatabase(db: Firestore) {
   // To map old seed IDs to new Firebase Auth UIDs
   const idMap: { [oldId: string]: string } = {};
 
+  console.log("Starting to create Auth users. If a user already exists, they will be skipped.");
   for (const user of allSeedUsers) {
     try {
         const email = `${user.telegramId.toLowerCase()}@example.com`;
@@ -66,7 +63,7 @@ export async function seedDatabase(db: Firestore) {
         idMap[user.seedId] = newUid;
     } catch (e: any) {
         if (e.code === 'auth/email-already-in-use') {
-            console.warn(`User with email ${user.telegramId.toLowerCase()}@example.com already exists. Seeding might be incomplete if UIDs change.`);
+            console.warn(`User with email ${user.telegramId.toLowerCase()}@example.com already exists. Seeding might be incomplete if UIDs change. For a clean seed, delete users from the Firebase Authentication console.`);
             // This case should ideally be handled by fetching the existing user's UID,
             // which requires admin privileges not available on the client.
             // For this project, we'll just log it.
@@ -85,7 +82,7 @@ export async function seedDatabase(db: Firestore) {
   // --- USERS (in Firestore) ---
   Object.entries(seedData.users).forEach(([id, data]) => {
     const newUid = idMap[id];
-    if (!newUid) return; // Skip if user creation failed
+    if (!newUid) return; // Skip if user creation failed or was skipped
 
     const docRef = doc(db, 'users', newUid);
     const userData: { [key: string]: any } = { ...data, createdAt: Timestamp.now() };
@@ -117,7 +114,7 @@ export async function seedDatabase(db: Firestore) {
   });
 
   // --- ALERTS ---
-  Object.entries(seedData.alerts).forEach(([id, data]) => {
+  Object.entries(seedData.alerts).forEach(([_, data]) => {
     const newTraderId = idMap[data.traderId];
     if (!newTraderId) return;
 
@@ -129,8 +126,8 @@ export async function seedDatabase(db: Firestore) {
     const alertData = {
       ...data,
       traderId: newTraderId,
-      likes: (data.likes || []).map(userId => idMap[userId] || userId),
-      dislikes: (data.dislikes || []).map(userId => idMap[userId] || userId),
+      likes: (data.likes || []).map(userId => idMap[userId] || userId).filter(Boolean),
+      dislikes: (data.dislikes || []).map(userId => idMap[userId] || userId).filter(Boolean),
       comments: newComments,
       timestamp: Timestamp.fromDate(new Date((data.timestamp as any).value)),
     };
@@ -143,5 +140,5 @@ export async function seedDatabase(db: Firestore) {
   
   await batch.commit();
   console.log('ID Map:', idMap);
-  return { message: 'База данных успешно заполнена! Были созданы реальные пользователи. Используйте email вида `telegramId@example.com` и пароль `password` для входа.' };
+  return { message: 'База данных успешно перезаписана! Были созданы или пропущены существующие пользователи. Для полной очистки, удалите пользователей из Firebase Authentication console.' };
 }
