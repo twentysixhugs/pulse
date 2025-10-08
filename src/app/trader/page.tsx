@@ -6,11 +6,10 @@ import { useAuth } from '@/hooks/use-auth';
 import { TraderDashboard } from "@/components/trader/trader-dashboard";
 import { RatingView } from '@/components/user/rating-view';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User as UserIcon, BarChart } from "lucide-react";
+import { User as UserIcon, BarChart, Star } from "lucide-react";
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 
@@ -44,15 +43,10 @@ function TraderInfo({ trader }: { trader: Trader }) {
                     </Badge>
                     </div>
                     <div className="mt-4 flex items-center gap-4">
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-1 text-green-500">
-                            <ThumbsUp className="h-4 w-4" />
-                            <span className="font-medium">{trader.reputation.positive}</span>
-                            </div>
-                            <div className="flex items-center gap-1 text-red-500">
-                            <ThumbsDown className="h-4 w-4" />
-                            <span className="font-medium">{trader.reputation.negative}</span>
-                            </div>
+                        <div className="flex items-center gap-2">
+                            <Star className="h-5 w-5 text-yellow-400" />
+                            <span className="font-bold text-lg">{trader.reputation.positive}</span>
+                            <span className="text-sm text-muted-foreground">Рейтинг</span>
                         </div>
                     </div>
                 </div>
