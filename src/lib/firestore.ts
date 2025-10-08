@@ -60,6 +60,7 @@ export interface User {
 
 export interface Reputation {
   positive: number;
+  negative: number;
 }
 
 export interface Comment {
@@ -386,20 +387,31 @@ export async function createReport(report: Omit<Report, 'id' | 'status'>): Promi
 }
 
 
-export async function updateTraderReputation(traderId: string, userId: string, type: 'pos'): Promise<Trader> {
+export async function updateTraderReputation(traderId: string, userId: string, type: 'pos' | 'neg'): Promise<Trader> {
   const traderRef = doc(db, 'traders', traderId);
   const userRepRef = doc(db, 'users', userId, 'traderReputation', traderId);
 
   await runTransaction(db, async (transaction) => {
     const userRepDoc = await transaction.get(userRepRef);
 
-    if (userRepDoc.exists()) {
-      // User has already voted, so we are undoing the vote.
-      transaction.update(traderRef, { 'reputation.positive': increment(-1) });
+    if (userRepDoc.exists() && userRepDoc.data().action === type) {
+      // User is undoing their vote
+      const fieldToDecrement = type === 'pos' ? 'reputation.positive' : 'reputation.negative';
+      transaction.update(traderRef, { [fieldToDecrement]: increment(-1) });
       transaction.delete(userRepRef);
+    } else if (userRepDoc.exists()) {
+      // User is changing their vote
+      const oldField = userRepDoc.data().action === 'pos' ? 'reputation.positive' : 'reputation.negative';
+      const newField = type === 'pos' ? 'reputation.positive' : 'reputation.negative';
+      transaction.update(traderRef, { 
+        [oldField]: increment(-1),
+        [newField]: increment(1)
+      });
+      transaction.set(userRepRef, { action: type });
     } else {
-      // User has not voted yet, so we are adding the vote.
-      transaction.update(traderRef, { 'reputation.positive': increment(1) });
+      // User is voting for the first time
+      const fieldToIncrement = type === 'pos' ? 'reputation.positive' : 'reputation.negative';
+      transaction.update(traderRef, { [fieldToIncrement]: increment(1) });
       transaction.set(userRepRef, { action: type });
     }
   });
@@ -409,11 +421,11 @@ export async function updateTraderReputation(traderId: string, userId: string, t
 }
 
 
-export async function getUserTraderReputation(userId: string, traderId: string): Promise<'pos' | null> {
+export async function getUserTraderReputation(userId: string, traderId: string): Promise<'pos' | 'neg' | null> {
     const userRepRef = doc(db, 'users', userId, 'traderReputation', traderId);
     const docSnap = await getDoc(userRepRef);
     if (docSnap.exists()) {
-        return docSnap.data().action as 'pos' | null;
+        return docSnap.data().action as 'pos' | 'neg' | null;
     }
     return null;
 }
@@ -534,7 +546,7 @@ export async function createTrader(db: Firestore, traderData: Omit<Trader, 'id' 
     batch.set(traderRef, {
         ...traderData,
         status: 'active',
-        reputation: { positive: 0 },
+        reputation: { positive: 0, negative: 0 },
     });
 
     // Create corresponding user entry in 'users' collection
@@ -662,5 +674,3 @@ export async function getMetrics(period: 'today' | '7d'): Promise<Metrics> {
     traderPosts,
   };
 }
-
-    
