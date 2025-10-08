@@ -55,8 +55,35 @@ export function CreateTraderDialog({ isOpen, onClose, onSave, categories }: Crea
   });
 
   const generatePassword = () => {
-    const newPassword = Math.random().toString(36).slice(-8);
-    setGeneratedPassword(newPassword);
+    const length = 25;
+    const specialCharsCount = 7;
+    const lowerChars = 'abcdefghijklmnopqrstuvwxyz';
+    const upperChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const numberChars = '0123456789';
+    const specialChars = '!@#$%^&*';
+
+    let password = '';
+    
+    // Add required special characters
+    for (let i = 0; i < specialCharsCount; i++) {
+        password += specialChars.charAt(Math.floor(Math.random() * specialChars.length));
+    }
+
+    // Add at least one of each other required type
+    password += lowerChars.charAt(Math.floor(Math.random() * lowerChars.length));
+    password += upperChars.charAt(Math.floor(Math.random() * upperChars.length));
+    password += numberChars.charAt(Math.floor(Math.random() * numberChars.length));
+
+    // Fill the rest of the password length
+    const allChars = lowerChars + upperChars + numberChars + specialChars;
+    while (password.length < length) {
+        password += allChars.charAt(Math.floor(Math.random() * allChars.length));
+    }
+
+    // Shuffle the password to randomize character positions
+    const shuffledPassword = password.split('').sort(() => 0.5 - Math.random()).join('');
+
+    setGeneratedPassword(shuffledPassword);
   };
   
   const copyToClipboard = (text: string) => {
@@ -168,13 +195,13 @@ export function CreateTraderDialog({ isOpen, onClose, onSave, categories }: Crea
               <div>
                   <FormLabel>Пароль</FormLabel>
                   <div className="flex items-center gap-2 mt-2">
-                      <Input value={generatedPassword} readOnly placeholder="Нажмите 'Сгенерировать'"/>
-                      <Button type="button" variant="outline" size="icon" onClick={generatePassword}><RefreshCw className="h-4 w-4" /></Button>
+                      <Input value={generatedPassword} readOnly />
+                      <Button type="button" variant="outline" onClick={generatePassword}>Сгенерировать</Button>
                       <Button type="button" variant="outline" size="icon" onClick={() => copyToClipboard(generatedPassword)} disabled={!generatedPassword}><Copy className="h-4 w-4" /></Button>
                   </div>
               </div>
 
-              <DialogFooter className='pt-4'>
+              <DialogFooter className='pt-4 grid grid-cols-2 gap-2'>
                   <Button type="button" variant="outline" onClick={onClose}>Отмена</Button>
                   <Button type="submit">Создать</Button>
               </DialogFooter>
