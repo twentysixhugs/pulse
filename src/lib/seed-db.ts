@@ -1,4 +1,5 @@
 
+
 import {
   collection,
   writeBatch,
@@ -57,13 +58,12 @@ export async function seedDatabase(db: Firestore) {
   console.log("Starting to create Auth users. If a user already exists, they will be skipped.");
   for (const user of allSeedUsers) {
     try {
-        const email = `${user.telegramId.toLowerCase()}@example.com`;
-        const userCredential = await createUserWithEmailAndPassword(auth, email, 'password');
+        const userCredential = await createUserWithEmailAndPassword(auth, user.email, 'password');
         const newUid = userCredential.user.uid;
         idMap[user.seedId] = newUid;
     } catch (e: any) {
         if (e.code === 'auth/email-already-in-use') {
-            console.warn(`User with email ${user.telegramId.toLowerCase()}@example.com already exists. Seeding might be incomplete if UIDs change. For a clean seed, delete users from the Firebase Authentication console.`);
+            console.warn(`User with email ${user.email} already exists. Seeding might be incomplete if UIDs change. For a clean seed, delete users from the Firebase Authentication console.`);
             // This case should ideally be handled by fetching the existing user's UID,
             // which requires admin privileges not available on the client.
             // For this project, we'll just log it.

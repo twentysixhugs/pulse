@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -44,6 +45,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (result) {
             if (result.isBanned) {
                 await logout();
+                // We throw an error to be caught in the login function, showing a specific toast.
+                // In the onAuthStateChanged listener, there's no immediate user action to respond to,
+                // so just logging out is sufficient.
                 return;
             }
 
