@@ -27,7 +27,6 @@ type EditSubscriptionDialogProps = {
 
 export function EditSubscriptionDialog({ isOpen, onClose, user, onSave }: EditSubscriptionDialogProps) {
   const [days, setDays] = useState<number | string>(0);
-  const [newEndDate, setNewEndDate] = useState<Date | null>(new Date());
   const [newEndDateString, setNewEndDateString] = useState<string>('');
 
 
@@ -45,21 +44,17 @@ export function EditSubscriptionDialog({ isOpen, onClose, user, onSave }: EditSu
     try {
         const numDays = typeof days === 'number' ? days : parseInt(String(days), 10);
         if (isNaN(numDays)) {
-            setNewEndDate(null);
             setNewEndDateString('Invalid time');
             return;
         }
 
         if (numDays === 0) {
-            setNewEndDate(null);
             setNewEndDateString('Нет');
         } else {
             const calculatedDate = addDays(new Date(), numDays - 1);
-            setNewEndDate(calculatedDate);
             setNewEndDateString(format(calculatedDate, 'PPP', { locale: ru }));
         }
     } catch (e) {
-        setNewEndDate(null);
         setNewEndDateString('Invalid time');
     }
 }, [days]);
@@ -103,7 +98,7 @@ export function EditSubscriptionDialog({ isOpen, onClose, user, onSave }: EditSu
           </DialogDescription>
         </DialogHeader>
         <div className='text-sm text-muted-foreground -mt-4'>
-            <div className='text-xs space-y-1'>
+            <div className='text-xs space-y-1 text-center'>
                 <div>Текущая дата окончания: {currentEndDate ? format(currentEndDate, 'PPP', { locale: ru }) : 'Нет'}</div>
                 <div>Новая дата окончания: {newEndDateString}</div>
             </div>
