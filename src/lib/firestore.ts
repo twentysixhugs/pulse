@@ -464,7 +464,7 @@ export async function deleteAlert(alertId: string) {
 
 export async function banUser(db: Firestore, userId: string) {
     const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, { isBanned: true });
+    await updateDoc(userRef, { isBanned: true, subscriptionStatus: 'inactive' });
 }
 export async function unbanUser(db: Firestore, userId: string) {
     const userRef = doc(db, 'users', userId);
