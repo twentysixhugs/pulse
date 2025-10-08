@@ -196,7 +196,7 @@ export function CreateTraderDialog({ isOpen, onClose, onSave, categories }: Crea
                   <FormLabel>Пароль</FormLabel>
                   <div className="flex items-center gap-2 mt-2">
                       <Input value={generatedPassword} readOnly />
-                      <Button type="button" variant="outline" onClick={generatePassword}>Сгенерировать</Button>
+                      <Button type="button" variant="outline" size="icon" onClick={generatePassword}><RefreshCw className="h-4 w-4" /></Button>
                       <Button type="button" variant="outline" size="icon" onClick={() => copyToClipboard(generatedPassword)} disabled={!generatedPassword}><Copy className="h-4 w-4" /></Button>
                   </div>
               </div>
