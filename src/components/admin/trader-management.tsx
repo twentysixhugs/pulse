@@ -73,6 +73,10 @@ export function TraderManagement() {
     fetchData();
   }, [fetchData]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchTerm]);
+
   const toggleTraderStatus = async (traderId: string, currentStatus: 'active' | 'inactive') => {
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
     const action = newStatus === 'active' ? activateTrader : deactivateTrader;
