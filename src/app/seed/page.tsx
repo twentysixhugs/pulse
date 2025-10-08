@@ -9,9 +9,7 @@ import { seedDatabase } from '@/lib/seed-db';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { signInAnonymously, getAuth } from 'firebase/auth';
-import { initializeApp, getApps, getApp, FirebaseOptions } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { firebaseConfig, db } from '@/lib/firebase';
+import { db, app } from '@/lib/firebase';
 
 
 export default function SeedPage() {
@@ -22,7 +20,9 @@ export default function SeedPage() {
   const handleSeed = async () => {
     setIsSeeding(true);
     try {
-      const auth = getAuth(getApps().length ? getApp() : initializeApp(firebaseConfig));
+      const auth = getAuth(app);
+      // Sign in anonymously to bypass security rules for seeding if necessary.
+      // Make sure anonymous auth is enabled in your Firebase project.
       await signInAnonymously(auth);
 
       const result = await seedDatabase(db);
@@ -57,7 +57,7 @@ export default function SeedPage() {
              <div className="flex flex-col items-center gap-4 text-center">
                 <p className='text-green-500'>База данных успешно заполнена!</p>
                 <Button asChild>
-                    <Link href="/">Перейти на главную страницу</Link>
+                    <Link href="/login">Перейти на страницу входа</Link>
                 </Button>
             </div>
           ) : (

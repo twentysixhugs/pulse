@@ -4,58 +4,68 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { AuthContext, AuthUser } from '@/hooks/use-auth';
-import { ALL_DUMMY_USERS } from '@/lib/dummy-auth';
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut as firebaseSignOut, User as FirebaseUser, signInAnonymously } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut as firebaseSignOut, User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc, getFirestore, Firestore } from 'firebase/firestore';
 import { app, db } from '@/lib/firebase';
+import { getUser, User } from '@/lib/firestore';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
+  const auth = getAuth(app);
 
-  useEffect(() => {
-    // Only run on the client
-    if (typeof window !== 'undefined') {
-      const storedUser = localStorage.getItem('authUser');
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-      }
+  const fetchUserRole = useCallback(async (firebaseUser: FirebaseUser): Promise<AuthUser | null> => {
+    const userDoc = await getUser(firebaseUser.uid);
+    if (userDoc) {
+        return {
+            uid: firebaseUser.uid,
+            role: userDoc.role,
+            name: userDoc.name,
+        };
     }
-    setLoading(false);
+    return null;
   }, []);
 
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        const authUser = await fetchUserRole(firebaseUser);
+        setUser(authUser);
+
+        if (pathname === '/login') {
+            if (authUser?.role === 'admin') router.push('/admin');
+            else if (authUser?.role === 'trader') router.push('/trader');
+            else router.push('/');
+        }
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [auth, pathname, router, fetchUserRole]);
+
   const login = async (credentials: any) => {
     const { email, password } = credentials;
-    const userToLogin = ALL_DUMMY_USERS.find(
-      (u) => u.email === email && u.password === password
-    );
-
-    if (userToLogin) {
-      const authUser: AuthUser = {
-        uid: userToLogin.uid,
-        role: userToLogin.role as 'user' | 'admin' | 'trader',
-        name: userToLogin.name
-      };
-      setUser(authUser);
-      localStorage.setItem('authUser', JSON.stringify(authUser));
-      
-      const role = authUser.role;
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const authUser = await fetchUserRole(userCredential.user);
+    setUser(authUser);
+    
+    if (authUser) {
       let targetPath = '/';
-      if (role === 'admin') targetPath = '/admin';
-      if (role === 'trader') targetPath = '/trader';
+      if (authUser.role === 'admin') targetPath = '/admin';
+      if (authUser.role === 'trader') targetPath = '/trader';
       router.push(targetPath);
-
-    } else {
-      throw new Error('Invalid credentials');
     }
   };
 
   const logout = async () => {
+    await firebaseSignOut(auth);
     setUser(null);
-    localStorage.removeItem('authUser');
     router.push('/login');
   };
 
@@ -63,9 +73,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (loading) return;
 
     const isAuthPage = pathname === '/login' || pathname === '/seed';
+    const isAdminRoute = pathname.startsWith('/admin');
+    const isTraderRoute = pathname.startsWith('/trader');
 
     if (!user && !isAuthPage) {
       router.push('/login');
+    } else if (user) {
+        if (isAdminRoute && user.role !== 'admin') {
+            router.push('/');
+        }
+        if (isTraderRoute && user.role !== 'trader') {
+            router.push('/');
+        }
     }
     
   }, [user, loading, pathname, router]);
@@ -78,8 +97,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     db
   };
   
-  if (loading && pathname !== '/login' && pathname !== '/seed') {
-    return <div className="w-screen h-screen flex items-center justify-center bg-background">Loading...</div>;
+  const isAuthPage = pathname === '/login' || pathname === '/seed';
+  if (loading && !isAuthPage) {
+    return <div className="w-screen h-screen flex items-center justify-center bg-background">Загрузка...</div>;
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

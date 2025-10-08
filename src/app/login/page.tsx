@@ -26,33 +26,38 @@ export default function LoginPage() {
     try {
       await login({ email, password });
       // The AuthProvider will handle redirection
-    } catch (error) {
+    } catch (error: any) {
+        let errorMessage = 'Неправильный email или пароль. Пожалуйста, попробуйте снова.';
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+            errorMessage = 'Неправильный email или пароль.';
+        } else if (error.code === 'auth/invalid-email') {
+            errorMessage = 'Неверный формат email.';
+        }
+        
       toast({
         variant: 'destructive',
         title: 'Ошибка входа',
-        description: 'Неправильный email или пароль. Пожалуйста, попробуйте снова.',
+        description: errorMessage,
       });
       setLoading(false);
     }
   };
 
+  // If user is already logged in, redirect them
+  useEffect(() => {
+    if (user) {
+        const targetPath = user.role === 'admin' ? '/admin' : user.role === 'trader' ? '/trader' : '/';
+        router.replace(targetPath);
+    }
+  }, [user, router]);
+
+
   if (user) {
       return (
         <div className="flex min-h-screen items-center justify-center bg-background px-4">
-             <Card className="w-full max-w-sm text-center">
-                 <CardHeader>
-                     <div className="flex justify-center mb-4">
-                        <Logo />
-                    </div>
-                    <CardTitle className="font-headline text-2xl">Вы уже вошли</CardTitle>
-                     <CardDescription>Вы успешно аутентифицированы.</CardDescription>
-                 </CardHeader>
-                 <CardContent>
-                     <Button asChild className="w-full">
-                         <Link href="/">Перейти к ленте</Link>
-                     </Button>
-                 </CardContent>
-             </Card>
+             <div className="w-full max-w-sm text-center">
+                Загрузка...
+             </div>
         </div>
       )
   }
