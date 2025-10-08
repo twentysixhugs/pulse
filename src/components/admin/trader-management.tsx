@@ -1,8 +1,9 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Trader, Category, getAllTraders, activateTrader, deactivateTrader, getAllCategories, createTrader, deleteTrader as deleteTraderFromDB } from '@/lib/firestore';
+import { Trader, Category, getAllTraders, activateTrader, deactivateTrader, getAllCategories, createTrader, deleteTrader as deleteTraderFromDB, updateTrader } from '@/lib/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +33,7 @@ import { useDebounce } from '@/hooks/use-debounce';
 import { PaginationControl } from '../common/pagination-control';
 import { CreateTraderDialog } from './create-trader-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { EditTraderDialog } from './edit-trader-dialog';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -43,6 +45,7 @@ export function TraderManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editingTrader, setEditingTrader] = useState<Trader | null>(null);
   const { toast } = useToast();
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -121,6 +124,24 @@ export function TraderManagement() {
     }
   };
 
+  const handleUpdateTrader = async (traderId: string, data: Partial<Omit<Trader, 'id' | 'email' | 'status' | 'reputation'>>) => {
+    try {
+        await updateTrader(db, traderId, data);
+        setEditingTrader(null);
+        toast({
+            title: "Профиль трейдера обновлен",
+        });
+        await fetchData();
+    } catch (error: any) {
+        console.error("Failed to update trader:", error);
+        toast({
+            variant: "destructive",
+            title: "Ошибка обновления",
+            description: error.message || "Не удалось обновить профиль трейдера.",
+        });
+    }
+  }
+
   const pageCount = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
   const handlePageChange = ({ selected }: { selected: number }) => {
@@ -139,6 +160,9 @@ export function TraderManagement() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setEditingTrader(trader)}>
+              Редактировать профиль
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => toggleTraderStatus(trader.id, trader.status)}>
                 {trader.status === 'active' ? 'Деактивировать' : 'Активировать'}
             </DropdownMenuItem>
@@ -304,6 +328,17 @@ export function TraderManagement() {
         onSave={handleCreateTrader}
         categories={categories}
       />
+      {editingTrader && (
+        <EditTraderDialog
+          trader={editingTrader}
+          isOpen={!!editingTrader}
+          onClose={() => setEditingTrader(null)}
+          onSave={handleUpdateTrader}
+          categories={categories}
+        />
+      )}
     </div>
   );
 }
+
+    

@@ -592,6 +592,27 @@ export async function updateUserSubscription(userId: string, newEndDate: Date) {
   await updateDoc(userRef, updates);
 }
 
+export async function updateTrader(db: Firestore, traderId: string, data: Partial<Omit<Trader, 'id' | 'email' | 'status' | 'reputation'>>) {
+    const traderRef = doc(db, 'traders', traderId);
+    const userRef = doc(db, 'users', traderId);
+
+    const batch = writeBatch(db);
+
+    // Update trader profile
+    batch.update(traderRef, data);
+
+    // Update corresponding user document if name or telegramId changed
+    const userUpdateData: { [key: string]: any } = {};
+    if(data.name) userUpdateData.name = data.name;
+    if(data.telegramId) userUpdateData.telegramId = data.telegramId;
+
+    if (Object.keys(userUpdateData).length > 0) {
+        batch.update(userRef, userUpdateData);
+    }
+
+    await batch.commit();
+}
+
 // --- Metrics ---
 
 export async function getMetrics(period: 'today' | '7d'): Promise<Metrics> {
@@ -641,3 +662,5 @@ export async function getMetrics(period: 'today' | '7d'): Promise<Metrics> {
     traderPosts,
   };
 }
+
+    
