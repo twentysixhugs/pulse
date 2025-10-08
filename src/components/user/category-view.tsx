@@ -29,7 +29,7 @@ export function CategoryView() {
         getAllTraders(),
       ]);
       setCategories(categoriesData);
-      setTraders(tradersData);
+      setTraders(tradersData.data);
       setLoading(false);
     }
     fetchData();
