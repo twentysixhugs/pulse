@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '../ui/textarea';
 import { Category, Trader } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { Copy, RefreshCw } from 'lucide-react';
+import { Copy, Loader2, RefreshCw } from 'lucide-react';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Имя должно содержать не менее 2 символов.' }),
@@ -34,12 +34,13 @@ const formSchema = z.object({
 type CreateTraderDialogProps = {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (traderData: Omit<Trader, 'id' | 'status' | 'reputation'>, password: string) => void;
+  onSave: (traderData: Omit<Trader, 'id' | 'status' | 'reputation'>, password: string) => Promise<void>;
   categories: Category[];
 };
 
 export function CreateTraderDialog({ isOpen, onClose, onSave, categories }: CreateTraderDialogProps) {
   const [generatedPassword, setGeneratedPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   
   const form = useForm<z.infer<typeof formSchema>>({
@@ -64,23 +65,19 @@ export function CreateTraderDialog({ isOpen, onClose, onSave, categories }: Crea
 
     let password = '';
     
-    // Add required special characters
     for (let i = 0; i < specialCharsCount; i++) {
         password += specialChars.charAt(Math.floor(Math.random() * specialChars.length));
     }
 
-    // Add at least one of each other required type
     password += lowerChars.charAt(Math.floor(Math.random() * lowerChars.length));
     password += upperChars.charAt(Math.floor(Math.random() * upperChars.length));
     password += numberChars.charAt(Math.floor(Math.random() * numberChars.length));
 
-    // Fill the rest of the password length
     const allChars = lowerChars + upperChars + numberChars + specialChars;
     while (password.length < length) {
         password += allChars.charAt(Math.floor(Math.random() * allChars.length));
     }
 
-    // Shuffle the password to randomize character positions
     const shuffledPassword = password.split('').sort(() => 0.5 - Math.random()).join('');
 
     setGeneratedPassword(shuffledPassword);
@@ -91,19 +88,27 @@ export function CreateTraderDialog({ isOpen, onClose, onSave, categories }: Crea
     toast({ title: "Пароль скопирован" });
   };
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!generatedPassword) {
       toast({ variant: 'destructive', title: 'Сгенерируйте пароль' });
       return;
     }
+    
+    setIsSubmitting(true);
+    
     const traderData = {
         ...values,
         profilePicUrl: values.profilePicUrl || `https://picsum.photos/seed/${values.telegramId}/200/200`,
         profilePicHint: 'person portrait',
     };
-    onSave(traderData, generatedPassword);
-    form.reset();
-    setGeneratedPassword('');
+
+    try {
+        await onSave(traderData, generatedPassword);
+        form.reset();
+        setGeneratedPassword('');
+    } finally {
+        setIsSubmitting(false);
+    }
   }
 
   return (
@@ -125,7 +130,7 @@ export function CreateTraderDialog({ isOpen, onClose, onSave, categories }: Crea
                   <FormItem>
                     <FormLabel>Имя</FormLabel>
                     <FormControl>
-                      <Input placeholder="Иван Петров" {...field} />
+                      <Input placeholder="Иван Петров" {...field} disabled={isSubmitting} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -138,7 +143,7 @@ export function CreateTraderDialog({ isOpen, onClose, onSave, categories }: Crea
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="trader@example.com" {...field} />
+                      <Input placeholder="trader@example.com" {...field} disabled={isSubmitting} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -149,9 +154,9 @@ export function CreateTraderDialog({ isOpen, onClose, onSave, categories }: Crea
                 name="telegramId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>ID в Telegram</FormLabel>
+                    <FormLabel>Текущий username в телеграм</FormLabel>
                     <FormControl>
-                      <Input placeholder="ivan_petrov" {...field} />
+                      <Input placeholder="ivan_petrov" {...field} disabled={isSubmitting} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -163,7 +168,7 @@ export function CreateTraderDialog({ isOpen, onClose, onSave, categories }: Crea
                   render={({ field }) => (
                       <FormItem>
                       <FormLabel>Категория</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
                           <FormControl>
                           <SelectTrigger>
                               <SelectValue placeholder="Выберите специализацию" />
@@ -186,7 +191,7 @@ export function CreateTraderDialog({ isOpen, onClose, onSave, categories }: Crea
                   <FormItem>
                     <FormLabel>Описание профиля</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Специалист по BTC и ETH" {...field} />
+                      <Textarea placeholder="Специалист по BTC и ETH" {...field} disabled={isSubmitting} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -195,15 +200,18 @@ export function CreateTraderDialog({ isOpen, onClose, onSave, categories }: Crea
               <div>
                   <FormLabel>Пароль</FormLabel>
                   <div className="flex items-center gap-2 mt-2">
-                      <Input value={generatedPassword} readOnly />
-                      <Button type="button" variant="outline" size="icon" onClick={generatePassword}><RefreshCw className="h-4 w-4" /></Button>
-                      <Button type="button" variant="outline" size="icon" onClick={() => copyToClipboard(generatedPassword)} disabled={!generatedPassword}><Copy className="h-4 w-4" /></Button>
+                      <Input value={generatedPassword} readOnly disabled={isSubmitting} />
+                      <Button type="button" variant="outline" size="icon" onClick={generatePassword} disabled={isSubmitting}><RefreshCw className="h-4 w-4" /></Button>
+                      <Button type="button" variant="outline" size="icon" onClick={() => copyToClipboard(generatedPassword)} disabled={!generatedPassword || isSubmitting}><Copy className="h-4 w-4" /></Button>
                   </div>
               </div>
 
               <DialogFooter className='pt-4 grid grid-cols-2 gap-2'>
-                  <Button type="button" variant="outline" onClick={onClose}>Отмена</Button>
-                  <Button type="submit">Создать</Button>
+                  <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Отмена</Button>
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isSubmitting ? 'Создание...' : 'Создать'}
+                  </Button>
               </DialogFooter>
             </form>
           </Form>
