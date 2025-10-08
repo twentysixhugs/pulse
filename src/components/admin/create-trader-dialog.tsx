@@ -29,6 +29,7 @@ const formSchema = z.object({
   category: z.string().min(1, { message: 'Выберите категорию.' }),
   specialization: z.string().min(5, { message: 'Описание должно содержать не менее 5 символов.' }),
   profilePicUrl: z.string().url({ message: 'Неверный URL изображения.' }).optional().or(z.literal('')),
+  password: z.string().min(8, { message: 'Пароль должен содержать не менее 8 символов.' }),
 });
 
 type CreateTraderDialogProps = {
@@ -39,7 +40,6 @@ type CreateTraderDialogProps = {
 };
 
 export function CreateTraderDialog({ isOpen, onClose, onSave, categories }: CreateTraderDialogProps) {
-  const [generatedPassword, setGeneratedPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   
@@ -52,6 +52,7 @@ export function CreateTraderDialog({ isOpen, onClose, onSave, categories }: Crea
       category: '',
       specialization: '',
       profilePicUrl: '',
+      password: '',
     },
   });
 
@@ -80,32 +81,23 @@ export function CreateTraderDialog({ isOpen, onClose, onSave, categories }: Crea
 
     const shuffledPassword = password.split('').sort(() => 0.5 - Math.random()).join('');
 
-    setGeneratedPassword(shuffledPassword);
+    form.setValue('password', shuffledPassword, { shouldValidate: true });
   };
   
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({ title: "Пароль скопирован" });
-  };
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!generatedPassword) {
-      toast({ variant: 'destructive', title: 'Сгенерируйте пароль' });
-      return;
-    }
-    
     setIsSubmitting(true);
     
+    const { password, ...traderDataPayload } = values;
+
     const traderData = {
-        ...values,
+        ...traderDataPayload,
         profilePicUrl: values.profilePicUrl || `https://picsum.photos/seed/${values.telegramId}/200/200`,
         profilePicHint: 'person portrait',
     };
 
     try {
-        await onSave(traderData, generatedPassword);
+        await onSave(traderData, password);
         form.reset();
-        setGeneratedPassword('');
     } finally {
         setIsSubmitting(false);
     }
@@ -197,15 +189,22 @@ export function CreateTraderDialog({ isOpen, onClose, onSave, categories }: Crea
                   </FormItem>
                 )}
               />
-              <div>
-                  <FormLabel>Пароль</FormLabel>
-                  <div className="flex items-center gap-2 mt-2">
-                      <Input value={generatedPassword} readOnly disabled={isSubmitting} />
-                      <Button type="button" variant="outline" size="icon" onClick={generatePassword} disabled={isSubmitting}><RefreshCw className="h-4 w-4" /></Button>
-                      <Button type="button" variant="outline" size="icon" onClick={() => copyToClipboard(generatedPassword)} disabled={!generatedPassword || isSubmitting}><Copy className="h-4 w-4" /></Button>
-                  </div>
-              </div>
-
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Пароль</FormLabel>
+                     <div className="flex items-center gap-2">
+                        <FormControl>
+                            <Input type="text" {...field} disabled={isSubmitting} />
+                        </FormControl>
+                        <Button type="button" variant="outline" size="icon" onClick={generatePassword} disabled={isSubmitting}><RefreshCw className="h-4 w-4" /></Button>
+                     </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <DialogFooter className='pt-4 grid grid-cols-2 gap-2'>
                   <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Отмена</Button>
                   <Button type="submit" disabled={isSubmitting}>
