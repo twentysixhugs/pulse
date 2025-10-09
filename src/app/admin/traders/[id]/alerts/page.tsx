@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { MoreVertical, Edit, Trash2, MessageSquare, ArrowLeft } from 'lucide-react';
+import { MoreVertical, Edit, Trash2, MessageSquare, ArrowLeft, ThumbsUp, ThumbsDown, ZoomIn } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -50,6 +50,8 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
+import Image from 'next/image';
+import { ImageModal } from '@/components/user/image-modal';
 
 const ALERTS_PER_PAGE = 10;
 
@@ -62,6 +64,7 @@ export default function AdminTraderAlertsPage() {
   const [alerts, setAlerts] = useState<AlertPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingPost, setEditingPost] = useState<AlertPost | null>(null);
+  const [imageModalState, setImageModalState] = useState<{isOpen: boolean; imageUrl?: string; imageHint?: string; title?: string; alertId?: string}>({isOpen: false});
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalAlerts, setTotalAlerts] = useState(0);
@@ -147,6 +150,18 @@ export default function AdminTraderAlertsPage() {
         toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось удалить комментарий.' });
     }
   };
+  
+  const openImageModal = (alert: AlertPost) => {
+    if (alert.screenshotUrl) {
+      setImageModalState({
+        isOpen: true,
+        imageUrl: alert.screenshotUrl,
+        imageHint: alert.screenshotHint,
+        title: `Скриншот от ${alert.traderName}`,
+        alertId: alert.id,
+      });
+    }
+  };
 
 
   const handlePageChange = ({ selected }: { selected: number }) => {
@@ -197,10 +212,39 @@ export default function AdminTraderAlertsPage() {
                       onDeleteComment={handleDeleteComment}
                     />
                   </div>
-                  <p className="text-sm break-words">{alert.text}</p>
                 </div>
               </CardHeader>
-              <CardFooter className="p-2 px-4 border-t">
+              <CardContent className="px-4 pb-2 pt-0">
+                <p className="mb-4 text-sm text-foreground/90 break-words">{alert.text}</p>
+                 {alert.screenshotUrl && (
+                    <div
+                        className="relative aspect-video w-full max-w-sm cursor-pointer overflow-hidden rounded-lg border"
+                        onClick={() => openImageModal(alert)}
+                        >
+                        <Image
+                            src={alert.screenshotUrl}
+                            alt="Скриншот предупреждения"
+                            fill
+                            className="object-cover transition-transform duration-300 hover:scale-105"
+                            data-ai-hint={alert.screenshotHint}
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity hover:opacity-100">
+                            <ZoomIn className="h-10 w-10 text-white" />
+                        </div>
+                    </div>
+                )}
+              </CardContent>
+              <CardFooter className="flex justify-between p-2 px-4 border-t">
+                 <div className="flex gap-4 text-sm text-muted-foreground pointer-events-none">
+                    <div className="flex items-center gap-1.5">
+                        <ThumbsUp className="h-4 w-4 text-green-500" />
+                        <span>{alert.likes.length}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <ThumbsDown className="h-4 w-4 text-red-500" />
+                        <span>{alert.dislikes.length}</span>
+                    </div>
+                </div>
                 <CommentsModal alert={alert} onDeleteComment={handleDeleteComment} />
               </CardFooter>
             </Card>
@@ -235,6 +279,17 @@ export default function AdminTraderAlertsPage() {
             </div>
           </DialogContent>
         </Dialog>
+      )}
+
+      {imageModalState.isOpen && imageModalState.alertId && (
+        <ImageModal
+          isOpen={imageModalState.isOpen}
+          onClose={() => setImageModalState({isOpen: false})}
+          imageUrl={imageModalState.imageUrl!}
+          imageHint={imageModalState.imageHint}
+          alertId={imageModalState.alertId}
+          title={imageModalState.title}
+        />
       )}
     </div>
   );
@@ -338,7 +393,5 @@ function AlertActionMenu({ alert, onEdit, onDelete, onDeleteComment }: { alert: 
       </Dialog>
     );
   }
-
-    
 
     
