@@ -393,7 +393,3 @@ function AlertActionMenu({ alert, onEdit, onDelete, onDeleteComment }: { alert: 
       </Dialog>
     );
   }
-
-    
-
-    
