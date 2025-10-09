@@ -384,7 +384,6 @@ export async function createReport(report: Omit<Report, 'id' | 'status'>): Promi
 export async function updateTraderReputation(
     traderId: string,
     userId: string,
-    type: 'pos'
   ): Promise<{ updatedTrader: Trader; newRepAction: 'pos' | null }> {
     const traderRef = doc(db, 'traders', traderId);
     const userRepRef = doc(db, 'users', userId, 'traderReputation', traderId);
