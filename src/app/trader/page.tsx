@@ -79,16 +79,16 @@ export default function TraderPage() {
 
     return (
         <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="flex flex-wrap h-auto">
-                <TabsTrigger value="profile" className="flex-1">
+            <TabsList className="grid h-auto grid-cols-2 sm:grid-cols-3">
+                <TabsTrigger value="profile">
                     <UserIcon className="mr-2 h-4 w-4" />
                     Профиль
                 </TabsTrigger>
-                <TabsTrigger value="rating" className="flex-1">
+                <TabsTrigger value="rating">
                     <BarChart className="mr-2 h-4 w-4" />
                     Рейтинг
                 </TabsTrigger>
-                <TabsTrigger value="all-alerts" className="flex-1">
+                <TabsTrigger value="all-alerts">
                     <Flame className="mr-2 h-4 w-4" />
                     Все алерты
                 </TabsTrigger>
