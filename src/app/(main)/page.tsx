@@ -15,6 +15,7 @@ import {
   AlertPost,
   Report,
   User,
+  createReport,
   getUser,
   listenToAlerts,
 } from '@/lib/firestore';
@@ -85,14 +86,21 @@ export default function HomePage() {
     setAlerts(currentAlerts => currentAlerts.map(a => a.id === updatedAlert.id ? updatedAlert : a));
   };
   
-  const handleReport = async (newReport: Omit<Report, 'id' | 'status'>) => {
-    // This function would call a method to create a report in Firestore
-    // For now, it just shows a toast.
-    // await createReport(newReport); 
-    toast({
-        title: 'Жалоба отправлена',
-        description: 'Спасибо, мы рассмотрим вашу жалобу.',
-    });
+  const handleReport = async (newReport: Omit<Report, 'id' | 'status' | 'createdAt'>) => {
+    try {
+        await createReport(newReport); 
+        toast({
+            title: 'Жалоба отправлена',
+            description: 'Спасибо, мы рассмотрим вашу жалобу.',
+        });
+    } catch(e) {
+        console.error("Failed to create report", e);
+        toast({
+            variant: 'destructive',
+            title: 'Ошибка',
+            description: 'Не удалось отправить жалобу.',
+        });
+    }
   };
 
   const handlePageChange = ({ selected }: { selected: number }) => {

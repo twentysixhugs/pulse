@@ -129,7 +129,7 @@ export function ComplaintManagement() {
 
   if (loading) {
       return (
-        <div className="space-y-4 px-4 md:px-0">
+        <div className="space-y-4">
             <h2 className="text-2xl font-headline font-bold">Очередь жалоб</h2>
             <div className="space-y-4">
               <Skeleton className="h-64 w-full" />
@@ -140,7 +140,7 @@ export function ComplaintManagement() {
   }
 
   return (
-    <div className="space-y-4 px-4 md:px-0">
+    <div className="space-y-4">
       <h2 className="text-2xl font-headline font-bold">Очередь жалоб</h2>
       {reports.length > 0 && currentUser ? (
         <div className="space-y-6">
