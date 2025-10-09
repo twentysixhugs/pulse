@@ -109,7 +109,7 @@ export function TraderManagement() {
     }
   }
 
-  const handleCreateTrader = async (traderData: Omit<Trader, 'id' | 'status' | 'reputation'>, password: string) => {
+  const handleCreateTrader = async (traderData: Omit<Trader & { email: string }, 'id' | 'status' | 'reputation'>, password: string) => {
     try {
       await createTrader(db, traderData, password);
       setCreateDialogOpen(false);

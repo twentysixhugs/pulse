@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -35,7 +36,7 @@ const formSchema = z.object({
 type CreateTraderDialogProps = {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (traderData: Omit<Trader, 'id' | 'status' | 'reputation'>, password: string) => Promise<void>;
+  onSave: (traderData: Omit<Trader & { email: string }, 'id' | 'status' | 'reputation'>, password: string) => Promise<void>;
   categories: Category[];
 };
 

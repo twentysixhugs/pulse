@@ -37,11 +37,7 @@ export function RatingView() {
 
   const sortedTraders = traders
     .filter(t => t.status === 'active')
-    .sort((a, b) => {
-      const scoreA = (a.reputation?.positive || 0) - (a.reputation?.negative || 0);
-      const scoreB = (b.reputation?.positive || 0) - (b.reputation?.negative || 0);
-      return scoreB - scoreA;
-    });
+    .sort((a, b) => (b.reputation || 0) - (a.reputation || 0));
 
   return (
     <Card>
@@ -66,7 +62,7 @@ export function RatingView() {
             </TableHeader>
             <TableBody>
               {sortedTraders.map((trader, index) => {
-                const score = (trader.reputation?.positive || 0) - (trader.reputation?.negative || 0);
+                const score = trader.reputation || 0;
                 const category = categories.find(c => c.id === trader.category);
                 return (
                   <TableRow key={trader.id}>

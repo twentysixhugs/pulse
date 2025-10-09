@@ -89,12 +89,11 @@ export interface AlertPost {
 export interface Trader {
   id: string; // This will be the document ID from Firestore
   name:string;
-  email: string;
   telegramId: string;
   specialization: string;
   category: string; // Should be a category ID
   status: TraderStatus;
-  reputation: Reputation;
+  reputation: number;
   profilePicUrl: string;
   profilePicHint: string;
 }
@@ -402,12 +401,12 @@ export async function updateTraderReputation(
   
       if (userRepDoc.exists()) {
         // User is undoing their positive vote
-        transaction.update(traderRef, { 'reputation.positive': increment(-1) });
+        transaction.update(traderRef, { 'reputation': increment(-1) });
         transaction.delete(userRepRef);
         newRepAction = null;
       } else {
         // User is adding a positive vote
-        transaction.update(traderRef, { 'reputation.positive': increment(1) });
+        transaction.update(traderRef, { 'reputation': increment(1) });
         transaction.set(userRepRef, { action: 'pos' });
         newRepAction = 'pos';
       }
@@ -515,7 +514,7 @@ export async function deleteTrader(db: Firestore, traderId: string) {
 }
 
 
-export async function createTrader(db: Firestore, traderData: Omit<Trader, 'id' | 'status' | 'reputation'>, password: string) {
+export async function createTrader(db: Firestore, traderData: Omit<Trader & { email: string }, 'id' | 'status' | 'reputation'>, password: string) {
     const auth = getAuth();
     
     const usersCol = collection(db, 'users');
@@ -542,11 +541,12 @@ export async function createTrader(db: Firestore, traderData: Omit<Trader, 'id' 
     const batch = writeBatch(db);
 
     // Create trader profile using the new UID
+    const {email, ...traderProfileData} = traderData;
     const traderRef = doc(db, 'traders', newTraderId);
     batch.set(traderRef, {
-        ...traderData,
+        ...traderProfileData,
         status: 'active',
-        reputation: { positive: 0, negative: 0 },
+        reputation: 0,
     });
 
     // Create corresponding user entry in 'users' collection

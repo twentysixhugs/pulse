@@ -98,8 +98,10 @@ export async function seedDatabase(db: Firestore) {
     const docRef = doc(db, 'users', newUid);
     const userData: { [key: string]: any } = { ...data, createdAt: Timestamp.now() };
 
-    userData.email = `${data.telegramId.toLowerCase()}@example.com`;
-
+    if (!(userData as any).email) {
+      userData.email = `${data.telegramId.toLowerCase()}@example.com`;
+    }
+    
     if (userData.subscriptionEndDate) {
       const subDate = new Date((userData.subscriptionEndDate as any).value);
       userData.subscriptionEndDate = Timestamp.fromDate(subDate);
@@ -122,7 +124,6 @@ export async function seedDatabase(db: Firestore) {
     const traderRef = doc(db, 'traders', newUid);
     const traderData = {
         ...data,
-        email: `${data.telegramId.toLowerCase()}@example.com`,
     };
     batch.set(traderRef, traderData as any);
   });

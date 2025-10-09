@@ -45,7 +45,7 @@ function TraderInfo({ trader }: { trader: Trader }) {
                     <div className="mt-4 flex items-center gap-4">
                         <div className="flex items-center gap-2">
                             <Star className="h-5 w-5 text-yellow-400" />
-                            <span className="font-bold text-lg">{trader.reputation.positive}</span>
+                            <span className="font-bold text-lg">{trader.reputation}</span>
                             <span className="text-sm text-muted-foreground">Рейтинг</span>
                         </div>
                     </div>

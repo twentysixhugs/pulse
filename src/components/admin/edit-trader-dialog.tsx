@@ -31,8 +31,8 @@ const formSchema = z.object({
 type EditTraderDialogProps = {
   isOpen: boolean;
   onClose: () => void;
-  trader: Trader;
-  onSave: (traderId: string, data: Partial<Omit<Trader, 'id' | 'email' | 'status' | 'reputation'>>) => Promise<void>;
+  trader: Trader & { email?: string };
+  onSave: (traderId: string, data: Partial<Omit<Trader, 'id' | 'status' | 'reputation'>>) => Promise<void>;
   categories: Category[];
 };
 
@@ -85,7 +85,7 @@ export function EditTraderDialog({ isOpen, onClose, trader, onSave, categories }
               <FormItem>
                 <FormLabel>Email (нельзя изменить)</FormLabel>
                 <FormControl>
-                  <Input value={trader.email} disabled />
+                  <Input value={trader.email || 'N/A'} disabled />
                 </FormControl>
               </FormItem>
               <FormField
