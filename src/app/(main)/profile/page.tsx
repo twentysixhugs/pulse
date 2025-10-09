@@ -144,20 +144,7 @@ export default function ProfilePage() {
                     {subscriptionInfo.text}
                   </Badge>
             </div>
-            <div className="border-t pt-4">
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Изменить подписку (для теста)</h3>
-                <div className="flex items-center gap-2">
-                    <Button size="icon" variant="outline" onClick={() => handleSubscriptionChange(1)}>
-                        <Plus className="h-4 w-4" />
-                    </Button>
-                     <Button size="icon" variant="outline" onClick={() => handleSubscriptionChange(-1)}>
-                        <Minus className="h-4 w-4" />
-                    </Button>
-                     <Button size="icon" variant="destructive" onClick={() => handleSubscriptionChange(0, true)}>
-                        <RefreshCcw className="h-4 w-4" />
-                    </Button>
-                </div>
-            </div>
+            
              <div>
                 <h3 className="text-sm font-medium text-muted-foreground">Статус аккаунта</h3>
                  <Badge variant={currentUser.isBanned ? 'destructive' : 'outline'} className="mt-1">
