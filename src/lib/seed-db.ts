@@ -7,21 +7,12 @@ import {
   Timestamp,
   doc,
   query,
-  limit,
   Firestore,
 } from 'firebase/firestore';
 import seedData from '../../seed.json';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { app } from './firebase';
 
-
-// A helper function to check if a collection is empty.
-async function isCollectionEmpty(db: Firestore, collectionPath: string): Promise<boolean> {
-  const collectionRef = collection(db, collectionPath);
-  const q = query(collectionRef, limit(1));
-  const snapshot = await getDocs(q);
-  return snapshot.empty;
-}
 
 // NOTE: This seed function now also creates REAL Firebase Auth users.
 // Be aware that this will populate your Firebase Authentication panel.
@@ -30,7 +21,7 @@ export async function seedDatabase(db: Firestore) {
 
   const collectionsToClear = ['users', 'traders', 'alerts', 'categories', 'reports'];
   
-  // Clear existing collections in Firestore
+  // 1. Clear existing Firestore data for a clean slate
   console.log("Clearing existing Firestore data...");
   for (const collectionPath of collectionsToClear) {
       const q = query(collection(db, collectionPath));
@@ -46,30 +37,28 @@ export async function seedDatabase(db: Firestore) {
 
   const batch = writeBatch(db);
 
-  // --- CREATE AUTH USERS and build ID map ---
+  // 2. CREATE/VERIFY AUTH USERS and build a map from seed ID to Auth UID
   const allSeedUsers = [
-    // from seed.json users with role 'user' or 'admin' or 'trader'
     ...Object.entries(seedData.users).map(([id, data]) => ({ seedId: id, ...data, email: `${data.telegramId}@example.com`, password: 'password' })),
-  ].filter((user, index, self) => index === self.findIndex((u) => u.email === user.email)); // a-la unique by email
+  ].filter((user, index, self) => index === self.findIndex((u) => u.email === user.email));
   
   
-  // To map old seed IDs to new Firebase Auth UIDs
   const idMap: { [oldId: string]: string } = {};
 
   console.log("Starting to create or verify Auth users...");
   for (const user of allSeedUsers) {
+    let uid: string | null = null;
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, user.email, user.password);
-        const newUid = userCredential.user.uid;
-        idMap[user.seedId] = newUid;
+        uid = userCredential.user.uid;
         console.log(`Created new auth user for ${user.email}`);
-        await signOut(auth); // Sign out the newly created user
+        await signOut(auth); // Sign out the newly created user immediately
     } catch (error: any) {
         if (error.code === 'auth/email-already-in-use') {
             try {
                 // If user exists, sign in to get their UID
                 const userCredential = await signInWithEmailAndPassword(auth, user.email, user.password);
-                idMap[user.seedId] = userCredential.user.uid;
+                uid = userCredential.user.uid;
                 console.warn(`User with email ${user.email} already exists. Using existing UID.`);
                 await signOut(auth); // Sign out after getting UID
             } catch (signInError: any) {
@@ -79,7 +68,15 @@ export async function seedDatabase(db: Firestore) {
             console.error(`Error creating auth user for ${user.telegramId}:`, error.message);
         }
     }
+    if (uid) {
+        idMap[user.seedId] = uid;
+    }
   }
+
+  console.log("Finished Auth user processing. Starting Firestore data population.");
+  console.log("ID Map:", idMap);
+
+  // --- 3. POPULATE FIRESTORE USING THE CORRECT UIDS ---
 
   // --- CATEGORIES ---
   Object.entries(seedData.categories).forEach(([id, data]) => {
@@ -154,18 +151,10 @@ export async function seedDatabase(db: Firestore) {
   });
   
   // --- REPORTS ---
-   Object.entries(seedData.reports).forEach(([id, data]) => {
-    const newReporterId = idMap[data.reporterId];
-    if (!newReporterId) {
-       console.warn(`Skipping report for alert ${data.alertId} because reporterId could not be mapped.`);
-       return;
-    }
-    // We cannot map alertId easily as they are auto-generated.
-    // In a real scenario, you'd query for the alert, but for seeding this is complex.
-    // So we'll skip creating reports to avoid dangling references.
-  });
+  // In a real app this would be more complex, but for seeding, we'll skip to avoid dangling references
+  // since alert IDs are auto-generated.
   
   await batch.commit();
-  console.log('ID Map:', idMap);
+  
   return { message: 'База данных успешно перезаписана! Существующие аккаунты были использованы повторно.' };
 }
