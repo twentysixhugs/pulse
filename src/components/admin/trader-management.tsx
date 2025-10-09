@@ -19,7 +19,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { MoreVertical, PlusCircle, PencilRuler } from 'lucide-react';
+import { MoreVertical, PlusCircle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -154,10 +154,8 @@ export function TraderManagement() {
   };
   
   const TraderActionMenu = ({ trader }: {trader: Trader}) => {
-    const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
-  
     return (
-      <>
+      <AlertDialog>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -168,26 +166,58 @@ export function TraderManagement() {
             <DropdownMenuItem onClick={() => setEditingTrader(trader)}>
               Редактировать профиль
             </DropdownMenuItem>
-             <DropdownMenuItem asChild>
-                <Link href={`/admin/traders/${trader.id}/alerts`}>
-                    <PencilRuler className="mr-2 h-4 w-4" />
-                    Редактировать посты
-                </Link>
+            <DropdownMenuItem asChild>
+              <Link href={`/admin/traders/${trader.id}/alerts`}>
+                Редактировать посты
+              </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => toggleTraderStatus(trader.id, trader.status)}>
+            <AlertDialogTrigger asChild>
+              <DropdownMenuItem 
+                onSelect={(e) => {
+                  e.preventDefault(); 
+                  document.getElementById(`status-trigger-${trader.id}`)?.click()
+                }}
+              >
                 {trader.status === 'active' ? 'Деактивировать' : 'Активировать'}
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              className="text-destructive focus:text-destructive"
-              onClick={() => setDeleteAlertOpen(true)}
-            >
-              Удалить трейдера
-            </DropdownMenuItem>
+              </DropdownMenuItem>
+            </AlertDialogTrigger>
+            <AlertDialogTrigger asChild>
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onSelect={(e) => {
+                  e.preventDefault();
+                  document.getElementById(`delete-trigger-${trader.id}`)?.click();
+                }}
+              >
+                Удалить трейдера
+              </DropdownMenuItem>
+            </AlertDialogTrigger>
           </DropdownMenuContent>
         </DropdownMenu>
-  
-        <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
-          <AlertDialogContent>
+        
+        {/* Hidden Triggers for separate modals */}
+        <AlertDialogTrigger asChild>
+          <button id={`status-trigger-${trader.id}`} className="hidden" />
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Это действие изменит статус трейдера {trader.name} на &quot;{trader.status === 'active' ? 'неактивен' : 'активен'}&quot;.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction onClick={() => toggleTraderStatus(trader.id, trader.status)}>
+              Подтвердить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+
+        <AlertDialogTrigger asChild>
+            <button id={`delete-trigger-${trader.id}`} className="hidden" />
+        </AlertDialogTrigger>
+        <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Удалить трейдера?</AlertDialogTitle>
               <AlertDialogDescription>
@@ -203,9 +233,8 @@ export function TraderManagement() {
                 Подтвердить удаление
               </AlertDialogAction>
             </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </>
+        </AlertDialogContent>
+      </AlertDialog>
     );
   };
 
@@ -350,5 +379,3 @@ export function TraderManagement() {
     </div>
   );
 }
-
-    
