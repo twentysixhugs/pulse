@@ -99,26 +99,6 @@ export function ComplaintManagement() {
     }
   };
 
-  const handleDeletePost = async (alertId: string, reportId: string) => {
-    // Optimistically remove the alert and the report from the UI
-    setAlerts(current => current.filter(a => a.id !== alertId));
-    setReports(current => current.filter(r => r.id !== reportId));
-
-    try {
-        await deleteAlert(alertId);
-        await resolveReport(db, reportId); // Also resolve the report
-        toast({
-            variant: 'destructive',
-            title: 'Пост удален',
-            description: 'Пост был удален из-за жалобы.',
-        });
-    } catch (error) {
-        console.error("Failed to delete post:", error);
-        toast({ variant: 'destructive', title: "Ошибка", description: "Не удалось удалить пост."});
-        // You might want to refetch data to revert the UI state
-    }
-  }
-  
   const handlePageChange = ({ selected }: { selected: number }) => {
     setCurrentPage(selected + 1);
   };
@@ -163,25 +143,6 @@ export function ComplaintManagement() {
                         </CardDescription>
                     </div>
                      <div className='flex flex-col gap-2'>
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button size="sm" variant="destructive">Удалить пост</Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Удалить этот пост?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                    Это действие нельзя отменить. Пост будет удален навсегда. Жалоба будет автоматически разрешена.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeletePost(alert.id, report.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                        Удалить
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button size="sm">Разрешить</Button>
