@@ -33,6 +33,12 @@ import {
 import { Skeleton } from '../ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
+import { PaginationControl } from '../common/pagination-control';
+import { Timestamp } from 'firebase/firestore';
+import { formatDistanceToNow } from 'date-fns';
+import { ru } from 'date-fns/locale';
+
+const REPORTS_PER_PAGE = 20;
 
 export function ComplaintManagement() {
   const [reports, setReports] = useState<Report[]>([]);
@@ -40,6 +46,9 @@ export function ComplaintManagement() {
   const [traders, setTraders] = useState<Trader[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalReports, setTotalReports] = useState(0);
+
   const { toast } = useToast();
   const { user: adminUser } = useAuth();
 
@@ -48,12 +57,17 @@ export function ComplaintManagement() {
       setLoading(true);
       try {
         const [reportsData, alertsData, tradersData, usersData] = await Promise.all([
-          getAllReports(),
+          getAllReports({ page: currentPage, limit: REPORTS_PER_PAGE }),
           getAlerts(),
           getAllTraders(),
           getAllUsers()
         ]);
-        setReports(reportsData);
+        
+        // We only care about pending reports, so we filter them here.
+        const pending = reportsData.data.filter(r => r.status === 'pending');
+        
+        setReports(pending);
+        setTotalReports(reportsData.totalCount);
         setAlerts(alertsData.alerts);
         setTraders(tradersData.data);
         setUsers(usersData.data);
@@ -65,7 +79,7 @@ export function ComplaintManagement() {
       }
     }
     fetchData();
-  }, [toast]);
+  }, [toast, currentPage]);
 
   const handleResolveReport = async (reportId: string) => {
     // Optimistic update
@@ -104,8 +118,13 @@ export function ComplaintManagement() {
         // You might want to refetch data to revert the UI state
     }
   }
+  
+  const handlePageChange = ({ selected }: { selected: number }) => {
+    setCurrentPage(selected + 1);
+  };
+  
+  const pageCount = Math.ceil(totalReports / REPORTS_PER_PAGE);
 
-  const pendingReports = reports.filter((r) => r.status === 'pending');
   const currentUser = adminUser ? users.find(u => u.id === adminUser.uid) : undefined;
 
   if (loading) {
@@ -123,9 +142,9 @@ export function ComplaintManagement() {
   return (
     <div className="space-y-4 px-4 md:px-0">
       <h2 className="text-2xl font-headline font-bold">Очередь жалоб</h2>
-      {pendingReports.length > 0 && currentUser ? (
+      {reports.length > 0 && currentUser ? (
         <div className="space-y-6">
-          {pendingReports.map((report) => {
+          {reports.map((report) => {
             const alert = alerts.find((a) => a.id === report.alertId);
             const reporter = users.find(u => u.id === report.reporterId);
 
@@ -139,6 +158,8 @@ export function ComplaintManagement() {
                         <CardTitle className="text-lg">Пост, на который пожаловались</CardTitle>
                         <CardDescription>
                             Жалоба от: {reporter?.name || 'Неизвестный пользователь'}
+                            <span className="mx-2 text-muted-foreground/50">|</span>
+                            {formatDistanceToNow((report.createdAt as Timestamp).toDate(), { addSuffix: true, locale: ru })}
                         </CardDescription>
                     </div>
                      <div className='flex gap-2'>
@@ -201,6 +222,13 @@ export function ComplaintManagement() {
               </Card>
             );
           })}
+          {pageCount > 1 && (
+            <PaginationControl
+              pageCount={pageCount}
+              currentPage={currentPage}
+              onPageChange={handlePageChange}
+            />
+          )}
         </div>
       ) : (
         <div className="text-center py-16 border-dashed border-2 rounded-lg">

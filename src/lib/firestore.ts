@@ -100,6 +100,7 @@ export interface Report {
   reporterId: string;
   reason: string;
   status: ReportStatus;
+  createdAt: Timestamp;
 }
 
 
@@ -306,11 +307,25 @@ export async function getAllCategories(): Promise<Category[]> {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
 }
 
-export async function getAllReports(): Promise<Report[]> {
-  const reportsCol = collection(db, 'reports');
-  const snapshot = await getDocs(reportsCol);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Report));
+type GetAllReportsParams = {
+  page?: number;
+  limit?: number;
 }
+export async function getAllReports(params: GetAllReportsParams = {}): Promise<{data: Report[], totalCount: number}> {
+  const { page = 1, limit = Number.MAX_SAFE_INTEGER } = params;
+  
+  const reportsCol = collection(db, 'reports');
+  const q = query(reportsCol, orderBy('createdAt', 'desc'));
+  
+  const snapshot = await getDocs(q);
+  const allReports = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Report));
+  
+  const totalCount = allReports.length;
+  const data = allReports.slice((page - 1) * limit, page * limit);
+
+  return { data, totalCount };
+}
+
 
 export async function getAlerts(): Promise<{alerts: AlertPost[], totalCount: number}> {
     const alertsCol = collection(db, 'alerts');
@@ -385,15 +400,17 @@ export async function deleteCommentFromAlert(alertId: string, commentId: string)
 }
 
 
-export async function createReport(report: Omit<Report, 'id' | 'status'>): Promise<Report> {
+export async function createReport(report: Omit<Report, 'id' | 'status' | 'createdAt'>): Promise<Report> {
     const reportsCol = collection(db, 'reports');
     const newReport = {
         ...report,
-        status: 'pending' as ReportStatus
+        status: 'pending' as ReportStatus,
+        createdAt: Timestamp.now(),
     }
     const docRef = await addDoc(reportsCol, newReport);
     return { ...newReport, id: docRef.id };
 }
+
 
 
 export async function updateTraderReputation(
