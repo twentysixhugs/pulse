@@ -39,7 +39,7 @@ export async function seedDatabase(db: Firestore) {
   // 2. Combine all user types for Auth processing
   const allSeedUsers = [
     ...Object.entries(seedData.users).map(([id, data]) => ({ seedId: id, email: `${data.telegramId}@example.com`, ...data, password: 'password' })),
-    ...Object.entries(seedData.traders).map(([id, data]) => ({ seedId: id, email: data.email, ...data, password: 'password' }))
+    ...Object.entries(seedData.traders).map(([id, data]) => ({ seedId: id, ...data, password: 'password' }))
   ].filter((user, index, self) => index === self.findIndex((u) => u.email === user.email));
   
   const idMap: { [oldId: string]: string } = {};
@@ -51,7 +51,6 @@ export async function seedDatabase(db: Firestore) {
         const userCredential = await createUserWithEmailAndPassword(auth, user.email, user.password);
         uid = userCredential.user.uid;
         console.log(`Created new auth user for ${user.email}`);
-        await signOut(auth); // Sign out the newly created user immediately
     } catch (error: any) {
         if (error.code === 'auth/email-already-in-use') {
             try {
@@ -59,14 +58,18 @@ export async function seedDatabase(db: Firestore) {
                 const userCredential = await signInWithEmailAndPassword(auth, user.email, user.password);
                 uid = userCredential.user.uid;
                 console.warn(`User with email ${user.email} already exists. Using existing UID.`);
-                await signOut(auth); // Sign out after getting UID
             } catch (signInError: any) {
                  console.error(`Failed to sign in existing user ${user.email} to get UID. The password might be different from 'password'.`, signInError.message);
             }
         } else {
             console.error(`Error creating auth user for ${user.telegramId}:`, error.message);
         }
+    } finally {
+        if (auth.currentUser) {
+            await signOut(auth); // Sign out any logged-in user to keep state clean
+        }
     }
+
     if (uid) {
         idMap[user.seedId] = uid;
     }
@@ -148,8 +151,8 @@ export async function seedDatabase(db: Firestore) {
   });
   
   // --- REPORTS ---
-  // In a real app this would be more complex, but for seeding, we'll skip to avoid dangling references
-  // since alert IDs are auto-generated.
+  // Since alert IDs are auto-generated, we can't reliably seed reports that reference them.
+  // This part is intentionally left empty.
   
   await batch.commit();
   
