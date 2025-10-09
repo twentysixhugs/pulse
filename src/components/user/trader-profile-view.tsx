@@ -86,12 +86,8 @@ export function TraderProfileView({
     const actionType = 'pos';
   
     try {
-      // The Firestore function now returns the updated trader and the new reputation state
       const { updatedTrader, newRepAction } = await updateTraderReputation(trader.id, currentUser.id, actionType);
-      
-      // Call the prop function to update the parent component's state
       onUpdateTraderRep(updatedTrader, newRepAction);
-  
     } catch (error) {
       console.error("Failed to update reputation:", error);
       toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось обновить репутацию.' });
@@ -146,8 +142,8 @@ export function TraderProfileView({
         <CardContent className="p-6 pt-0 flex flex-col sm:flex-row gap-2">
             {!isTraderViewing && (
                  <Button onClick={handleRep} variant="outline" className="w-full sm:w-auto" disabled={isSubmittingRep || repLoading}>
-                    {repLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (userRepAction === 'pos' ? <Check className="mr-2 h-4 w-4" /> : <Star className="mr-2 h-4 w-4" />)}
-                    {repLoading ? 'Загрузка...' : (userRepAction === 'pos' ? 'Убрать голос' : 'Повысить рейтинг')}
+                    {userRepAction === 'pos' ? <Check className="mr-2 h-4 w-4" /> : <Star className="mr-2 h-4 w-4" />}
+                    {userRepAction === 'pos' ? 'Убрать голос' : 'Повысить рейтинг'}
                 </Button>
             )}
         </CardContent>
