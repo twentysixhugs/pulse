@@ -98,7 +98,7 @@ export function TraderDashboard() {
   const [currentTrader, setCurrentTrader] = useState<Trader | undefined>();
   const [alerts, setAlerts] = useState<AlertPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingPost, setEditingPost] = useState<AlertPost | undefined>(undefined);
+  const [editingPost, setEditingPost] = useState<AlertPost | null>(null);
   const [imageModalState, setImageModalState] = useState<{isOpen: boolean; imageUrl?: string; imageHint?: string; title?: string; alertId?: string}>({isOpen: false});
   
   const { toast } = useToast();
@@ -174,7 +174,7 @@ export function TraderDashboard() {
           toast({ title: 'Пост создан' });
         }
       }
-      setEditingPost(undefined); // Close modal on success
+      setEditingPost(null); // Close modal on success
     } catch (error) {
       console.error("Failed to save post", error);
       toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось сохранить пост.'})
@@ -276,13 +276,13 @@ export function TraderDashboard() {
                                         </AlertDialogContent>
                                     </AlertDialog>
                                   </div>
-                                  <p className="text-sm break-words">{alert.text}</p>
                                </div>
                             </CardHeader>
-                            {alert.screenshotUrl && (
-                                <CardContent className="px-4 pt-0 pb-4">
+                            <CardContent className="px-4 pb-2 pt-0">
+                                <p className="text-sm break-words">{alert.text}</p>
+                                {alert.screenshotUrl && (
                                      <div
-                                        className="relative aspect-video w-full max-w-sm cursor-pointer overflow-hidden rounded-lg border"
+                                        className="relative aspect-video w-full max-w-sm cursor-pointer overflow-hidden rounded-lg border mt-4"
                                         onClick={() => openImageModal(alert)}
                                         >
                                         <Image
@@ -296,8 +296,8 @@ export function TraderDashboard() {
                                             <ZoomIn className="h-10 w-10 text-white" />
                                         </div>
                                     </div>
-                                </CardContent>
-                            )}
+                                )}
+                            </CardContent>
                              <CardFooter className="flex justify-between p-2 px-4 border-t items-center">
                                 <div className="flex gap-4 text-sm text-muted-foreground pointer-events-none">
                                     <div className="flex items-center gap-1.5">
@@ -339,7 +339,7 @@ export function TraderDashboard() {
           title={imageModalState.title}
         />
       )}
-       <Dialog open={!!editingPost} onOpenChange={(isOpen) => !isOpen && setEditingPost(undefined)}>
+       <Dialog open={!!editingPost} onOpenChange={(isOpen) => !isOpen && setEditingPost(null)}>
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Редактировать пост</DialogTitle>

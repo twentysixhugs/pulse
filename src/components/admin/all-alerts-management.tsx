@@ -2,22 +2,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, notFound, useRouter } from 'next/navigation';
 import {
-  Trader,
   AlertPost,
-  getTrader,
-  listenToAlertsByTrader,
+  listenToAlerts,
   updateAlert,
   deleteAlert,
   Comment,
   deleteCommentFromAlert,
+  getTrader,
+  Trader,
 } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { MoreVertical, Edit, Trash2, MessageSquare, ArrowLeft, ThumbsUp, ThumbsDown, ZoomIn } from 'lucide-react';
+import { MoreVertical, Edit, Trash2, MessageSquare, ThumbsUp, ThumbsDown, ZoomIn } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -30,7 +29,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -53,17 +51,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ImageModal } from '@/components/user/image-modal';
 
-const ALERTS_PER_PAGE = 10;
+const ALERTS_PER_PAGE = 20;
 
-export default function AdminTraderAlertsPage() {
-  const params = useParams();
-  const router = useRouter();
-  const traderId = params.id as string;
-
-  const [trader, setTrader] = useState<Trader | null>(null);
+export function AllAlertsManagement() {
   const [alerts, setAlerts] = useState<AlertPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingPost, setEditingPost] = useState<AlertPost | null>(null);
+  const [editingTrader, setEditingTrader] = useState<Trader | null>(null);
   const [imageModalState, setImageModalState] = useState<{isOpen: boolean; imageUrl?: string; imageHint?: string; title?: string; alertId?: string}>({isOpen: false});
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -72,51 +66,39 @@ export default function AdminTraderAlertsPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!traderId) {
-      notFound();
-      return;
-    }
+    setLoading(true);
+    const unsubscribe = listenToAlerts(
+      ({ alerts: newAlerts, totalCount }) => {
+        setAlerts(newAlerts);
+        setTotalAlerts(totalCount);
+        setLoading(false);
+      },
+      (error) => {
+        console.error(error);
+        toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось загрузить посты.' });
+        setLoading(false);
+      },
+      currentPage,
+      ALERTS_PER_PAGE
+    );
 
-    let unsubscribe: Unsubscribe | undefined;
+    return () => unsubscribe();
+  }, [currentPage, toast]);
 
-    async function fetchData() {
-      setLoading(true);
-      try {
-        const traderData = await getTrader(traderId);
-        if (!traderData) {
-          notFound();
-          return;
+  const handleEditClick = async (alert: AlertPost) => {
+    try {
+        const traderData = await getTrader(alert.traderId);
+        if (traderData) {
+            setEditingTrader(traderData);
+            setEditingPost(alert);
+        } else {
+            toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось найти трейдера для этого поста.' });
         }
-        setTrader(traderData);
-
-        unsubscribe = listenToAlertsByTrader(
-          traderId,
-          ({ alerts: newAlerts, totalCount }) => {
-            setAlerts(newAlerts);
-            setTotalAlerts(totalCount);
-            setLoading(false);
-          },
-          (error) => {
-            console.error(error);
-            toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось загрузить посты трейдера.' });
-            setLoading(false);
-          },
-          currentPage,
-          ALERTS_PER_PAGE
-        );
-      } catch (error) {
+    } catch (error) {
         console.error(error);
         toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось загрузить данные трейдера.' });
-        notFound();
-      }
     }
-
-    fetchData();
-
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
-  }, [traderId, currentPage, toast]);
+  }
 
   const handleSavePost = async (postData: Partial<Omit<AlertPost, 'id'>> & { id?: string }) => {
     if (!postData.id) return;
@@ -125,6 +107,7 @@ export default function AdminTraderAlertsPage() {
       await updateAlert(id, updateData);
       toast({ title: 'Пост обновлен' });
       setEditingPost(null);
+      setEditingTrader(null);
     } catch (error) {
       console.error(error);
       toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось обновить пост.' });
@@ -163,7 +146,6 @@ export default function AdminTraderAlertsPage() {
     }
   };
 
-
   const handlePageChange = ({ selected }: { selected: number }) => {
     setCurrentPage(selected + 1);
   };
@@ -171,19 +153,8 @@ export default function AdminTraderAlertsPage() {
   const pageCount = Math.ceil(totalAlerts / ALERTS_PER_PAGE);
 
   return (
-    <div>
-      <Button variant="ghost" asChild className="mb-4">
-        <Link href="/admin">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Назад к управлению
-        </Link>
-      </Button>
-
-      {loading || !trader ? (
-        <Skeleton className="h-12 w-1/2 mb-6" />
-      ) : (
-        <h1 className="text-2xl font-headline font-bold mb-6">Посты трейдера: {trader.name}</h1>
-      )}
+    <div className="space-y-4 px-4 md:px-0">
+      <h2 className="text-2xl font-headline font-bold">Все алерты</h2>
 
       {loading ? (
         <div className="space-y-4">
@@ -207,7 +178,7 @@ export default function AdminTraderAlertsPage() {
                     </div>
                     <AlertActionMenu
                       alert={alert}
-                      onEdit={() => setEditingPost(alert)}
+                      onEdit={() => handleEditClick(alert)}
                       onDelete={() => handleDeletePost(alert.id)}
                       onDeleteComment={handleDeleteComment}
                     />
@@ -259,12 +230,12 @@ export default function AdminTraderAlertsPage() {
         </div>
       ) : (
         <div className="text-center py-16 border-dashed border-2 rounded-lg">
-          <p className="text-muted-foreground">У этого трейдера еще нет постов.</p>
+          <p className="text-muted-foreground">Алертов пока нет.</p>
         </div>
       )}
 
-      {trader && editingPost && (
-        <Dialog open={!!editingPost} onOpenChange={(isOpen) => !isOpen && setEditingPost(null)}>
+      {editingPost && editingTrader && (
+        <Dialog open={!!editingPost} onOpenChange={(isOpen) => !isOpen && (setEditingPost(null), setEditingTrader(null))}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Редактировать пост</DialogTitle>
@@ -272,7 +243,7 @@ export default function AdminTraderAlertsPage() {
             </DialogHeader>
             <div className="pt-4">
               <PostEditor
-                trader={trader}
+                trader={editingTrader}
                 onSave={handleSavePost}
                 postToEdit={editingPost}
               />

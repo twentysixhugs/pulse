@@ -29,7 +29,7 @@ const formSchema = z.object({
 
 type PostEditorProps = {
   trader: Trader;
-  postToEdit?: AlertPost;
+  postToEdit?: AlertPost | null;
   onSave: (postData: Partial<Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'>> & {id?: string}) => void;
 };
 
@@ -84,10 +84,12 @@ export function PostEditor({ trader, postToEdit, onSave }: PostEditorProps) {
       description: 'Ваше оповещение было успешно сохранено.',
     });
     
-    form.reset({ text: '', screenshot: undefined });
-    setSelectedFileName(null);
-    if(fileInputRef.current) {
-      fileInputRef.current.value = '';
+    if (!postToEdit) {
+      form.reset({ text: '', screenshot: undefined });
+      setSelectedFileName(null);
+      if(fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   }
 

@@ -6,7 +6,7 @@ import { UserManagement } from "@/components/admin/user-management";
 import { TraderManagement } from "@/components/admin/trader-management";
 import { ComplaintManagement } from "@/components/admin/complaint-management";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, GanttChartSquare, ShieldAlert, LineChart, FolderKanban } from "lucide-react";
+import { Users, GanttChartSquare, ShieldAlert, LineChart, FolderKanban, Newspaper } from "lucide-react";
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Select,
@@ -17,12 +17,14 @@ import {
 } from "@/components/ui/select";
 import { MetricsManagement } from './metrics-management';
 import { CategoryManagement } from './category-management';
+import { AllAlertsManagement } from './all-alerts-management';
 
 
 const TABS = [
     { value: "users", label: "Пользователи", icon: Users },
     { value: "traders", label: "Трейдеры", icon: GanttChartSquare },
     { value: "categories", label: "Категории", icon: FolderKanban },
+    { value: "all-alerts", label: "Все алерты", icon: Newspaper },
     { value: "complaints", label: "Жалобы", icon: ShieldAlert },
     { value: "metrics", label: "Метрики", icon: LineChart },
 ];
@@ -55,6 +57,7 @@ export function AdminTabs() {
                     {activeTab === 'users' && <UserManagement />}
                     {activeTab === 'traders' && <TraderManagement />}
                     {activeTab === 'categories' && <CategoryManagement />}
+                    {activeTab === 'all-alerts' && <AllAlertsManagement />}
                     {activeTab === 'complaints' && <ComplaintManagement />}
                     {activeTab === 'metrics' && <MetricsManagement />}
                 </div>
@@ -80,6 +83,9 @@ export function AdminTabs() {
             </TabsContent>
              <TabsContent value="categories" className="mt-6">
                 <CategoryManagement />
+            </TabsContent>
+             <TabsContent value="all-alerts" className="mt-6">
+                <AllAlertsManagement />
             </TabsContent>
             <TabsContent value="complaints" className="mt-6">
                 <ComplaintManagement />
