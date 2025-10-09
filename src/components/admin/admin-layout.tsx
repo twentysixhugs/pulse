@@ -88,7 +88,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <main className="flex-1">
-        <div className="container py-8">{children}</div>
+        <div className="container py-8 px-4">{children}</div>
       </main>
     </div>
   );
