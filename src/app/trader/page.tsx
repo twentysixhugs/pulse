@@ -5,13 +5,13 @@ import { Trader, getTrader } from '@/lib/firestore';
 import { useAuth } from '@/hooks/use-auth';
 import { TraderDashboard } from "@/components/trader/trader-dashboard";
 import { RatingView } from '@/components/user/rating-view';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User as UserIcon, BarChart, Star, Flame } from "lucide-react";
 import { Card, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AllAlertsView } from '@/components/trader/all-alerts-view';
+import { ResponsiveTabs } from '@/components/common/responsive-tabs';
 
 
 function TraderInfo({ trader }: { trader: Trader }) {
@@ -56,6 +56,12 @@ function TraderInfo({ trader }: { trader: Trader }) {
     );
 }
 
+const tabTriggers = [
+    { value: "profile", label: "Профиль", icon: UserIcon },
+    { value: "rating", label: "Рейтинг", icon: BarChart },
+    { value: "all-alerts", label: "Все алерты", icon: Flame },
+];
+
 
 export default function TraderPage() {
     const { user: authUser } = useAuth();
@@ -76,46 +82,48 @@ export default function TraderPage() {
 
     }, [authUser]);
 
-
-    return (
-        <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="grid h-auto grid-cols-2 sm:grid-cols-3">
-                <TabsTrigger value="profile">
-                    <UserIcon className="mr-2 h-4 w-4" />
-                    Профиль
-                </TabsTrigger>
-                <TabsTrigger value="rating">
-                    <BarChart className="mr-2 h-4 w-4" />
-                    Рейтинг
-                </TabsTrigger>
-                <TabsTrigger value="all-alerts" className="col-span-2 sm:col-span-1">
-                    <Flame className="mr-2 h-4 w-4" />
-                    Все алерты
-                </TabsTrigger>
-            </TabsList>
-            <TabsContent value="profile" className="mt-6">
-                {loading || !currentTrader ? (
-                    <div className="mb-8">
-                        <Skeleton className="h-40 w-full" />
-                    </div>
-                ) : (
-                    <TraderInfo trader={currentTrader} />
-                )}
-                <TraderDashboard />
-            </TabsContent>
-            <TabsContent value="rating" className="mt-6">
-                <RatingView />
-            </TabsContent>
-            <TabsContent value="all-alerts" className="mt-6">
-                {loading || !currentTrader ? (
+    const tabContents = [
+        {
+            value: "profile",
+            children: (
+                <>
+                    {loading || !currentTrader ? (
+                        <div className="mb-8">
+                            <Skeleton className="h-40 w-full" />
+                        </div>
+                    ) : (
+                        <TraderInfo trader={currentTrader} />
+                    )}
+                    <TraderDashboard />
+                </>
+            )
+        },
+        {
+            value: "rating",
+            children: <RatingView />
+        },
+        {
+            value: "all-alerts",
+            children: (
+                 loading || !currentTrader ? (
                      <div className="space-y-4">
                         <Skeleton className="h-96 w-full" />
                         <Skeleton className="h-96 w-full" />
                      </div>
                 ) : (
                     <AllAlertsView currentUser={currentTrader} />
-                )}
-            </TabsContent>
-        </Tabs>
+                )
+            )
+        }
+    ]
+
+
+    return (
+        <ResponsiveTabs
+            defaultValue="profile"
+            triggers={tabTriggers}
+            contents={tabContents}
+            isTrader={true}
+        />
     );
 }

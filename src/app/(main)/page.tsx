@@ -1,13 +1,12 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { LegalModal } from '@/components/user/legal-modal';
 import { SubscriptionGate } from '@/components/user/subscription-gate';
 import { AlertCard } from '@/components/user/alert-card';
 import { CategoryView } from '@/components/user/category-view';
 import { RatingView } from '@/components/user/rating-view';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Flame, Layers } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
@@ -20,10 +19,17 @@ import {
   listenToAlerts,
 } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { Unsubscribe } from 'firebase/firestore';
 import { PaginationControl } from '@/components/common/pagination-control';
+import { ResponsiveTabs } from '@/components/common/responsive-tabs';
 
 const ALERTS_PER_PAGE = 20;
+
+const tabTriggers = [
+  { value: "alerts", label: "Все алерты", icon: Flame },
+  { value: "categories", label: "Категории", icon: Layers },
+  { value: "rating", label: "Рейтинг", icon: BarChart },
+];
+
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -118,68 +124,59 @@ export default function HomePage() {
   }
 
   const isSubscribed = currentUser?.subscriptionStatus === 'active';
+
+  const tabContents = [
+    {
+      value: "alerts",
+      children: (
+        <div className="space-y-4">
+            {loading ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-96 w-full" />
+                  <Skeleton className="h-96 w-full" />
+                </div>
+            ) : alerts.length > 0 ? (
+              <>
+                {alerts.map((alert) => (
+                    <AlertCard
+                        key={alert.id}
+                        alert={alert}
+                        currentUser={currentUser}
+                        onUpdateAlert={handleUpdateAlert}
+                        onReport={handleReport}
+                        interactionsDisabled={currentUser.role === 'trader'}
+                    />
+                ))}
+                {pageCount > 1 && (
+                    <PaginationControl
+                        pageCount={pageCount}
+                        currentPage={currentPage}
+                        onPageChange={handlePageChange}
+                    />
+                )}
+              </>
+            ) : (
+              <div className="text-center py-16 border-dashed border-2 rounded-lg">
+                  <p className="text-muted-foreground">Пока нет алертов.</p>
+              </div>
+            )}
+        </div>
+      )
+    },
+    { value: "categories", children: <CategoryView /> },
+    { value: "rating", children: <RatingView /> }
+  ];
   
   return (
     <div className="container mx-auto max-w-3xl py-8 px-4">
       <LegalModal isOpen={!hasAgreed} onAccept={handleAgree} />
       {hasAgreed && (
         <SubscriptionGate isSubscribed={isSubscribed}>
-          <Tabs defaultValue="alerts" className="w-full">
-            <TabsList className="flex flex-wrap h-auto">
-              <TabsTrigger value="alerts" className="flex-1">
-                <Flame className="h-4 w-4 mr-2" />
-                Все алерты
-              </TabsTrigger>
-              <TabsTrigger value="categories" className="flex-1">
-                <Layers className="h-4 w-4 mr-2" />
-                Категории
-              </TabsTrigger>
-              <TabsTrigger value="rating" className="flex-1">
-                <BarChart className="h-4 w-4 mr-2" />
-                Рейтинг
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="alerts" className="mt-6">
-                <div className="space-y-4">
-                    {loading ? (
-                       <div className="space-y-4">
-                         <Skeleton className="h-96 w-full" />
-                         <Skeleton className="h-96 w-full" />
-                       </div>
-                    ) : alerts.length > 0 ? (
-                      <>
-                        {alerts.map((alert) => (
-                            <AlertCard
-                                key={alert.id}
-                                alert={alert}
-                                currentUser={currentUser}
-                                onUpdateAlert={handleUpdateAlert}
-                                onReport={handleReport}
-                                interactionsDisabled={currentUser.role === 'trader'}
-                            />
-                        ))}
-                         {pageCount > 1 && (
-                            <PaginationControl
-                                pageCount={pageCount}
-                                currentPage={currentPage}
-                                onPageChange={handlePageChange}
-                            />
-                         )}
-                      </>
-                    ) : (
-                      <div className="text-center py-16 border-dashed border-2 rounded-lg">
-                          <p className="text-muted-foreground">Пока нет алертов.</p>
-                      </div>
-                    )}
-                </div>
-            </TabsContent>
-            <TabsContent value="categories" className="mt-6">
-              <CategoryView />
-            </TabsContent>
-            <TabsContent value="rating" className="mt-6">
-              <RatingView />
-            </TabsContent>
-          </Tabs>
+           <ResponsiveTabs
+            defaultValue="alerts"
+            triggers={tabTriggers}
+            contents={tabContents}
+          />
         </SubscriptionGate>
       )}
     </div>
