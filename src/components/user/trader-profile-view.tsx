@@ -146,7 +146,7 @@ export function TraderProfileView({
         <CardContent className="p-6 pt-0 flex flex-col sm:flex-row gap-2">
             {!isTraderViewing && (
                  <Button onClick={handleRep} variant="outline" className="w-full sm:w-auto" disabled={isSubmittingRep || repLoading}>
-                    {repLoading || isSubmittingRep ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (userRepAction === 'pos' ? <Check className="mr-2 h-4 w-4" /> : <Star className="mr-2 h-4 w-4" />)}
+                    {repLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (userRepAction === 'pos' ? <Check className="mr-2 h-4 w-4" /> : <Star className="mr-2 h-4 w-4" />)}
                     {repLoading ? 'Загрузка...' : (userRepAction === 'pos' ? 'Убрать голос' : 'Повысить рейтинг')}
                 </Button>
             )}
