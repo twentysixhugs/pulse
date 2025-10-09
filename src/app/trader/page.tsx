@@ -88,7 +88,7 @@ export default function TraderPage() {
                     <BarChart className="mr-2 h-4 w-4" />
                     Рейтинг
                 </TabsTrigger>
-                <TabsTrigger value="all-alerts">
+                <TabsTrigger value="all-alerts" className="col-span-2 sm:col-span-1">
                     <Flame className="mr-2 h-4 w-4" />
                     Все алерты
                 </TabsTrigger>
