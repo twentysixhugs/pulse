@@ -19,7 +19,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { MoreVertical, PlusCircle } from 'lucide-react';
+import { MoreVertical, PlusCircle, PencilRuler } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +34,7 @@ import { PaginationControl } from '../common/pagination-control';
 import { CreateTraderDialog } from './create-trader-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { EditTraderDialog } from './edit-trader-dialog';
+import Link from 'next/link';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -167,10 +168,15 @@ export function TraderManagement() {
             <DropdownMenuItem onClick={() => setEditingTrader(trader)}>
               Редактировать профиль
             </DropdownMenuItem>
+             <DropdownMenuItem asChild>
+                <Link href={`/admin/traders/${trader.id}/alerts`}>
+                    <PencilRuler className="mr-2 h-4 w-4" />
+                    Редактировать посты
+                </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => toggleTraderStatus(trader.id, trader.status)}>
                 {trader.status === 'active' ? 'Деактивировать' : 'Активировать'}
             </DropdownMenuItem>
-            <DropdownMenuItem disabled>Редактировать посты</DropdownMenuItem>
             <DropdownMenuItem 
               className="text-destructive focus:text-destructive"
               onClick={() => setDeleteAlertOpen(true)}

@@ -370,6 +370,20 @@ export async function addCommentToAlert(alertId: string, comment: Omit<Comment, 
   return newComment;
 }
 
+export async function deleteCommentFromAlert(alertId: string, commentId: string) {
+    const alertRef = doc(db, 'alerts', alertId);
+    await runTransaction(db, async (transaction) => {
+        const alertDoc = await transaction.get(alertRef);
+        if (!alertDoc.exists()) {
+            throw "Alert not found!";
+        }
+        const currentComments = alertDoc.data().comments as Comment[];
+        const newComments = currentComments.filter(c => c.id !== commentId);
+        transaction.update(alertRef, { comments: newComments });
+    });
+}
+
+
 export async function createReport(report: Omit<Report, 'id' | 'status'>): Promise<Report> {
     const reportsCol = collection(db, 'reports');
     const newReport = {
