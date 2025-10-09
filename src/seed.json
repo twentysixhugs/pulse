@@ -23,9 +23,9 @@
     "trader-3": { "name": "Бен 'СэнсэйАкций' Картер", "telegramId": "stock_sensei_ben", "isBanned": false, "subscriptionStatus": "active", "subscriptionEndDate": { "__datatype__": "timestamp", "value": "2099-01-01T10:00:00Z" }, "role": "trader" }
   },
   "traders": {
-    "trader-1": { "name": "Алекс 'КриптоКороль' Иванов", "telegramId": "crypto_king_alex", "specialization": "Специалист по BTC и ETH", "category": "cat-crypto", "status": "active", "reputation": 125, "profilePicUrl": "https://picsum.photos/seed/trader1/200/200", "profilePicHint": "male portrait" },
-    "trader-2": { "name": "Сара 'ФорексКоролева' Миллер", "telegramId": "forex_queen_sarah", "specialization": "Мастер по основным валютным парам", "category": "cat-forex", "status": "active", "reputation": 210, "profilePicUrl": "https://picsum.photos/seed/trader2/200/200", "profilePicHint": "female portrait" },
-    "trader-3": { "name": "Бен 'СэнсэйАкций' Картер", "telegramId": "stock_sensei_ben", "specialization": "Гуру акций технологических компаний", "category": "cat-stocks", "status": "inactive", "reputation": 88, "profilePicUrl": "https://picsum.photos/seed/trader3/200/200", "profilePicHint": "male portrait" }
+    "trader-1": { "name": "Алекс 'КриптоКороль' Иванов", "telegramId": "crypto_king_alex", "email": "crypto_king_alex@example.com", "specialization": "Специалист по BTC и ETH", "category": "cat-crypto", "status": "active", "reputation": 125, "profilePicUrl": "https://picsum.photos/seed/trader1/200/200", "profilePicHint": "male portrait" },
+    "trader-2": { "name": "Сара 'ФорексКоролева' Миллер", "telegramId": "forex_queen_sarah", "email": "forex_queen_sarah@example.com", "specialization": "Мастер по основным валютным парам", "category": "cat-forex", "status": "active", "reputation": 210, "profilePicUrl": "https://picsum.photos/seed/trader2/200/200", "profilePicHint": "female portrait" },
+    "trader-3": { "name": "Бен 'СэнсэйАкций' Картер", "telegramId": "stock_sensei_ben", "email": "stock_sensei_ben@example.com", "specialization": "Гуру акций технологических компаний", "category": "cat-stocks", "status": "inactive", "reputation": 88, "profilePicUrl": "https://picsum.photos/seed/trader3/200/200", "profilePicHint": "male portrait" }
   },
   "alerts": {
     "alert-1": { "traderId": "trader-1", "traderName": "Алекс 'КриптоКороль' Иванов", "traderProfilePicUrl": "https://picsum.photos/seed/trader1/200/200", "traderProfilePicHint": "male portrait", "text": "BTC готовится к прорыву! Ожидаю движения к $70k в ближайшие 24 часа. Стоп-лосс на $65k.", "screenshotUrl": "https://picsum.photos/seed/ss1/800/600", "screenshotHint": "stock chart", "timestamp": { "__datatype__": "timestamp", "value": "2024-05-21T10:00:00Z" }, "likes": ["user-1", "user-2"], "dislikes": [], "comments": [{ "id": "comment-1-1", "userId": "user-2", "userName": "Елена Сидорова", "text": "Отличный анализ, Алекс! Тоже слежу за этим уровнем.", "timestamp": "2024-05-21T10:30:00Z" }] },
@@ -36,3 +36,5 @@
     "report-1": { "alertId": "alert-2", "reporterId": "user-1", "reason": "Этот трейдер постоянно дает неверные сигналы. Это похоже на манипуляцию рынком.", "status": "pending" }
   }
 }
+
+    

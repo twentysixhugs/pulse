@@ -34,14 +34,13 @@ export async function seedDatabase(db: Firestore) {
       }
   }
 
-
   const batch = writeBatch(db);
 
-  // 2. CREATE/VERIFY AUTH USERS and build a map from seed ID to Auth UID
+  // 2. Combine all user types for Auth processing
   const allSeedUsers = [
-    ...Object.entries(seedData.users).map(([id, data]) => ({ seedId: id, ...data, email: `${data.telegramId}@example.com`, password: 'password' })),
+    ...Object.entries(seedData.users).map(([id, data]) => ({ seedId: id, email: `${data.telegramId}@example.com`, ...data, password: 'password' })),
+    ...Object.entries(seedData.traders).map(([id, data]) => ({ seedId: id, email: data.email, ...data, password: 'password' }))
   ].filter((user, index, self) => index === self.findIndex((u) => u.email === user.email));
-  
   
   const idMap: { [oldId: string]: string } = {};
 
@@ -118,11 +117,9 @@ export async function seedDatabase(db: Firestore) {
     }
 
     // Create trader profile
+    const { email, ...traderDataForFirestore } = data; // Exclude email from trader document
     const traderRef = doc(db, 'traders', newUid);
-    const traderData = {
-        ...data,
-    };
-    batch.set(traderRef, traderData as any);
+    batch.set(traderRef, traderDataForFirestore as any);
   });
 
   // --- ALERTS ---
@@ -158,3 +155,5 @@ export async function seedDatabase(db: Firestore) {
   
   return { message: 'База данных успешно перезаписана! Существующие аккаунты были использованы повторно.' };
 }
+
+    
