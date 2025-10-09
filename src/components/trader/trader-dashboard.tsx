@@ -42,7 +42,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
-import { format, formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '../ui/skeleton';
@@ -82,7 +82,7 @@ function CommentsModal({ alert }: { alert: AlertPost }) {
                                 <div>
                                     <p className="text-sm font-semibold">{comment.userName}</p>
                                     <p className="text-sm text-muted-foreground break-words">{comment.text}</p>
-                                    <p className="text-xs text-muted-foreground/70">{formatDistanceToNow(new Date(comment.timestamp), { addSuffix: true, locale: ru })}</p>
+                                    <p className="text-xs text-muted-foreground/70">{format(new Date(comment.timestamp), 'd MMMM yyyy, HH:mm', { locale: ru })}</p>
                                 </div>
                             </div>
                         ))
@@ -242,7 +242,7 @@ export function TraderDashboard() {
                                   <div className="flex justify-between items-start">
                                     <div className="leading-[1.3rem]">
                                         <p className="font-bold">{alert.traderName}</p>
-                                        <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(alert.timestamp as string), { addSuffix: true, locale: ru })}</p>
+                                        <p className="text-xs text-muted-foreground">{format(new Date(alert.timestamp as string), 'd MMMM yyyy, HH:mm', { locale: ru })}</p>
                                     </div>
                                     <AlertDialog>
                                         <DropdownMenu>

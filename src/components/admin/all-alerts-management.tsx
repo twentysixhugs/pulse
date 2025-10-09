@@ -17,7 +17,7 @@ import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { MoreVertical, Edit, Trash2, MessageSquare, ThumbsUp, ThumbsDown, ZoomIn } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Unsubscribe } from 'firebase/firestore';
@@ -336,7 +336,7 @@ function AlertActionMenu({ alert, onEdit, onDelete, onDeleteComment }: { alert: 
                   <div className="flex-1">
                     <p className="text-sm font-semibold">{comment.userName}</p>
                     <p className="text-sm text-muted-foreground break-words">{comment.text}</p>
-                    <p className="text-xs text-muted-foreground/70">{formatDistanceToNow(new Date(comment.timestamp), { addSuffix: true, locale: ru })}</p>
+                    <p className="text-xs text-muted-foreground/70">{format(new Date(comment.timestamp), 'd MMMM yyyy, HH:mm', { locale: ru })}</p>
                   </div>
                   <AlertDialog>
                       <AlertDialogTrigger asChild>

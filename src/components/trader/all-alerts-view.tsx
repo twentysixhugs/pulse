@@ -13,7 +13,7 @@ import {
 } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { PaginationControl } from '@/components/common/pagination-control';
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -64,7 +64,7 @@ function ReadOnlyAlertCard({ alert }: { alert: AlertPost }) {
                 <div className="flex justify-between items-start">
                     <div className="leading-[1.3rem]">
                     <Link href={`/traders/${alert.traderId}`} className="font-bold hover:underline">{alert.traderName}</Link>
-                    <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(alert.timestamp as string), { addSuffix: true, locale: ru })}</p>
+                    <p className="text-xs text-muted-foreground">{format(new Date(alert.timestamp as string), 'd MMMM yyyy, HH:mm', { locale: ru })}</p>
                     </div>
                 </div>
                 </div>
@@ -144,7 +144,7 @@ function CommentsModal({ alert }: { alert: AlertPost }) {
                                 <div>
                                     <p className="text-sm font-semibold">{comment.userName}</p>
                                     <p className="text-sm text-muted-foreground break-words">{comment.text}</p>
-                                    <p className="text-xs text-muted-foreground/70">{formatDistanceToNow(new Date(comment.timestamp), { addSuffix: true, locale: ru })}</p>
+                                    <p className="text-xs text-muted-foreground/70">{format(new Date(comment.timestamp), 'd MMMM yyyy, HH:mm', { locale: ru })}</p>
                                 </div>
                             </div>
                         ))

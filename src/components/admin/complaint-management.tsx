@@ -35,7 +35,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { PaginationControl } from '../common/pagination-control';
 import { Timestamp } from 'firebase/firestore';
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
 const REPORTS_PER_PAGE = 20;
@@ -139,7 +139,7 @@ export function ComplaintManagement() {
                         <CardDescription>
                             Жалоба от: {reporter?.name || 'Неизвестный пользователь'}
                             <span className="mx-2 text-muted-foreground/50">|</span>
-                            {formatDistanceToNow((report.createdAt as Timestamp).toDate(), { addSuffix: true, locale: ru })}
+                            {format(new Date((report.createdAt as Timestamp).toDate()), 'd MMMM yyyy, HH:mm', { locale: ru })}
                         </CardDescription>
                     </div>
                      <div className='flex flex-col gap-2'>

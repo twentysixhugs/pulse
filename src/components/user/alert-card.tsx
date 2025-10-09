@@ -50,7 +50,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { ImageModal } from './image-modal';
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
 type AlertCardProps = {
@@ -186,7 +186,7 @@ export function AlertCard({
               <div className="mt-0 leading-[1.3rem]">
                 <Link href={`/traders/${alert.traderId}`} className="font-bold hover:underline">{alert.traderName}</Link>
                 <p className="text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(alert.timestamp as string), { addSuffix: true, locale: ru })}
+                  {format(new Date(alert.timestamp as string), 'd MMMM yyyy, HH:mm', { locale: ru })}
                 </p>
               </div>
               <ReportDialog onConfirm={handleReport} disabled={!currentUser || interactionsDisabled} />
@@ -292,7 +292,7 @@ function CommentDialog({ alert, currentUser, commentText, setCommentText, onAddC
                                 <div>
                                     <p className="text-sm font-semibold">{comment.userName}</p>
                                     <p className="text-sm text-muted-foreground break-words">{comment.text}</p>
-                                    <p className="text-xs text-muted-foreground/70">{formatDistanceToNow(new Date(comment.timestamp), { addSuffix: true, locale: ru })}</p>
+                                    <p className="text-xs text-muted-foreground/70">{format(new Date(comment.timestamp), 'd MMMM yyyy, HH:mm', { locale: ru })}</p>
                                 </div>
                             </div>
                         ))
