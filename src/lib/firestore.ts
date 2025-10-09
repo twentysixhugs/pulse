@@ -29,8 +29,9 @@ import {
   startAt,
   endAt,
 } from 'firebase/firestore';
-import { db } from './firebase';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { db, app, firebaseConfig } from './firebase';
+import { getAuth, createUserWithEmailAndPassword, initializeAuth, browserLocalPersistence } from 'firebase/auth';
+import { initializeApp, deleteApp } from 'firebase/app';
 
 
 // Data type definitions
@@ -523,54 +524,54 @@ export async function deleteTrader(db: Firestore, traderId: string) {
 
 
 export async function createTrader(db: Firestore, traderData: Omit<Trader & { email: string }, 'id' | 'status' | 'reputation'>, password: string) {
-    const auth = getAuth();
-    
-    const usersCol = collection(db, 'users');
+    const tempAppName = `create-trader-app-${Date.now()}`;
+    const tempApp = initializeApp(firebaseConfig, tempAppName);
+    const tempAuth = initializeAuth(tempApp, { persistence: browserLocalPersistence });
 
-    // Check if email or telegramId is already in use in the users collection
-    const emailQuery = query(usersCol, where("email", "==", traderData.email));
-    const telegramIdQuery = query(usersCol, where("telegramId", "==", traderData.telegramId));
+    try {
+        const usersCol = collection(db, 'users');
+        const emailQuery = query(usersCol, where("email", "==", traderData.email));
+        const telegramIdQuery = query(usersCol, where("telegramId", "==", traderData.telegramId));
 
-    const emailSnapshot = await getDocs(emailQuery);
-    if (!emailSnapshot.empty) {
-        throw new Error("Этот email уже используется.");
+        const emailSnapshot = await getDocs(emailQuery);
+        if (!emailSnapshot.empty) {
+            throw new Error("Этот email уже используется.");
+        }
+
+        const telegramIdSnapshot = await getDocs(telegramIdQuery);
+        if (!telegramIdSnapshot.empty) {
+            throw new Error("Этот Telegram ID уже используется.");
+        }
+
+        const userCredential = await createUserWithEmailAndPassword(tempAuth, traderData.email, password);
+        const newTraderId = userCredential.user.uid;
+
+        const batch = writeBatch(db);
+
+        const { email, ...traderProfileData } = traderData;
+        const traderRef = doc(db, 'traders', newTraderId);
+        batch.set(traderRef, {
+            ...traderProfileData,
+            status: 'active',
+            reputation: 0,
+        });
+
+        const userRef = doc(db, 'users', newTraderId);
+        batch.set(userRef, {
+            name: traderData.name,
+            email: traderData.email,
+            telegramId: traderData.telegramId,
+            role: 'trader',
+            isBanned: false,
+            subscriptionStatus: 'active',
+            subscriptionEndDate: Timestamp.fromDate(new Date('2099-12-31')),
+            createdAt: Timestamp.now(),
+        });
+
+        await batch.commit();
+    } finally {
+        await deleteApp(tempApp);
     }
-
-    const telegramIdSnapshot = await getDocs(telegramIdQuery);
-    if (!telegramIdSnapshot.empty) {
-        throw new Error("Этот Telegram ID уже используется.");
-    }
-
-    // This will fail in a client-only environment unless you enable email/password auth in the Firebase console.
-    const userCredential = await createUserWithEmailAndPassword(auth, traderData.email, password);
-    const newTraderId = userCredential.user.uid;
-
-
-    const batch = writeBatch(db);
-
-    // Create trader profile using the new UID
-    const {email, ...traderProfileData} = traderData;
-    const traderRef = doc(db, 'traders', newTraderId);
-    batch.set(traderRef, {
-        ...traderProfileData,
-        status: 'active',
-        reputation: 0,
-    });
-
-    // Create corresponding user entry in 'users' collection
-    const userRef = doc(db, 'users', newTraderId);
-    batch.set(userRef, {
-        name: traderData.name,
-        email: traderData.email,
-        telegramId: traderData.telegramId,
-        role: 'trader',
-        isBanned: false,
-        subscriptionStatus: 'active', // Traders have permanent subscription
-        subscriptionEndDate: Timestamp.fromDate(new Date('2099-12-31')),
-        createdAt: Timestamp.now(),
-    });
-    
-    await batch.commit();
 }
 
 
