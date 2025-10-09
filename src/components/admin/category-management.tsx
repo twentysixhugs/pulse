@@ -12,7 +12,7 @@ import {
 } from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Pencil, PlusCircle } from 'lucide-react';
+import { Pencil, PlusCircle, Users } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import {
   Table,
@@ -23,9 +23,9 @@ import {
   TableRow,
 } from '../ui/table';
 import { CategoryDialog } from './category-dialog';
-import { Badge } from '../ui/badge';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 
 export function CategoryManagement() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -120,7 +120,7 @@ export function CategoryManagement() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Название категории</TableHead>
+                <TableHead>Название</TableHead>
                 <TableHead>Трейдеры</TableHead>
                 <TableHead className="text-right">Действия</TableHead>
               </TableRow>
@@ -135,21 +135,38 @@ export function CategoryManagement() {
                     <TableCell className="font-medium">{category.name}</TableCell>
                     <TableCell>
                       {tradersInCategory.length > 0 ? (
-                         <div className="flex flex-wrap gap-2 items-center">
-                           {tradersInCategory.map(trader => (
-                             <Link href={`/admin/traders/${trader.id}/alerts`} key={trader.id}>
-                                <Badge variant="secondary" className="hover:bg-muted transition-colors">
-                                  <Avatar className="h-4 w-4 -ml-1 mr-1.5">
-                                    <AvatarImage src={trader.profilePicUrl} />
-                                    <AvatarFallback>{trader.name.charAt(0)}</AvatarFallback>
-                                  </Avatar>
-                                  {trader.name}
-                                </Badge>
-                             </Link>
-                           ))}
-                         </div>
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                    <Users className="mr-2 h-4 w-4" />
+                                    {tradersInCategory.length}
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Трейдеры в категории &quot;{category.name}&quot;</DialogTitle>
+                                    <DialogDescription>Список всех трейдеров, привязанных к этой категории.</DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-2 py-4 max-h-96 overflow-y-auto">
+                                    {tradersInCategory.map(trader => (
+                                        <Link href={`/admin/traders/${trader.id}/alerts`} key={trader.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted">
+                                            <Avatar>
+                                                <AvatarImage src={trader.profilePicUrl} />
+                                                <AvatarFallback>{trader.name.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <div className='font-semibold'>{trader.name}</div>
+                                                <div className='text-sm text-muted-foreground'>@{trader.telegramId}</div>
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </DialogContent>
+                        </Dialog>
                       ) : (
-                        <span className="text-muted-foreground">Нет трейдеров</span>
+                        <Button variant="outline" size="sm" disabled>
+                           <Users className="mr-2 h-4 w-4" />0
+                        </Button>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
