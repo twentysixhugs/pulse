@@ -11,7 +11,7 @@ import {
   Firestore,
 } from 'firebase/firestore';
 import seedData from '../../seed.json';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { app } from './firebase';
 
 
@@ -31,6 +31,7 @@ export async function seedDatabase(db: Firestore) {
   const collectionsToClear = ['users', 'traders', 'alerts', 'categories', 'reports'];
   
   // Clear existing collections in Firestore
+  console.log("Clearing existing Firestore data...");
   for (const collectionPath of collectionsToClear) {
       const q = query(collection(db, collectionPath));
       const snapshot = await getDocs(q);
@@ -45,7 +46,7 @@ export async function seedDatabase(db: Firestore) {
 
   const batch = writeBatch(db);
 
-  // --- CREATE AUTH USERS ---
+  // --- CREATE AUTH USERS and build ID map ---
   const allSeedUsers = [
     // from seed.json users with role 'user' or 'admin' or 'trader'
     ...Object.entries(seedData.users).map(([id, data]) => ({ seedId: id, ...data, email: `${data.telegramId}@example.com`, password: 'password' })),
@@ -55,20 +56,27 @@ export async function seedDatabase(db: Firestore) {
   // To map old seed IDs to new Firebase Auth UIDs
   const idMap: { [oldId: string]: string } = {};
 
-  console.log("Starting to create Auth users. If a user already exists, they will be skipped.");
+  console.log("Starting to create or verify Auth users...");
   for (const user of allSeedUsers) {
     try {
-        const userCredential = await createUserWithEmailAndPassword(auth, user.email, 'password');
+        const userCredential = await createUserWithEmailAndPassword(auth, user.email, user.password);
         const newUid = userCredential.user.uid;
         idMap[user.seedId] = newUid;
-    } catch (e: any) {
-        if (e.code === 'auth/email-already-in-use') {
-            console.warn(`User with email ${user.email} already exists. Seeding might be incomplete if UIDs change. For a clean seed, delete users from the Firebase Authentication console.`);
-            // This case should ideally be handled by fetching the existing user's UID,
-            // which requires admin privileges not available on the client.
-            // For this project, we'll just log it.
+        console.log(`Created new auth user for ${user.email}`);
+        await signOut(auth); // Sign out the newly created user
+    } catch (error: any) {
+        if (error.code === 'auth/email-already-in-use') {
+            try {
+                // If user exists, sign in to get their UID
+                const userCredential = await signInWithEmailAndPassword(auth, user.email, user.password);
+                idMap[user.seedId] = userCredential.user.uid;
+                console.warn(`User with email ${user.email} already exists. Using existing UID.`);
+                await signOut(auth); // Sign out after getting UID
+            } catch (signInError: any) {
+                 console.error(`Failed to sign in existing user ${user.email} to get UID. The password might be different from 'password'.`, signInError.message);
+            }
         } else {
-            console.error(`Error creating auth user for ${user.telegramId}:`, e.message);
+            console.error(`Error creating auth user for ${user.telegramId}:`, error.message);
         }
     }
   }
@@ -82,7 +90,10 @@ export async function seedDatabase(db: Firestore) {
   // --- USERS (in Firestore) ---
   Object.entries(seedData.users).forEach(([id, data]) => {
     const newUid = idMap[id];
-    if (!newUid) return; // Skip if user creation failed or was skipped
+    if (!newUid) {
+      console.warn(`Skipping Firestore user entry for ${data.telegramId} because UID was not found.`);
+      return; 
+    }
 
     const docRef = doc(db, 'users', newUid);
     const userData: { [key: string]: any } = { ...data, createdAt: Timestamp.now() };
@@ -102,7 +113,10 @@ export async function seedDatabase(db: Firestore) {
   // --- TRADERS (in Firestore) ---
   Object.entries(seedData.traders).forEach(([id, data]) => {
     const newUid = idMap[id];
-    if (!newUid) return;
+     if (!newUid) {
+        console.warn(`Skipping Firestore trader entry for ${data.telegramId} because UID was not found.`);
+        return;
+    }
 
     // Create trader profile
     const traderRef = doc(db, 'traders', newUid);
@@ -114,9 +128,12 @@ export async function seedDatabase(db: Firestore) {
   });
 
   // --- ALERTS ---
-  Object.entries(seedData.alerts).forEach(([_, data]) => {
+  Object.entries(seedData.alerts).forEach(([id, data]) => {
     const newTraderId = idMap[data.traderId];
-    if (!newTraderId) return;
+    if (!newTraderId) {
+        console.warn(`Skipping alert because traderId ${data.traderId} could not be mapped to a new UID.`);
+        return;
+    }
 
     const newComments = (data.comments || []).map(comment => ({
         ...comment,
@@ -136,9 +153,18 @@ export async function seedDatabase(db: Firestore) {
   });
   
   // --- REPORTS ---
-  // Reports are skipped as their alertIds would need complex mapping.
+   Object.entries(seedData.reports).forEach(([id, data]) => {
+    const newReporterId = idMap[data.reporterId];
+    if (!newReporterId) {
+       console.warn(`Skipping report for alert ${data.alertId} because reporterId could not be mapped.`);
+       return;
+    }
+    // We cannot map alertId easily as they are auto-generated.
+    // In a real scenario, you'd query for the alert, but for seeding this is complex.
+    // So we'll skip creating reports to avoid dangling references.
+  });
   
   await batch.commit();
   console.log('ID Map:', idMap);
-  return { message: 'База данных успешно перезаписана! Были созданы или пропущены существующие пользователи. Для полной очистки, удалите пользователей из Firebase Authentication console.' };
+  return { message: 'База данных успешно перезаписана! Существующие аккаунты были использованы повторно.' };
 }
