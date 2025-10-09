@@ -43,7 +43,8 @@ export function TraderProfileView({
   onReport,
 }: TraderProfileViewProps) {
   const { toast } = useToast();
-  const [isSubmittingRep, setIsSubmittingRep] = useState(false);
+  const [isLoadingAdd, setIsLoadingAdd] = useState(false);
+  const [isLoadingRemove, setIsLoadingRemove] = useState(false);
   const [alerts, setAlerts] = useState<AlertPost[]>([]);
   const [loadingAlerts, setLoadingAlerts] = useState(true);
   
@@ -79,11 +80,14 @@ export function TraderProfileView({
   };
 
 
-  const handleRep = async () => {
-    if (isSubmittingRep || isTraderViewing || repLoading) return;
-    setIsSubmittingRep(true);
+  const handleRep = async (actionType: 'pos' | 'neg') => {
+    if (isTraderViewing || repLoading) return;
   
-    const actionType = 'pos';
+    if (actionType === 'pos') {
+      setIsLoadingAdd(true);
+    } else {
+      setIsLoadingRemove(true);
+    }
   
     try {
       const { updatedTrader, newRepAction } = await updateTraderReputation(trader.id, currentUser.id, actionType);
@@ -92,7 +96,8 @@ export function TraderProfileView({
       console.error("Failed to update reputation:", error);
       toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось обновить репутацию.' });
     } finally {
-      setIsSubmittingRep(false);
+      setIsLoadingAdd(false);
+      setIsLoadingRemove(false);
     }
   };
 
@@ -141,10 +146,19 @@ export function TraderProfileView({
         </CardHeader>
         <CardContent className="p-6 pt-0 flex flex-col sm:flex-row gap-2">
             {!isTraderViewing && (
-                 <Button onClick={handleRep} variant="outline" className="w-full sm:w-auto" disabled={isSubmittingRep || repLoading}>
-                    {userRepAction === 'pos' ? <Check className="mr-2 h-4 w-4" /> : <Star className="mr-2 h-4 w-4" />}
-                    {userRepAction === 'pos' ? 'Убрать голос' : 'Повысить рейтинг'}
-                </Button>
+                repLoading ? (
+                    <Skeleton className="h-10 w-44" />
+                ) : userRepAction === 'pos' ? (
+                    <Button onClick={() => handleRep('pos')} variant="outline" className="w-full sm:w-auto" disabled={isLoadingRemove || isLoadingAdd}>
+                        <Check className="mr-2 h-4 w-4" />
+                        Убрать голос
+                    </Button>
+                ) : (
+                    <Button onClick={() => handleRep('pos')} variant="outline" className="w-full sm:w-auto" disabled={isLoadingAdd || isLoadingRemove}>
+                        <Star className="mr-2 h-4 w-4" />
+                        Повысить рейтинг
+                    </Button>
+                )
             )}
         </CardContent>
       </Card>
