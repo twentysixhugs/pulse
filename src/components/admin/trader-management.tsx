@@ -154,8 +154,11 @@ export function TraderManagement() {
   };
   
   const TraderActionMenu = ({ trader }: {trader: Trader}) => {
+    const [isStatusAlertOpen, setStatusAlertOpen] = useState(false);
+    const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
+
     return (
-      <AlertDialog>
+      <>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -171,70 +174,57 @@ export function TraderManagement() {
                 Редактировать посты
               </Link>
             </DropdownMenuItem>
-            <AlertDialogTrigger asChild>
-              <DropdownMenuItem 
-                onSelect={(e) => {
-                  e.preventDefault(); 
-                  document.getElementById(`status-trigger-${trader.id}`)?.click()
-                }}
-              >
-                {trader.status === 'active' ? 'Деактивировать' : 'Активировать'}
-              </DropdownMenuItem>
-            </AlertDialogTrigger>
-            <AlertDialogTrigger asChild>
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onSelect={(e) => {
-                  e.preventDefault();
-                  document.getElementById(`delete-trigger-${trader.id}`)?.click();
-                }}
-              >
-                Удалить трейдера
-              </DropdownMenuItem>
-            </AlertDialogTrigger>
+            <DropdownMenuItem onSelect={() => setStatusAlertOpen(true)}>
+              {trader.status === 'active' ? 'Деактивировать' : 'Активировать'}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onSelect={() => setDeleteAlertOpen(true)}
+            >
+              Удалить трейдера
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        
-        {/* Hidden Triggers for separate modals */}
-        <AlertDialogTrigger asChild>
-          <button id={`status-trigger-${trader.id}`} className="hidden" />
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Это действие изменит статус трейдера {trader.name} на &quot;{trader.status === 'active' ? 'неактивен' : 'активен'}&quot;.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Отмена</AlertDialogCancel>
-            <AlertDialogAction onClick={() => toggleTraderStatus(trader.id, trader.status)}>
-              Подтвердить
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
 
-        <AlertDialogTrigger asChild>
-            <button id={`delete-trigger-${trader.id}`} className="hidden" />
-        </AlertDialogTrigger>
-        <AlertDialogContent>
+        {/* Status Change Alert */}
+        <AlertDialog open={isStatusAlertOpen} onOpenChange={setStatusAlertOpen}>
+          <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Удалить трейдера?</AlertDialogTitle>
+              <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
               <AlertDialogDescription>
-                Это действие нельзя отменить. Это приведет к необратимому удалению {trader.name} и всех связанных данных.
+                Это действие изменит статус трейдера {trader.name} на &quot;{trader.status === 'active' ? 'неактивен' : 'активен'}&quot;.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Отмена</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => deleteTrader(trader.id)}
-                className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
-              >
-                Подтвердить удаление
+              <AlertDialogAction onClick={() => toggleTraderStatus(trader.id, trader.status)}>
+                Подтвердить
               </AlertDialogAction>
             </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Delete Trader Alert */}
+        <AlertDialog open={isDeleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Удалить трейдера?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Это действие нельзя отменить. Это приведет к необратимому удалению {trader.name} и всех связанных данных.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => deleteTrader(trader.id)}
+                  className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                >
+                  Подтвердить удаление
+                </AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
     );
   };
 
