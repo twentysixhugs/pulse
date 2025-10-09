@@ -6,11 +6,12 @@ import { useAuth } from '@/hooks/use-auth';
 import { TraderDashboard } from "@/components/trader/trader-dashboard";
 import { RatingView } from '@/components/user/rating-view';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User as UserIcon, BarChart, Star } from "lucide-react";
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { User as UserIcon, BarChart, Star, Flame } from "lucide-react";
+import { Card, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AllAlertsView } from '@/components/trader/all-alerts-view';
 
 
 function TraderInfo({ trader }: { trader: Trader }) {
@@ -78,7 +79,7 @@ export default function TraderPage() {
 
     return (
         <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="profile">
                     <UserIcon className="mr-2 h-4 w-4" />
                     Профиль
@@ -86,6 +87,10 @@ export default function TraderPage() {
                 <TabsTrigger value="rating">
                     <BarChart className="mr-2 h-4 w-4" />
                     Рейтинг
+                </TabsTrigger>
+                <TabsTrigger value="all-alerts">
+                    <Flame className="mr-2 h-4 w-4" />
+                    Все алерты
                 </TabsTrigger>
             </TabsList>
             <TabsContent value="profile" className="mt-6">
@@ -100,6 +105,16 @@ export default function TraderPage() {
             </TabsContent>
             <TabsContent value="rating" className="mt-6">
                 <RatingView />
+            </TabsContent>
+            <TabsContent value="all-alerts" className="mt-6">
+                {loading || !currentTrader ? (
+                     <div className="space-y-4">
+                        <Skeleton className="h-96 w-full" />
+                        <Skeleton className="h-96 w-full" />
+                     </div>
+                ) : (
+                    <AllAlertsView currentUser={currentTrader} />
+                )}
             </TabsContent>
         </Tabs>
     );
