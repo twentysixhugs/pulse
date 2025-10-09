@@ -155,7 +155,7 @@ export function TraderDashboard() {
   
   const handleSavePost = async (postData: Partial<Omit<AlertPost, 'id' | 'timestamp' | 'likes' | 'dislikes' | 'comments'>> & {id?: string}) => {
     try {
-      if (postData.id && editingPost) { // Editing
+      if (postData.id) { // Editing
         const { id, ...updateData } = postData;
         
         await updateAlert(id, updateData);
@@ -174,7 +174,7 @@ export function TraderDashboard() {
           toast({ title: 'Пост создан' });
         }
       }
-      setEditingPost(undefined);
+      setEditingPost(undefined); // Close modal on success
     } catch (error) {
       console.error("Failed to save post", error);
       toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось сохранить пост.'})
@@ -221,7 +221,7 @@ export function TraderDashboard() {
 
   return (
     <div className="space-y-8">
-      <PostEditor trader={currentTrader} onSave={handleSavePost} postToEdit={editingPost} />
+      <PostEditor trader={currentTrader} onSave={handleSavePost} />
       <div>
           <h2 className="text-2xl font-headline font-bold mb-4">Ваши алерты</h2>
             {loading ? (
@@ -339,6 +339,25 @@ export function TraderDashboard() {
           title={imageModalState.title}
         />
       )}
+       <Dialog open={!!editingPost} onOpenChange={(isOpen) => !isOpen && setEditingPost(undefined)}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Редактировать пост</DialogTitle>
+                    <DialogDescription>
+                        Внесите изменения в свой пост и сохраните их.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="pt-4">
+                    {editingPost && (
+                        <PostEditor 
+                            trader={currentTrader} 
+                            onSave={handleSavePost} 
+                            postToEdit={editingPost}
+                        />
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
     </div>
   );
 }
