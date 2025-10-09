@@ -358,7 +358,7 @@ function ReportDialog({ onConfirm, disabled }: { onConfirm: (reason: string) => 
             onChange={(e) => setReason(e.target.value)}
           />
         </div>
-        <DialogFooter>
+        <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
           <Button variant="outline" onClick={() => setOpen(false)}>Отмена</Button>
           <Button variant="destructive" onClick={handleConfirm} disabled={!reason.trim()}>Отправить жалобу</Button>
         </DialogFooter>
