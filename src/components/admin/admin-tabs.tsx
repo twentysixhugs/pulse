@@ -6,7 +6,7 @@ import { UserManagement } from "@/components/admin/user-management";
 import { TraderManagement } from "@/components/admin/trader-management";
 import { ComplaintManagement } from "@/components/admin/complaint-management";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, GanttChartSquare, ShieldAlert, LineChart } from "lucide-react";
+import { Users, GanttChartSquare, ShieldAlert, LineChart, FolderKanban } from "lucide-react";
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Select,
@@ -16,11 +16,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MetricsManagement } from './metrics-management';
+import { CategoryManagement } from './category-management';
 
 
 const TABS = [
     { value: "users", label: "Пользователи", icon: Users },
     { value: "traders", label: "Трейдеры", icon: GanttChartSquare },
+    { value: "categories", label: "Категории", icon: FolderKanban },
     { value: "complaints", label: "Жалобы", icon: ShieldAlert },
     { value: "metrics", label: "Метрики", icon: LineChart },
 ];
@@ -52,6 +54,7 @@ export function AdminTabs() {
                 <div className="mt-6">
                     {activeTab === 'users' && <UserManagement />}
                     {activeTab === 'traders' && <TraderManagement />}
+                    {activeTab === 'categories' && <CategoryManagement />}
                     {activeTab === 'complaints' && <ComplaintManagement />}
                     {activeTab === 'metrics' && <MetricsManagement />}
                 </div>
@@ -74,6 +77,9 @@ export function AdminTabs() {
             </TabsContent>
             <TabsContent value="traders" className="mt-6">
                 <TraderManagement />
+            </TabsContent>
+             <TabsContent value="categories" className="mt-6">
+                <CategoryManagement />
             </TabsContent>
             <TabsContent value="complaints" className="mt-6">
                 <ComplaintManagement />

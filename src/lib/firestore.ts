@@ -303,7 +303,7 @@ export async function getAllTraders(params: GetAllTradersParams = {}): Promise<{
 
 export async function getAllCategories(): Promise<Category[]> {
   const categoriesCol = collection(db, 'categories');
-  const snapshot = await getDocs(categoriesCol);
+  const snapshot = await getDocs(query(categoriesCol, orderBy('name')));
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
 }
 
@@ -650,6 +650,20 @@ export async function updateTrader(db: Firestore, traderId: string, data: Partia
 
     await batch.commit();
 }
+
+
+export async function createCategory(name: string): Promise<Category> {
+  const categoriesCol = collection(db, 'categories');
+  const newCategoryData = { name };
+  const docRef = await addDoc(categoriesCol, newCategoryData);
+  return { id: docRef.id, ...newCategoryData };
+}
+
+export async function updateCategory(id: string, name: string): Promise<void> {
+  const categoryRef = doc(db, 'categories', id);
+  await updateDoc(categoryRef, { name });
+}
+
 
 // --- Metrics ---
 
