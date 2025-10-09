@@ -58,11 +58,6 @@ export interface User {
   role: UserRole;
 }
 
-export interface Reputation {
-  positive: number;
-  negative: number;
-}
-
 export interface Comment {
   id: string;
   userId: string;
