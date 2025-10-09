@@ -162,7 +162,7 @@ export function ComplaintManagement() {
                             {formatDistanceToNow((report.createdAt as Timestamp).toDate(), { addSuffix: true, locale: ru })}
                         </CardDescription>
                     </div>
-                     <div className='flex gap-2'>
+                     <div className='flex flex-col gap-2'>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button size="sm" variant="destructive">Удалить пост</Button>
