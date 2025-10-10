@@ -46,7 +46,6 @@ export function CategoryManagement() {
   const [traders, setTraders] = useState<Trader[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEditDialogOpen, setEditDialogOpen] = useState(false);
-  const [isReassignDialogOpen, setReassignDialogOpen] = useState(false);
   const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
 
   const { toast } = useToast();
@@ -87,13 +86,7 @@ export function CategoryManagement() {
   };
   
   const handleAttemptDelete = (category: Category) => {
-    const tradersInCategory = traders.filter((t) => t.category === category.id);
-    if (tradersInCategory.length > 0) {
-      setDeletingCategory(category);
-      setReassignDialogOpen(true);
-    } else {
-       setDeletingCategory(category);
-    }
+    setDeletingCategory(category);
   };
 
   const handleSaveCategory = async (id: string | null, name: string) => {
@@ -140,7 +133,6 @@ export function CategoryManagement() {
         title: 'Трейдеры переназначены',
         description: `Категория "${deletingCategory.name}" была успешно удалена.`,
       });
-      setReassignDialogOpen(false);
       setDeletingCategory(null);
       await fetchData();
     } catch (error) {
@@ -152,6 +144,10 @@ export function CategoryManagement() {
       });
     }
   };
+
+  const tradersInCategory = deletingCategory 
+    ? traders.filter(t => t.category === deletingCategory.id) 
+    : [];
 
 
   return (
@@ -177,7 +173,7 @@ export function CategoryManagement() {
           <p className="text-muted-foreground">Категории не найдены.</p>
         </div>
       ) : (
-        <AlertDialog>
+        <AlertDialog onOpenChange={(open) => !open && setDeletingCategory(null)}>
           <div className="rounded-lg border">
             <Table>
               <TableHeader>
@@ -189,19 +185,19 @@ export function CategoryManagement() {
               </TableHeader>
               <TableBody>
                 {categories.map((category) => {
-                  const tradersInCategory = traders.filter(
+                  const tradersInCategoryCount = traders.filter(
                     (t) => t.category === category.id
-                  );
+                  ).length;
                   return (
                     <TableRow key={category.id}>
                       <TableCell className="font-medium">{category.name}</TableCell>
                       <TableCell>
-                        {tradersInCategory.length > 0 ? (
+                        {tradersInCategoryCount > 0 ? (
                           <Dialog>
                               <DialogTrigger asChild>
                                   <Button variant="outline" size="sm">
                                       <Users className="mr-2 h-4 w-4" />
-                                      {tradersInCategory.length}
+                                      {tradersInCategoryCount}
                                   </Button>
                               </DialogTrigger>
                               <DialogContent>
@@ -210,7 +206,7 @@ export function CategoryManagement() {
                                       <DialogDescription>Список всех трейдеров, привязанных к этой категории.</DialogDescription>
                                   </DialogHeader>
                                   <div className="space-y-2 py-4 max-h-96 overflow-y-auto">
-                                      {tradersInCategory.map(trader => (
+                                      {traders.filter(t => t.category === category.id).map(trader => (
                                           <Link href={`/admin/traders/${trader.id}/alerts`} key={trader.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted">
                                               <Avatar>
                                                   <AvatarImage src={trader.profilePicUrl} />
@@ -256,7 +252,7 @@ export function CategoryManagement() {
               </TableBody>
             </Table>
           </div>
-          {deletingCategory && (
+          {deletingCategory && tradersInCategory.length === 0 && (
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Удалить категорию &quot;{deletingCategory.name}&quot;?</AlertDialogTitle>
@@ -265,7 +261,7 @@ export function CategoryManagement() {
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setDeletingCategory(null)}>Отмена</AlertDialogCancel>
+                <AlertDialogCancel>Отмена</AlertDialogCancel>
                 <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                   Удалить
                 </AlertDialogAction>
@@ -280,13 +276,13 @@ export function CategoryManagement() {
         onSave={handleSaveCategory}
         category={deletingCategory}
       />
-      {deletingCategory && (
+      {deletingCategory && tradersInCategory.length > 0 && (
          <ReassignTradersDialog
-            isOpen={isReassignDialogOpen}
-            onClose={() => setReassignDialogOpen(false)}
+            isOpen={true}
+            onClose={() => setDeletingCategory(null)}
             categoryToDelete={deletingCategory}
             allCategories={categories}
-            tradersToReassign={traders.filter(t => t.category === deletingCategory.id)}
+            tradersToReassign={tradersInCategory}
             onConfirm={handleReassignAndclose}
         />
       )}
