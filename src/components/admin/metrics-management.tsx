@@ -10,11 +10,12 @@ import { Users, Newspaper, CalendarPlus, CalendarX, Repeat, TrendingUp } from 'l
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Separator } from '../ui/separator';
 
 type Period = 'today' | '7d';
 
-const MetricCard = ({ title, value, icon: Icon, loading }: { title: string, value: number, icon: React.ElementType, loading: boolean }) => (
-    <Card>
+const MetricCard = ({ title, value, icon: Icon, loading, className }: { title: string, value: number, icon: React.ElementType, loading: boolean, className?: string }) => (
+    <Card className={className}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
             <Icon className="h-4 w-4 text-muted-foreground" />
@@ -52,8 +53,7 @@ export function MetricsManagement() {
         fetchMetrics();
     }, [period, toast]);
 
-    const metricItems = [
-        { title: "Всего подписчиков", value: metrics?.totalSubscribedUsers, icon: Users },
+    const periodMetricItems = [
         { title: "Новые пользователи", value: metrics?.newUsers, icon: CalendarPlus },
         { title: "Новые подписки", value: metrics?.newlySubscribedUsers, icon: TrendingUp },
         { title: "Продления", value: metrics?.renewedSubscriptions, icon: Repeat },
@@ -62,9 +62,14 @@ export function MetricsManagement() {
     ];
     
     const PeriodSelector = () => {
+        const commonProps = {
+            value: period,
+            onValueChange: (v: string) => setPeriod(v as Period)
+        };
+
         if (isMobile) {
             return (
-                <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
+                <Select {...commonProps}>
                     <SelectTrigger className="w-full sm:w-[180px]">
                         <SelectValue placeholder="Период" />
                     </SelectTrigger>
@@ -76,7 +81,7 @@ export function MetricsManagement() {
             )
         }
         return (
-            <Tabs defaultValue={period} onValueChange={(v) => setPeriod(v as Period)}>
+            <Tabs defaultValue={period} onValueChange={commonProps.onValueChange}>
                 <TabsList>
                     <TabsTrigger value="today">Сегодня</TabsTrigger>
                     <TabsTrigger value="7d">7 дней</TabsTrigger>
@@ -86,21 +91,38 @@ export function MetricsManagement() {
     }
 
     return (
-        <div className="space-y-4 px-4 md:px-0">
-             <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
-                <h2 className="text-2xl font-headline font-bold self-start">Ключевые метрики</h2>
-                <PeriodSelector />
-            </div>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-               {metricItems.map(item => (
-                   <MetricCard 
-                        key={item.title}
-                        title={item.title}
-                        value={item.value ?? 0}
-                        icon={item.icon}
-                        loading={loading}
-                    />
-               ))}
+        <div className="space-y-6 px-4 md:px-0">
+             <div>
+                <h2 className="text-2xl font-headline font-bold">Ключевые метрики</h2>
+                <p className="text-muted-foreground">Общая статистика и показатели за выбранный период.</p>
+             </div>
+             
+             <MetricCard 
+                title="Всего подписчиков"
+                value={metrics?.totalSubscribedUsers ?? 0}
+                icon={Users}
+                loading={loading}
+                className="border-primary/50"
+            />
+            
+            <Separator />
+
+            <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+                    <h3 className="text-lg font-headline font-semibold self-start">Метрики за период</h3>
+                    <PeriodSelector />
+                </div>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                   {periodMetricItems.map(item => (
+                       <MetricCard 
+                            key={item.title}
+                            title={item.title}
+                            value={item.value ?? 0}
+                            icon={item.icon}
+                            loading={loading}
+                        />
+                   ))}
+                </div>
             </div>
         </div>
     );
