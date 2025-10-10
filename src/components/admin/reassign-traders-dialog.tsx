@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -29,6 +28,7 @@ import {
 import { Category, Trader } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { ScrollArea } from '../ui/scroll-area';
 
 type ReassignTradersDialogProps = {
   isOpen: boolean;
@@ -86,60 +86,62 @@ export function ReassignTradersDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-w-2xl h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Невозможно удалить категорию</DialogTitle>
           <DialogDescription>
             К категории &quot;{categoryToDelete.name}&quot; привязаны трейдеры. Пожалуйста, переназначьте их в другие категории перед удалением.
           </DialogDescription>
         </DialogHeader>
-        <div className="max-h-[60vh] overflow-y-auto my-4 pr-2">
+        <div className="flex-grow overflow-hidden">
             {availableCategories.length > 0 ? (
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Трейдер</TableHead>
-                            <TableHead>Новая категория</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {tradersToReassign.map(trader => (
-                            <TableRow key={trader.id}>
-                                <TableCell className="font-medium">{trader.name}</TableCell>
-                                <TableCell>
-                                    <Select 
-                                        onValueChange={(value) => handleAssignmentChange(trader.id, value)}
-                                        value={assignments[trader.id] || ''}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Выберите категорию..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {availableCategories.map(cat => (
-                                                <SelectItem key={cat.id} value={cat.id}>
-                                                    {cat.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </TableCell>
+                 <ScrollArea className="h-full pr-4">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Трейдер</TableHead>
+                                <TableHead>Новая категория</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {tradersToReassign.map(trader => (
+                                <TableRow key={trader.id}>
+                                    <TableCell className="font-medium">{trader.name}</TableCell>
+                                    <TableCell>
+                                        <Select 
+                                            onValueChange={(value) => handleAssignmentChange(trader.id, value)}
+                                            value={assignments[trader.id] || ''}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Выберите категорию..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {availableCategories.map(cat => (
+                                                    <SelectItem key={cat.id} value={cat.id}>
+                                                        {cat.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </ScrollArea>
             ) : (
                 <div className="text-center text-destructive p-4 border border-destructive/50 rounded-md">
                     Нет других категорий для переназначения. Пожалуйста, сначала создайте новую категорию.
                 </div>
             )}
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
-            Отмена
-          </Button>
-          <Button onClick={handleSubmit} disabled={!canConfirm || isSubmitting}>
+        <DialogFooter className="flex-col gap-2 pt-4">
+          <Button onClick={handleSubmit} disabled={!canConfirm || isSubmitting} size="lg" className="w-full">
             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             {isSubmitting ? 'Выполнение...' : 'Переназначить и удалить'}
+          </Button>
+          <Button variant="outline" onClick={onClose} disabled={isSubmitting} size="lg" className="w-full">
+            Отмена
           </Button>
         </DialogFooter>
       </DialogContent>
