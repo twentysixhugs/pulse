@@ -681,6 +681,7 @@ export async function reassignTraders(assignments: { [traderId: string]: string 
         batch.update(traderRef, { category: newCategoryId });
     }
     
+    // Also delete the old category
     const categoryRef = doc(db, 'categories', oldCategoryId);
     batch.delete(categoryRef);
     

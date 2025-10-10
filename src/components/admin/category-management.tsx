@@ -47,7 +47,6 @@ export function CategoryManagement() {
   const [isEditDialogOpen, setEditDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   
-  // State for deletion flow
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
   const [isDeleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isReassignDialogOpen, setReassignDialogOpen] = useState(false);
@@ -275,7 +274,7 @@ export function CategoryManagement() {
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel>Отмена</AlertDialogCancel>
+                    <AlertDialogCancel onClick={() => setCategoryToDelete(null)}>Отмена</AlertDialogCancel>
                     <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                     Удалить
                     </AlertDialogAction>
