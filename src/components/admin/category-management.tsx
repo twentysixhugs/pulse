@@ -33,7 +33,6 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { CategoryDialog } from './category-dialog';
 import Link from 'next/link';
@@ -47,9 +46,11 @@ export function CategoryManagement() {
   const [loading, setLoading] = useState(true);
   const [isEditDialogOpen, setEditDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
-  const [isReassignDialogOpen, setReassignDialogOpen] = useState(false);
+  
+  // State for deletion flow
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
   const [isDeleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [isReassignDialogOpen, setReassignDialogOpen] = useState(false);
 
   const { toast } = useToast();
 
@@ -89,7 +90,7 @@ export function CategoryManagement() {
   };
   
   const handleAttemptDelete = (category: Category) => {
-    setDeletingCategory(category);
+    setCategoryToDelete(category);
     const tradersInCategoryCount = traders.filter(t => t.category === category.id).length;
     if (tradersInCategoryCount > 0) {
         setReassignDialogOpen(true);
@@ -121,12 +122,12 @@ export function CategoryManagement() {
   };
 
   const handleConfirmDelete = async () => {
-    if (!deletingCategory) return;
+    if (!categoryToDelete) return;
     try {
-      await deleteCategory(deletingCategory.id);
-      toast({ variant: 'destructive', title: `Категория "${deletingCategory.name}" удалена`});
-      setDeletingCategory(null);
+      await deleteCategory(categoryToDelete.id);
+      toast({ variant: 'destructive', title: `Категория "${categoryToDelete.name}" удалена`});
       setDeleteConfirmOpen(false);
+      setCategoryToDelete(null);
       fetchData();
     } catch (error) {
       console.error('Failed to delete category:', error);
@@ -135,16 +136,16 @@ export function CategoryManagement() {
   };
   
   const handleReassignAndClose = async (assignments: { [traderId: string]: string }) => {
-    if (!deletingCategory) return;
+    if (!categoryToDelete) return;
 
     try {
-      await reassignTraders(assignments, deletingCategory.id);
+      await reassignTraders(assignments, categoryToDelete.id);
       toast({
         title: 'Трейдеры переназначены',
-        description: `Категория "${deletingCategory.name}" была успешно удалена.`,
+        description: `Категория "${categoryToDelete.name}" была успешно удалена.`,
       });
       setReassignDialogOpen(false);
-      setDeletingCategory(null);
+      setCategoryToDelete(null);
       await fetchData();
     } catch (error) {
       console.error('Failed to reassign traders and delete category:', error);
@@ -155,10 +156,6 @@ export function CategoryManagement() {
       });
     }
   };
-
-  const tradersForReassignment = deletingCategory 
-    ? traders.filter(t => t.category === deletingCategory.id) 
-    : [];
 
   return (
     <div className="space-y-4 px-4 md:px-0">
@@ -266,12 +263,13 @@ export function CategoryManagement() {
         onSave={handleSaveCategory}
         category={editingCategory}
       />
-      {deletingCategory && (
+      
+      {categoryToDelete && (
         <>
             <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
                 <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Удалить категорию &quot;{deletingCategory.name}&quot;?</AlertDialogTitle>
+                    <AlertDialogTitle>Удалить категорию &quot;{categoryToDelete.name}&quot;?</AlertDialogTitle>
                     <AlertDialogDescription>
                     Это действие нельзя отменить. Категория будет удалена навсегда.
                     </AlertDialogDescription>
@@ -286,10 +284,13 @@ export function CategoryManagement() {
             </AlertDialog>
             <ReassignTradersDialog
                 isOpen={isReassignDialogOpen}
-                onClose={() => setReassignDialogOpen(false)}
-                categoryToDelete={deletingCategory}
+                onClose={() => {
+                    setReassignDialogOpen(false);
+                    setCategoryToDelete(null);
+                }}
+                categoryToDelete={categoryToDelete}
                 allCategories={categories}
-                tradersToReassign={tradersForReassignment}
+                tradersToReassign={traders.filter(t => t.category === categoryToDelete.id)}
                 onConfirm={handleReassignAndClose}
             />
         </>
