@@ -46,7 +46,10 @@ export function CategoryManagement() {
   const [traders, setTraders] = useState<Trader[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEditDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
+  const [isReassignDialogOpen, setReassignDialogOpen] = useState(false);
+  const [isDeleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const { toast } = useToast();
 
@@ -76,17 +79,23 @@ export function CategoryManagement() {
   }, [fetchData]);
 
   const handleOpenCreate = () => {
-    setDeletingCategory(null);
+    setEditingCategory(null);
     setEditDialogOpen(true);
   };
 
   const handleOpenEdit = (category: Category) => {
-    setDeletingCategory(category);
+    setEditingCategory(category);
     setEditDialogOpen(true);
   };
   
   const handleAttemptDelete = (category: Category) => {
     setDeletingCategory(category);
+    const tradersInCategoryCount = traders.filter(t => t.category === category.id).length;
+    if (tradersInCategoryCount > 0) {
+        setReassignDialogOpen(true);
+    } else {
+        setDeleteConfirmOpen(true);
+    }
   };
 
   const handleSaveCategory = async (id: string | null, name: string) => {
@@ -117,6 +126,7 @@ export function CategoryManagement() {
       await deleteCategory(deletingCategory.id);
       toast({ variant: 'destructive', title: `Категория "${deletingCategory.name}" удалена`});
       setDeletingCategory(null);
+      setDeleteConfirmOpen(false);
       fetchData();
     } catch (error) {
       console.error('Failed to delete category:', error);
@@ -124,7 +134,7 @@ export function CategoryManagement() {
     }
   };
   
-  const handleReassignAndclose = async (assignments: { [traderId: string]: string }) => {
+  const handleReassignAndClose = async (assignments: { [traderId: string]: string }) => {
     if (!deletingCategory) return;
 
     try {
@@ -133,6 +143,7 @@ export function CategoryManagement() {
         title: 'Трейдеры переназначены',
         description: `Категория "${deletingCategory.name}" была успешно удалена.`,
       });
+      setReassignDialogOpen(false);
       setDeletingCategory(null);
       await fetchData();
     } catch (error) {
@@ -145,10 +156,9 @@ export function CategoryManagement() {
     }
   };
 
-  const tradersInCategory = deletingCategory 
+  const tradersForReassignment = deletingCategory 
     ? traders.filter(t => t.category === deletingCategory.id) 
     : [];
-
 
   return (
     <div className="space-y-4 px-4 md:px-0">
@@ -173,7 +183,6 @@ export function CategoryManagement() {
           <p className="text-muted-foreground">Категории не найдены.</p>
         </div>
       ) : (
-        <AlertDialog onOpenChange={(open) => !open && setDeletingCategory(null)}>
           <div className="rounded-lg border">
             <Table>
               <TableHeader>
@@ -235,16 +244,14 @@ export function CategoryManagement() {
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <AlertDialogTrigger asChild>
-                             <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => handleAttemptDelete(category)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                        </AlertDialogTrigger>
+                         <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleAttemptDelete(category)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   );
@@ -252,39 +259,40 @@ export function CategoryManagement() {
               </TableBody>
             </Table>
           </div>
-          {deletingCategory && tradersInCategory.length === 0 && (
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Удалить категорию &quot;{deletingCategory.name}&quot;?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Это действие нельзя отменить. Категория будет удалена навсегда.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Отмена</AlertDialogCancel>
-                <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                  Удалить
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          )}
-        </AlertDialog>
       )}
       <CategoryDialog
         isOpen={isEditDialogOpen}
         onClose={() => setEditDialogOpen(false)}
         onSave={handleSaveCategory}
-        category={deletingCategory}
+        category={editingCategory}
       />
-      {deletingCategory && tradersInCategory.length > 0 && (
-         <ReassignTradersDialog
-            isOpen={true}
-            onClose={() => setDeletingCategory(null)}
-            categoryToDelete={deletingCategory}
-            allCategories={categories}
-            tradersToReassign={tradersInCategory}
-            onConfirm={handleReassignAndclose}
-        />
+      {deletingCategory && (
+        <>
+            <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+                <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Удалить категорию &quot;{deletingCategory.name}&quot;?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                    Это действие нельзя отменить. Категория будет удалена навсегда.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Отмена</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Удалить
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            <ReassignTradersDialog
+                isOpen={isReassignDialogOpen}
+                onClose={() => setReassignDialogOpen(false)}
+                categoryToDelete={deletingCategory}
+                allCategories={categories}
+                tradersToReassign={tradersForReassignment}
+                onConfirm={handleReassignAndClose}
+            />
+        </>
       )}
     </div>
   );
