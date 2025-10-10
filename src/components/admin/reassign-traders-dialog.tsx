@@ -1,0 +1,142 @@
+
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import { Category, Trader } from '@/lib/firestore';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
+
+type ReassignTradersDialogProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  categoryToDelete: Category;
+  allCategories: Category[];
+  tradersToReassign: Trader[];
+  onConfirm: (assignments: { [traderId: string]: string }) => Promise<void>;
+};
+
+export function ReassignTradersDialog({
+  isOpen,
+  onClose,
+  categoryToDelete,
+  allCategories,
+  tradersToReassign,
+  onConfirm,
+}: ReassignTradersDialogProps) {
+  const [assignments, setAssignments] = useState<{ [traderId: string]: string }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+  
+  const availableCategories = allCategories.filter(c => c.id !== categoryToDelete.id);
+
+  useEffect(() => {
+    // Pre-fill assignments with the first available category if possible
+    if (availableCategories.length > 0) {
+      const initialAssignments = tradersToReassign.reduce((acc, trader) => {
+        acc[trader.id] = '';
+        return acc;
+      }, {} as { [traderId: string]: string });
+      setAssignments(initialAssignments);
+    }
+  }, [isOpen, tradersToReassign, availableCategories]);
+
+  const handleAssignmentChange = (traderId: string, newCategoryId: string) => {
+    setAssignments(prev => ({ ...prev, [traderId]: newCategoryId }));
+  };
+
+  const canConfirm = Object.values(assignments).every(val => val && val !== '');
+
+  const handleSubmit = async () => {
+    if (!canConfirm) {
+      toast({
+        variant: 'destructive',
+        title: 'Ошибка',
+        description: 'Пожалуйста, назначьте новую категорию для каждого трейдера.',
+      });
+      return;
+    }
+    setIsSubmitting(true);
+    await onConfirm(assignments);
+    setIsSubmitting(false);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Невозможно удалить категорию</DialogTitle>
+          <DialogDescription>
+            К категории &quot;{categoryToDelete.name}&quot; привязаны трейдеры. Пожалуйста, переназначьте их в другие категории перед удалением.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="max-h-[60vh] overflow-y-auto my-4 pr-2">
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Трейдер</TableHead>
+                        <TableHead>Новая категория</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {tradersToReassign.map(trader => (
+                        <TableRow key={trader.id}>
+                            <TableCell className="font-medium">{trader.name}</TableCell>
+                            <TableCell>
+                                <Select 
+                                    onValueChange={(value) => handleAssignmentChange(trader.id, value)}
+                                    value={assignments[trader.id] || ''}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Выберите категорию..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {availableCategories.map(cat => (
+                                            <SelectItem key={cat.id} value={cat.id}>
+                                                {cat.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+            Отмена
+          </Button>
+          <Button onClick={handleSubmit} disabled={!canConfirm || isSubmitting}>
+            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            {isSubmitting ? 'Выполнение...' : 'Переназначить и удалить'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

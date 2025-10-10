@@ -664,6 +664,29 @@ export async function updateCategory(id: string, name: string): Promise<void> {
   await updateDoc(categoryRef, { name });
 }
 
+export async function deleteCategory(id: string): Promise<void> {
+    const tradersSnapshot = await getDocs(query(collection(db, 'traders'), where('category', '==', id)));
+    if (!tradersSnapshot.empty) {
+        throw new Error('Cannot delete category with assigned traders.');
+    }
+    const categoryRef = doc(db, 'categories', id);
+    await deleteDoc(categoryRef);
+}
+
+export async function reassignTraders(assignments: { [traderId: string]: string }, oldCategoryId: string) {
+    const batch = writeBatch(db);
+    for (const traderId in assignments) {
+        const newCategoryId = assignments[traderId];
+        const traderRef = doc(db, 'traders', traderId);
+        batch.update(traderRef, { category: newCategoryId });
+    }
+    
+    const categoryRef = doc(db, 'categories', oldCategoryId);
+    batch.delete(categoryRef);
+    
+    await batch.commit();
+}
+
 
 // --- Metrics ---
 

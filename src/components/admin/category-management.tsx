@@ -9,10 +9,12 @@ import {
   getAllTraders,
   createCategory,
   updateCategory,
+  deleteCategory,
+  reassignTraders,
 } from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Pencil, PlusCircle, Users } from 'lucide-react';
+import { Pencil, PlusCircle, Users, Trash2 } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import {
   Table,
@@ -22,17 +24,30 @@ import {
   TableHeader,
   TableRow,
 } from '../ui/table';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { CategoryDialog } from './category-dialog';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import { ReassignTradersDialog } from './reassign-traders-dialog';
 
 export function CategoryManagement() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [traders, setTraders] = useState<Trader[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isDialogOpen, setDialogOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [isEditDialogOpen, setEditDialogOpen] = useState(false);
+  const [isReassignDialogOpen, setReassignDialogOpen] = useState(false);
+  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
 
   const { toast } = useToast();
 
@@ -62,16 +77,26 @@ export function CategoryManagement() {
   }, [fetchData]);
 
   const handleOpenCreate = () => {
-    setEditingCategory(null);
-    setDialogOpen(true);
+    setDeletingCategory(null);
+    setEditDialogOpen(true);
   };
 
   const handleOpenEdit = (category: Category) => {
-    setEditingCategory(category);
-    setDialogOpen(true);
+    setDeletingCategory(category);
+    setEditDialogOpen(true);
+  };
+  
+  const handleAttemptDelete = (category: Category) => {
+    const tradersInCategory = traders.filter((t) => t.category === category.id);
+    if (tradersInCategory.length > 0) {
+      setDeletingCategory(category);
+      setReassignDialogOpen(true);
+    } else {
+       setDeletingCategory(category);
+    }
   };
 
-  const handleSave = async (id: string | null, name: string) => {
+  const handleSaveCategory = async (id: string | null, name: string) => {
     try {
       if (id) {
         await updateCategory(id, name);
@@ -80,8 +105,8 @@ export function CategoryManagement() {
         await createCategory(name);
         toast({ title: 'Категория создана' });
       }
-      await fetchData(); // Refresh data
-      setDialogOpen(false);
+      await fetchData();
+      setEditDialogOpen(false);
     } catch (error: any) {
       console.error('Failed to save category:', error);
       toast({
@@ -92,6 +117,42 @@ export function CategoryManagement() {
       });
     }
   };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingCategory) return;
+    try {
+      await deleteCategory(deletingCategory.id);
+      toast({ variant: 'destructive', title: `Категория "${deletingCategory.name}" удалена`});
+      setDeletingCategory(null);
+      fetchData();
+    } catch (error) {
+      console.error('Failed to delete category:', error);
+      toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось удалить категорию.'});
+    }
+  };
+  
+  const handleReassignAndclose = async (assignments: { [traderId: string]: string }) => {
+    if (!deletingCategory) return;
+
+    try {
+      await reassignTraders(assignments, deletingCategory.id);
+      toast({
+        title: 'Трейдеры переназначены',
+        description: `Категория "${deletingCategory.name}" была успешно удалена.`,
+      });
+      setReassignDialogOpen(false);
+      setDeletingCategory(null);
+      await fetchData();
+    } catch (error) {
+      console.error('Failed to reassign traders and delete category:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Ошибка',
+        description: 'Не удалось переназначить трейдеров и удалить категорию.',
+      });
+    }
+  };
+
 
   return (
     <div className="space-y-4 px-4 md:px-0">
@@ -116,81 +177,119 @@ export function CategoryManagement() {
           <p className="text-muted-foreground">Категории не найдены.</p>
         </div>
       ) : (
-        <div className="rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Название</TableHead>
-                <TableHead>Трейдеры</TableHead>
-                <TableHead className="text-right">Действия</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {categories.map((category) => {
-                const tradersInCategory = traders.filter(
-                  (t) => t.category === category.id
-                );
-                return (
-                  <TableRow key={category.id}>
-                    <TableCell className="font-medium">{category.name}</TableCell>
-                    <TableCell>
-                      {tradersInCategory.length > 0 ? (
-                        <Dialog>
-                            <DialogTrigger asChild>
-                                <Button variant="outline" size="sm">
-                                    <Users className="mr-2 h-4 w-4" />
-                                    {tradersInCategory.length}
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Трейдеры в категории &quot;{category.name}&quot;</DialogTitle>
-                                    <DialogDescription>Список всех трейдеров, привязанных к этой категории.</DialogDescription>
-                                </DialogHeader>
-                                <div className="space-y-2 py-4 max-h-96 overflow-y-auto">
-                                    {tradersInCategory.map(trader => (
-                                        <Link href={`/admin/traders/${trader.id}/alerts`} key={trader.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted">
-                                            <Avatar>
-                                                <AvatarImage src={trader.profilePicUrl} />
-                                                <AvatarFallback>{trader.name.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                            <div>
-                                                <div className='font-semibold'>{trader.name}</div>
-                                                <div className='text-sm text-muted-foreground'>@{trader.telegramId}</div>
-                                            </div>
-                                        </Link>
-                                    ))}
-                                </div>
-                            </DialogContent>
-                        </Dialog>
-                      ) : (
-                        <Button variant="outline" size="sm" disabled>
-                           <Users className="mr-2 h-4 w-4" />0
+        <AlertDialog>
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Название</TableHead>
+                  <TableHead>Трейдеры</TableHead>
+                  <TableHead className="text-right">Действия</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {categories.map((category) => {
+                  const tradersInCategory = traders.filter(
+                    (t) => t.category === category.id
+                  );
+                  return (
+                    <TableRow key={category.id}>
+                      <TableCell className="font-medium">{category.name}</TableCell>
+                      <TableCell>
+                        {tradersInCategory.length > 0 ? (
+                          <Dialog>
+                              <DialogTrigger asChild>
+                                  <Button variant="outline" size="sm">
+                                      <Users className="mr-2 h-4 w-4" />
+                                      {tradersInCategory.length}
+                                  </Button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                  <DialogHeader>
+                                      <DialogTitle>Трейдеры в категории &quot;{category.name}&quot;</DialogTitle>
+                                      <DialogDescription>Список всех трейдеров, привязанных к этой категории.</DialogDescription>
+                                  </DialogHeader>
+                                  <div className="space-y-2 py-4 max-h-96 overflow-y-auto">
+                                      {tradersInCategory.map(trader => (
+                                          <Link href={`/admin/traders/${trader.id}/alerts`} key={trader.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted">
+                                              <Avatar>
+                                                  <AvatarImage src={trader.profilePicUrl} />
+                                                  <AvatarFallback>{trader.name.charAt(0)}</AvatarFallback>
+                                              </Avatar>
+                                              <div>
+                                                  <div className='font-semibold'>{trader.name}</div>
+                                                  <div className='text-sm text-muted-foreground'>@{trader.telegramId}</div>
+                                              </div>
+                                          </Link>
+                                      ))}
+                                  </div>
+                              </DialogContent>
+                          </Dialog>
+                        ) : (
+                          <Button variant="outline" size="sm" disabled>
+                             <Users className="mr-2 h-4 w-4" />0
+                          </Button>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right space-x-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleOpenEdit(category)}
+                        >
+                          <Pencil className="h-4 w-4" />
                         </Button>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleOpenEdit(category)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+                        <AlertDialogTrigger asChild>
+                             <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => handleAttemptDelete(category)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </AlertDialogTrigger>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+          {deletingCategory && (
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Удалить категорию &quot;{deletingCategory.name}&quot;?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Это действие нельзя отменить. Категория будет удалена навсегда.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setDeletingCategory(null)}>Отмена</AlertDialogCancel>
+                <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Удалить
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          )}
+        </AlertDialog>
       )}
       <CategoryDialog
-        isOpen={isDialogOpen}
-        onClose={() => setDialogOpen(false)}
-        onSave={handleSave}
-        category={editingCategory}
+        isOpen={isEditDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        onSave={handleSaveCategory}
+        category={deletingCategory}
       />
+      {deletingCategory && (
+         <ReassignTradersDialog
+            isOpen={isReassignDialogOpen}
+            onClose={() => setReassignDialogOpen(false)}
+            categoryToDelete={deletingCategory}
+            allCategories={categories}
+            tradersToReassign={traders.filter(t => t.category === deletingCategory.id)}
+            onConfirm={handleReassignAndclose}
+        />
+      )}
     </div>
   );
 }
