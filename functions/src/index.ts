@@ -9,12 +9,12 @@ initializeApp();
 getFirestore();
 
 // Получаем токен из переменных окружения
-const botToken = functions.config().telegram.token;
+const botToken = process.env.TELEGRAM_BOT_TOKEN;
 if (!botToken) {
-  console.error("Telegram bot token is not set in functions config. Use 'firebase functions:config:set telegram.token=\"YOUR_TOKEN\"'");
+  console.error("Telegram bot token is not set in environment variables.");
 }
 
-const bot = new Telegraf(botToken);
+const bot = new Telegraf(botToken!);
 
 bot.start((ctx) => ctx.reply("Добро пожаловать!"));
 
