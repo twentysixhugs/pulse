@@ -18,7 +18,7 @@ if (!botToken) {
 
 const bot = new Telegraf(botToken);
 
-bot.start((ctx) => ctx.reply("Добро пожаловать!"));
+bot.start((ctx) => ctx.reply("Привет"));
 
 // HTTP-функция для вебхука
 export const telegramWebhook = functions.https.onRequest(async (req, res) => {
