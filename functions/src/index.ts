@@ -1,16 +1,34 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
 
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
+import * as functions from "firebase-functions";
+import { Telegraf } from "telegraf";
+import { initializeApp } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
 
-// export const helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+// Инициализация Firebase Admin SDK
+initializeApp();
+getFirestore();
+
+// Получаем токен из переменных окружения
+const botToken = functions.config().telegram.token;
+if (!botToken) {
+  console.error("Telegram bot token is not set in functions config. Use 'firebase functions:config:set telegram.token=\"YOUR_TOKEN\"'");
+}
+
+const bot = new Telegraf(botToken);
+
+bot.start((ctx) => ctx.reply("Добро пожаловать!"));
+
+// HTTP-функция для вебхука
+export const telegramWebhook = functions.https.onRequest(async (req, res) => {
+  if (bot) {
+    try {
+      await bot.handleUpdate(req.body);
+      res.sendStatus(200);
+    } catch (e) {
+      console.error(e);
+      res.sendStatus(500);
+    }
+  } else {
+    res.sendStatus(500);
+  }
+});
