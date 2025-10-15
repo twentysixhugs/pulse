@@ -3,6 +3,7 @@ import * as functions from "firebase-functions";
 import { Telegraf } from "telegraf";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import "dotenv/config";
 
 // Инициализация Firebase Admin SDK
 initializeApp();
