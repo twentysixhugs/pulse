@@ -5,7 +5,7 @@ require("dotenv").config({ path: __dirname + "/../.env" });
 const setWebhook = async () => {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   const projectId = process.env.FIREBASE_PROJECT_ID;
-  const region = "us-central1"; // Или ваш регион
+  const region = "europe-central2";
   const functionName = "telegramWebhook";
 
   if (!botToken || !projectId) {
