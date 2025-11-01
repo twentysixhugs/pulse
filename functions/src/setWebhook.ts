@@ -4,13 +4,13 @@ require("dotenv").config({ path: __dirname + "/../.env" });
 
 const setWebhook = async () => {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const projectId = process.env.PROJECT_ID;
   const region = "europe-central2";
   const functionName = "telegramWebhook";
 
   if (!botToken || !projectId) {
     console.error(
-      "TELEGRAM_BOT_TOKEN и FIREBASE_PROJECT_ID должны быть установлены в .env файле"
+      "TELEGRAM_BOT_TOKEN и PROJECT_ID должны быть установлены в .env файле"
     );
     return;
   }

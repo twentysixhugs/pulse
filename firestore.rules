@@ -12,7 +12,7 @@ service cloud.firestore {
     match /{document=**} {
       allow read, write: if false;
     }
-
+    
     // Allow reading categories for anyone who is logged in
     match /categories/{categoryId} {
       allow read: if request.auth != null;

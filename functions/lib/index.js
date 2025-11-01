@@ -38,6 +38,8 @@ const functions = __importStar(require("firebase-functions"));
 const telegraf_1 = require("telegraf");
 const app_1 = require("firebase-admin/app");
 const firestore_1 = require("firebase-admin/firestore");
+// import "dotenv/config";
+require("dotenv").config({ path: __dirname + "/../.env" });
 // Инициализация Firebase Admin SDK
 (0, app_1.initializeApp)();
 (0, firestore_1.getFirestore)();
