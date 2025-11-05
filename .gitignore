@@ -2,6 +2,8 @@
 
 # Firebase
 .firebase/
+/.firebase/
+.firebase/*
 database-debug.log
 firestore-debug.log
 storage-debug.log
