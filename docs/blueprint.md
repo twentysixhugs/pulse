@@ -9,7 +9,7 @@
 - Admin Trader Management: Enables admins to manage traders (edit posts, delete, deactivate/activate, view Telegram ID and profile details).
 - Admin Complaint Handling: Allows admins to view and resolve user complaints related to posts.
 - Access Validation: Validates user access based on subscription status to https://t.me/fashopet983jrt292rk01jf9h3f8j. Includes simulation of payment access checks, and handles displaying legal documents before use.
-- Trader Authentication: Admin-generated login/password credentials for traders.
+- Telegram Authentication: All roles (user, trader, admin) authenticate via Telegram WebApp init data, backed by Firebase custom tokens. Access is granted per-role based on configuration in Firestore.
 - Category Browsing: Users can browse traders by category, with an 'All' category as the default. Categories are displayed in an expandable list.
 - Image Zoom: Users can zoom into screenshots after opening them. If not opened, a button allows opening the screenshot in the browser.
 - Legal Documents: Displays legal documents to the user before they can use the bot.

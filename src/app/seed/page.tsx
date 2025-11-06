@@ -57,7 +57,7 @@ export default function SeedPage() {
              <div className="flex flex-col items-center gap-4 text-center">
                 <p className='text-green-500'>База данных успешно заполнена!</p>
                 <Button asChild>
-                    <Link href="/login">Перейти на страницу входа</Link>
+                    <Link href="/">Открыть пользовательское приложение</Link>
                 </Button>
             </div>
           ) : (

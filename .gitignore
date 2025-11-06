@@ -27,6 +27,8 @@ firebase-debug.log
 # Misc
 .DS_Store
 *.pem
+.frontend_tunnel_url
+bin/cloudflared
 
 # Local Env Files
 .env.local

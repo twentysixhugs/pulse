@@ -1,21 +1,57 @@
 
 'use client';
 
-import { Firestore } from 'firebase/firestore';
 import { createContext, useContext } from 'react';
+
+export type AuthRole = 'user' | 'admin' | 'trader';
+
+export type PaymentStatus = 'inactive' | 'active';
+
+export type TelegramProfile = {
+  id: number;
+  username: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  languageCode: string | null;
+  isPremium: boolean | null;
+};
 
 export type AuthUser = {
   uid: string;
-  role: 'user' | 'admin' | 'trader';
-  name: string;
+  roles: AuthRole[];
+  paymentStatus: PaymentStatus;
+  telegram: TelegramProfile | null;
+  profile: Record<string, unknown>;
+  name?: string;
+  role?: AuthRole;
+};
+
+export type AuthErrorCode =
+  | 'NO_INIT_DATA'
+  | 'BACKEND_MISSING'
+  | 'AUTH_FAILED'
+  | 'AUTH_EXPIRED'
+  | 'ROLE_FORBIDDEN'
+  | 'BOT_UNAVAILABLE'
+  | 'INVALID_SIGNATURE'
+  | 'USER_MISSING'
+  | 'NETWORK_ERROR'
+  | 'USER_DOC_MISSING'
+  | 'FIRESTORE_ERROR';
+
+export type AuthError = {
+  code: AuthErrorCode;
+  message: string;
 };
 
 export type AuthContextType = {
   user: AuthUser | null;
   loading: boolean;
-  login: (credentials: any) => Promise<void>;
-  logout: () => void;
-  db: Firestore | null;
+  error: AuthError | null;
+  expectedRole: AuthRole;
+  hasRole: (role: AuthRole) => boolean;
+  refresh: () => Promise<void>;
+  logout: () => Promise<void>;
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);

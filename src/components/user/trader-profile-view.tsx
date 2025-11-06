@@ -50,7 +50,7 @@ export function TraderProfileView({
   const [currentPage, setCurrentPage] = useState(1);
   const [totalAlerts, setTotalAlerts] = useState(0);
 
-  const isTraderViewing = currentUser?.role === 'trader';
+  const isTraderViewing = currentUser?.roles?.includes('trader') ?? currentUser?.role === 'trader';
   const repLoading = userRepAction === undefined;
 
   useEffect(() => {

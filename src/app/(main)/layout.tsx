@@ -3,7 +3,7 @@
 import { Logo } from "@/components/common/logo";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { User, LogOut } from "lucide-react";
+import { User, LogOut, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function MainLayout({
@@ -11,7 +11,32 @@ export default function MainLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, logout } = useAuth();
+  const { user, logout, loading, error, refresh } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-sm text-muted-foreground">Авторизация…</p>
+      </div>
+    );
+  }
+
+  if (error || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-6 text-center">
+        <div className="space-y-4">
+          <p className="text-lg font-semibold">Нет доступа</p>
+          <p className="text-sm text-muted-foreground">
+            {error?.message ?? 'Не удалось подтвердить учетную запись Telegram.'}
+          </p>
+          <Button onClick={refresh} variant="outline" className="mx-auto">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Повторить попытку
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -23,14 +48,14 @@ export default function MainLayout({
           <div className="flex items-center gap-2">
             <nav className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground hidden sm:inline">
-                {user?.name}
+                {user?.name ?? (user?.telegram?.username ? `@${user.telegram.username}` : '—')}
               </span>
               <Button variant="ghost" size="icon" asChild>
                 <Link href="/profile">
                   <User className="h-5 w-5" />
                 </Link>
               </Button>
-              <Button variant="ghost" size="icon" onClick={logout}>
+              <Button variant="ghost" size="icon" onClick={() => logout()}>
                 <LogOut className="h-5 w-5" />
               </Button>
             </nav>

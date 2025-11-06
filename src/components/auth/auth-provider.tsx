@@ -2,127 +2,316 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { AuthContext, AuthUser } from '@/hooks/use-auth';
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut as firebaseSignOut, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, getFirestore, Firestore } from 'firebase/firestore';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { AuthContext, AuthUser, AuthRole, AuthError } from '@/hooks/use-auth';
 import { app, db } from '@/lib/firebase';
-import { getUser, User } from '@/lib/firestore';
+import {
+  getAuth,
+  signInWithCustomToken,
+  signOut,
+  onAuthStateChanged,
+} from 'firebase/auth';
+import {
+  doc,
+  onSnapshot,
+  Unsubscribe,
+} from 'firebase/firestore';
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+const RAW_BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || '').replace(/\/$/, '');
+
+const buildBackendUrl = (path: string) => `${RAW_BACKEND_URL ? `${RAW_BACKEND_URL}${path}` : path}`;
+
+function resolveRoleFromPath(pathname: string): AuthRole {
+  if (pathname.startsWith('/admin')) return 'admin';
+  if (pathname.startsWith('/trader')) return 'trader';
+  return 'user';
+}
+
+function extractInitData(): string | null {
+  if (typeof window === 'undefined') return null;
+  const telegram = (window as any)?.Telegram?.WebApp;
+  try {
+    telegram?.ready?.();
+  } catch {
+    // ignore
+  }
+  if (telegram?.initData && telegram.initData.length > 0) {
+    return telegram.initData;
+  }
+  const unsafe = telegram?.initDataUnsafe;
+  if (unsafe && typeof unsafe === 'object') {
+    const query = new URLSearchParams();
+    if (unsafe.query_id) query.set('query_id', unsafe.query_id);
+    if (unsafe.user) query.set('user', JSON.stringify(unsafe.user));
+    if (unsafe.receiver) query.set('receiver', JSON.stringify(unsafe.receiver));
+    if (unsafe.start_param) query.set('start_param', unsafe.start_param);
+    if (unsafe.auth_date) query.set('auth_date', String(unsafe.auth_date));
+    if (unsafe.hash) query.set('hash', unsafe.hash);
+    const built = query.toString();
+    if (built.length > 0) {
+      return built;
+    }
+  }
+  const params = new URLSearchParams(window.location.search);
+  const paramInit = params.get('initData') ?? params.get('tg_init_data');
+  if (paramInit) {
+    try {
+      const decoded = decodeURIComponent(paramInit);
+      if (decoded.length > 0) return decoded;
+    } catch {
+      return paramInit;
+    }
+  }
+  const sessionInit = typeof window !== 'undefined'
+    ? window.sessionStorage.getItem('tg:initData')
+    : null;
+  if (sessionInit) return sessionInit;
+  const fallback = process.env.NEXT_PUBLIC_TG_STATIC_INIT_DATA;
+  return fallback && fallback.length > 0 ? fallback : null;
+}
+
+async function waitForInitData(maxAttempts = 50, delayMs = 300): Promise<string | null> {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const data = extractInitData();
+    if (data) return data;
+    if (attempt === Math.floor(maxAttempts / 2)) {
+      console.warn('[auth] Still waiting for Telegram init data...');
+    }
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+  return extractInitData();
+}
+
+function mapBackendError(code: string): AuthError {
+  switch (code) {
+    case 'AUTH_EXPIRED':
+      return { code: 'AUTH_EXPIRED', message: 'Сессия Telegram устарела. Повторите попытку.' };
+    case 'ROLE_FORBIDDEN':
+      return { code: 'ROLE_FORBIDDEN', message: 'Доступ к этой роли запрещён.' };
+    case 'BOT_TOKEN_UNAVAILABLE':
+      return { code: 'BOT_UNAVAILABLE', message: 'Сервис бота недоступен. Попробуйте позже.' };
+    case 'INVALID_SIGNATURE':
+      return { code: 'INVALID_SIGNATURE', message: 'Не удалось подтвердить данные Telegram.' };
+    case 'USER_MISSING':
+      return { code: 'USER_MISSING', message: 'Telegram не передал данные пользователя.' };
+    default:
+      return { code: 'AUTH_FAILED', message: 'Ошибка авторизации. Попробуйте позже.' };
+  }
+}
+
+type Props = { children: React.ReactNode };
+
+export function AuthProvider({ children }: Props) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const expectedRole = useMemo(() => resolveRoleFromPath(pathname), [pathname]);
+  const auth = useMemo(() => getAuth(app), []);
+
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
-  const pathname = usePathname();
-  const auth = getAuth(app);
+  const [error, setError] = useState<AuthError | null>(null);
 
-  const fetchUserWithRole = useCallback(async (firebaseUser: FirebaseUser): Promise<{authUser: AuthUser, isBanned: boolean} | null> => {
-    const userDoc = await getUser(firebaseUser.uid);
-    if (userDoc) {
-        return {
-            authUser: {
-                uid: firebaseUser.uid,
-                role: userDoc.role,
-                name: userDoc.name,
-            },
-            isBanned: userDoc.isBanned,
-        };
+  const docUnsubRef = useRef<Unsubscribe | null>(null);
+  const authUnsubRef = useRef<Unsubscribe | null>(null);
+  const authenticatingRef = useRef(false);
+
+  const cleanupDoc = useCallback(() => {
+    if (docUnsubRef.current) {
+      docUnsubRef.current();
+      docUnsubRef.current = null;
     }
-    return null;
   }, []);
 
-  const logout = useCallback(async () => {
-    await firebaseSignOut(auth);
+  const subscribeToUserDoc = useCallback(
+    (uid: string, expected: AuthRole) => {
+      cleanupDoc();
+      docUnsubRef.current = onSnapshot(
+        doc(db, 'users', uid),
+        (snapshot) => {
+          if (!snapshot.exists()) {
+            setError({ code: 'USER_DOC_MISSING', message: 'Профиль пользователя не найден.' });
+            setUser(null);
+            return;
+          }
+          const data = snapshot.data() as Record<string, unknown>;
+          const rolesArray = Array.isArray(data.roles)
+            ? (data.roles as string[])
+            : data.role
+              ? [data.role as string]
+              : [];
+          const normalizedRoles = rolesArray.filter((r): r is AuthRole =>
+            r === 'user' || r === 'admin' || r === 'trader',
+          );
+          if (expected && normalizedRoles.length > 0 && !normalizedRoles.includes(expected)) {
+            setError({ code: 'ROLE_FORBIDDEN', message: 'Доступ к этой роли запрещён.' });
+          } else {
+            setError(null);
+          }
+
+          setUser((prev) => ({
+            uid,
+            roles: normalizedRoles,
+            paymentStatus: (data.paymentStatus as any) ?? 'inactive',
+            telegram: prev?.telegram ?? null,
+            profile: data,
+            name: (data.name as string) ?? prev?.name ?? undefined,
+            role:
+              normalizedRoles[0] ??
+              ((typeof data.role === 'string' &&
+                (data.role === 'user' || data.role === 'admin' || data.role === 'trader')
+                  ? data.role
+                  : undefined) as AuthRole | undefined),
+          }));
+        },
+        (err) => {
+          console.error('[auth] Firestore listener failed:', err);
+          setError({ code: 'FIRESTORE_ERROR', message: 'Ошибка загрузки профиля.' });
+        },
+      );
+    },
+    [cleanupDoc],
+  );
+
+  const performAuth = useCallback(
+    async (forcedRole?: AuthRole) => {
+      if (authenticatingRef.current) return;
+      authenticatingRef.current = true;
+      setLoading(true);
+      setError(null);
+      try {
+        const initData = await waitForInitData();
+        if (!initData) {
+          throw { code: 'NO_INIT_DATA', message: 'Telegram не передал данные авторизации.' } as AuthError;
+        }
+        const role = forcedRole ?? expectedRole;
+        const response = await fetch(buildBackendUrl('/auth/telegram'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initData, botName: role }),
+        }).catch((err) => {
+          console.error('[auth] Network error:', err);
+          throw { code: 'NETWORK_ERROR', message: 'Не удалось связаться с сервером.' } as AuthError;
+        });
+
+        const payload = await response.json().catch(() => ({ ok: false }));
+
+        if (!response.ok || !payload?.ok) {
+          const backendCode = payload?.error ?? 'AUTH_FAILED';
+          throw mapBackendError(backendCode);
+        }
+
+        if (payload.customToken) {
+          await signInWithCustomToken(auth, payload.customToken);
+        }
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('tg:initData', initData);
+        }
+
+        const payloadRoles = Array.isArray(payload.roles)
+          ? (payload.roles as string[]).filter((r): r is AuthRole =>
+              r === 'user' || r === 'admin' || r === 'trader',
+            )
+          : [];
+
+        subscribeToUserDoc(payload.uid, role);
+        setUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                paymentStatus: payload.paymentStatus,
+                roles: payloadRoles.length ? payloadRoles : prev.roles,
+                telegram: {
+                  id: payload.telegram?.id ?? null,
+                  username: payload.telegram?.username ?? null,
+                  firstName: payload.telegram?.firstName ?? null,
+                  lastName: payload.telegram?.lastName ?? null,
+                  languageCode: payload.telegram?.languageCode ?? null,
+                  isPremium: payload.telegram?.isPremium ?? null,
+                },
+                role: (payloadRoles[0] ?? prev.role) as AuthRole | undefined,
+              }
+            : {
+                uid: payload.uid,
+                roles: payloadRoles,
+                paymentStatus: payload.paymentStatus ?? 'inactive',
+                telegram: {
+                  id: payload.telegram?.id ?? null,
+                  username: payload.telegram?.username ?? null,
+                  firstName: payload.telegram?.firstName ?? null,
+                  lastName: payload.telegram?.lastName ?? null,
+                  languageCode: payload.telegram?.languageCode ?? null,
+                  isPremium: payload.telegram?.isPremium ?? null,
+                },
+                profile: {},
+                name: undefined,
+                role: (payloadRoles[0] ?? undefined) as AuthRole | undefined,
+              },
+        );
+      } catch (err) {
+        const authError = (err as AuthError).code ? (err as AuthError) : { code: 'AUTH_FAILED', message: 'Ошибка авторизации.' };
+        setError(authError as AuthError);
+        await signOut(auth).catch(() => undefined);
+        setUser(null);
+      } finally {
+        authenticatingRef.current = false;
+        setLoading(false);
+      }
+    },
+    [auth, expectedRole, subscribeToUserDoc],
+  );
+
+  const refresh = useCallback(async () => {
+    await performAuth();
+  }, [performAuth]);
+
+  const handleLogout = useCallback(async () => {
+    cleanupDoc();
+    await signOut(auth).catch(() => undefined);
     setUser(null);
-    router.push('/login');
-  }, [auth, router]);
+    setError(null);
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('tg:initData');
+      const telegram = (window as any)?.Telegram?.WebApp;
+      telegram?.close?.();
+    }
+    router.push('/');
+  }, [auth, cleanupDoc, router]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        const result = await fetchUserWithRole(firebaseUser);
-        if (result) {
-            if (result.isBanned) {
-                await logout();
-                return;
-            }
+    setLoading(true);
+    performAuth();
 
-            setUser(result.authUser);
-            if (pathname === '/login') {
-                if (result.authUser?.role === 'admin') router.push('/admin');
-                else if (result.authUser?.role === 'trader') router.push('/trader');
-                else router.push('/');
-            }
-        } else {
-            // User exists in Auth but not in Firestore DB. This can happen if DB was cleared.
-            await logout();
-        }
-      } else {
+    authUnsubRef.current = onAuthStateChanged(auth, (firebaseUser) => {
+      if (!firebaseUser) {
+        cleanupDoc();
         setUser(null);
       }
-      setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, [auth, pathname, router, fetchUserWithRole, logout]);
+    return () => {
+      cleanupDoc();
+      authUnsubRef.current?.();
+    };
+  }, [auth, cleanupDoc, performAuth, expectedRole]);
 
-  const login = async (credentials: any) => {
-    const { email, password } = credentials;
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const result = await fetchUserWithRole(userCredential.user);
+  const hasRole = useCallback(
+    (role: AuthRole) => !!user?.roles?.includes(role),
+    [user?.roles],
+  );
 
-    if (!result) {
-        await logout(); // Sign out if no profile found
-        throw new Error("Профиль пользователя не найден в базе данных.");
-    }
-    
-    if (result.isBanned) {
-        await logout(); // Sign out if banned
-        throw new Error("Ваш аккаунт забанен.");
-    }
-
-    setUser(result.authUser);
-    
-    let targetPath = '/';
-    if (result.authUser.role === 'admin') targetPath = '/admin';
-    if (result.authUser.role === 'trader') targetPath = '/trader';
-    router.push(targetPath);
-  };
-
-
-  useEffect(() => {
-    if (loading) return;
-
-    const isAuthPage = pathname === '/login' || pathname === '/seed';
-    const isAdminRoute = pathname.startsWith('/admin');
-    const isTraderRoute = pathname.startsWith('/trader/') || pathname === '/trader';
-
-    if (!user && !isAuthPage) {
-      router.push('/login');
-    } else if (user) {
-        if (isAdminRoute && user.role !== 'admin') {
-            router.push('/');
-        }
-        if (isTraderRoute && user.role !== 'trader') {
-            router.push('/');
-        }
-    }
-    
-  }, [user, loading, pathname, router]);
-
-  const value = {
-    user,
-    loading,
-    login,
-    logout,
-    db
-  };
-  
-  const isAuthPage = pathname === '/login' || pathname === '/seed';
-  if (loading && !isAuthPage) {
-    return <div className="w-screen h-screen flex items-center justify-center bg-background">Загрузка...</div>;
-  }
+  const value = useMemo(
+    () => ({
+      user,
+      loading,
+      error,
+      expectedRole,
+      hasRole,
+      refresh,
+      logout: handleLogout,
+    }),
+    [user, loading, error, expectedRole, hasRole, refresh, handleLogout],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

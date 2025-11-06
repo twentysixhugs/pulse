@@ -81,7 +81,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            <Button variant="ghost" size="icon" onClick={logout}>
+            <Button variant="ghost" size="icon" onClick={() => logout()}>
                 <LogOut className="h-4 w-4" />
             </Button>
           </div>

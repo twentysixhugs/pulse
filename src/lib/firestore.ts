@@ -56,7 +56,8 @@ export interface User {
   createdAt?: Timestamp; // Add createdAt for tracking new users
   firstSubscribedAt?: Timestamp;
   lastRenewedAt?: Timestamp;
-  role: UserRole;
+  roles: UserRole[];
+  role?: UserRole;
 }
 
 export interface Comment {
@@ -185,7 +186,17 @@ export async function getUser(userId: string): Promise<User | undefined> {
     const docSnap = await getDoc(userRef);
     if (docSnap.exists()) {
         const data = docSnap.data();
-        return { id: docSnap.id, ...data } as User;
+        const roles = Array.isArray(data.roles)
+          ? (data.roles as UserRole[])
+          : data.role
+            ? [data.role as UserRole]
+            : [];
+        return {
+          id: docSnap.id,
+          ...data,
+          roles,
+          role: (data.role as UserRole | undefined) ?? roles[0],
+        } as User;
     }
     return undefined;
 }
@@ -236,13 +247,29 @@ export async function getAllUsers(params: GetAllUsersParams = {}): Promise<{ dat
   // This is inefficient. For a real app, use a dedicated search service like Algolia or Typesense,
   // or structure your data to allow for more complex Firestore queries.
   const snapshot = await getDocs(query(usersCol));
-  allUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+  allUsers = snapshot.docs.map((docSnap) => {
+    const data = docSnap.data();
+    const roles = Array.isArray(data.roles)
+      ? (data.roles as UserRole[])
+      : data.role
+        ? [data.role as UserRole]
+        : [];
+    return {
+      id: docSnap.id,
+      ...data,
+      roles,
+      role: (data.role as UserRole | undefined) ?? roles[0],
+    } as User;
+  });
 
   // Apply filters in memory
   let filteredUsers = allUsers;
 
   if (role) {
-    filteredUsers = filteredUsers.filter(user => user.role === role);
+    filteredUsers = filteredUsers.filter((user) => {
+      if (Array.isArray(user.roles) && user.roles.includes(role)) return true;
+      return user.role === role;
+    });
   }
   
   if (subscriptionStatus !== 'all') {
@@ -579,6 +606,7 @@ export async function createTrader(db: Firestore, traderData: Omit<Trader & { em
             email: traderData.email,
             telegramId: traderData.telegramId,
             role: 'trader',
+            roles: ['trader'],
             isBanned: false,
             subscriptionStatus: 'active',
             subscriptionEndDate: Timestamp.fromDate(new Date('2099-12-31')),
