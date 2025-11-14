@@ -182,13 +182,15 @@ export function AuthProvider({ children }: Props) {
           throw { code: 'NO_INIT_DATA', message: 'Telegram не передал данные авторизации.' } as AuthError;
         }
         const role = forcedRole ?? expectedRole;
-        const response = await fetch(buildBackendUrl('/auth/telegram'), {
+        const backendUrl = buildBackendUrl('/auth/telegram');
+
+        const response = await fetch(backendUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ initData: initDataRaw, botName: role }),
         }).catch((err) => {
           console.error('[auth] Network error:', err);
-          throw { code: 'NETWORK_ERROR', message: JSON.stringify(error) } as AuthError;
+          throw { code: 'NETWORK_ERROR', message: backendUrl } as AuthError;
         });
 
         const payload = await response.json().catch(() => ({ ok: false }));
