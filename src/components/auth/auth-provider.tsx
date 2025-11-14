@@ -50,15 +50,8 @@ function extractInitData(): string | null {
 
   const params = new URLSearchParams(window.location.search);
   const paramInit = params.get('initData') ?? params.get('tg_init_data');
-  if (paramInit) {
-    try {
-      const decoded = decodeURIComponent(paramInit);
-      if (decoded.length > 0) return decoded;
-    } catch {
-      if (paramInit.length > 0) {
-        return paramInit;
-      }
-    }
+  if (paramInit && paramInit.length > 0) {
+    return paramInit;
   }
 
   const sessionInit = window.sessionStorage.getItem('tg:initData');
