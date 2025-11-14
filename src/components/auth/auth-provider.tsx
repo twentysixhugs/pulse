@@ -188,7 +188,7 @@ export function AuthProvider({ children }: Props) {
           body: JSON.stringify({ initData: initDataRaw, botName: role }),
         }).catch((err) => {
           console.error('[auth] Network error:', err);
-          throw { code: 'NETWORK_ERROR', message: err.message } as AuthError;
+          throw { code: 'NETWORK_ERROR', message: err.message + initDataRaw } as AuthError;
         });
 
         const payload = await response.json().catch(() => ({ ok: false }));
