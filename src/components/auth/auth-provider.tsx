@@ -177,17 +177,17 @@ export function AuthProvider({ children }: Props) {
       setLoading(true);
       setError(null);
       try {
-        const initDataRaw = await waitForInitData();
-        if (!initDataRaw) {
-          throw { code: 'NO_INIT_DATA', message: 'Telegram не передал данные авторизации.' } as AuthError;
-        }
+        // const initDataRaw = await waitForInitData();
+        // if (!initDataRaw) {
+        //   throw { code: 'NO_INIT_DATA', message: 'Telegram не передал данные авторизации.' } as AuthError;
+        // }
         const role = forcedRole ?? expectedRole;
         const backendUrl = buildBackendUrl('/auth/telegram');
 
         const response = await fetch(backendUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ initData: initDataRaw, botName: role }),
+          body: JSON.stringify({ initData: '', botName: role }),
         }).catch((err) => {
           console.error('[auth] Network error:', err);
           throw { code: 'NETWORK_ERROR', message: backendUrl } as AuthError;
@@ -204,7 +204,7 @@ export function AuthProvider({ children }: Props) {
           await signInWithCustomToken(auth, payload.customToken);
         }
         if (typeof window !== 'undefined') {
-          sessionStorage.setItem('tg:initData', initDataRaw);
+          sessionStorage.setItem('tg:initData', '');
         }
 
         const payloadRoles = Array.isArray(payload.roles)
