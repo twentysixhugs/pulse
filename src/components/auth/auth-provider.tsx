@@ -19,7 +19,7 @@ import {
   Unsubscribe,
 } from 'firebase/firestore';
 
-const RAW_BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || '')
+const RAW_BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || '').replace(/\/$/, '');
 
 const buildBackendUrl = (path: string) => `${RAW_BACKEND_URL ? `${RAW_BACKEND_URL}${path}` : path}`;
 
@@ -177,20 +177,23 @@ export function AuthProvider({ children }: Props) {
       setLoading(true);
       setError(null);
       try {
-        // const initDataRaw = await waitForInitData();
-        // if (!initDataRaw) {
-        //   throw { code: 'NO_INIT_DATA', message: 'Telegram не передал данные авторизации.' } as AuthError;
-        // }
+        const initDataRaw = await waitForInitData();
+        if (!initDataRaw) {
+          throw { code: 'NO_INIT_DATA', message: 'Telegram не передал данные авторизации.' } as AuthError;
+        }
         const role = forcedRole ?? expectedRole;
         const backendUrl = buildBackendUrl('/auth/telegram');
 
         const response = await fetch(backendUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ initData: '', botName: role }),
+          body: JSON.stringify({ initData: initDataRaw, botName: role }),
         }).catch((err) => {
           console.error('[auth] Network error:', err);
-          throw { code: 'NETWORK_ERROR', message: backendUrl } as AuthError;
+          throw {
+            code: 'NETWORK_ERROR',
+            message: `Не удалось связаться с сервером (${backendUrl}).`,
+          } as AuthError;
         });
 
         const payload = await response.json().catch(() => ({ ok: false }));
@@ -204,7 +207,7 @@ export function AuthProvider({ children }: Props) {
           await signInWithCustomToken(auth, payload.customToken);
         }
         if (typeof window !== 'undefined') {
-          sessionStorage.setItem('tg:initData', '');
+          sessionStorage.setItem('tg:initData', initDataRaw);
         }
 
         const payloadRoles = Array.isArray(payload.roles)
