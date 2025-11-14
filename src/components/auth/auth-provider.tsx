@@ -19,7 +19,7 @@ import {
   Unsubscribe,
 } from 'firebase/firestore';
 
-const RAW_BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || '').replace(/\/$/, '');
+const RAW_BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || '')
 
 const buildBackendUrl = (path: string) => `${RAW_BACKEND_URL ? `${RAW_BACKEND_URL}${path}` : path}`;
 
