@@ -4,6 +4,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { miniApp, retrieveRawInitData, isUnknownEnvError } from '@telegram-apps/sdk';
 import { AuthContext, AuthUser, AuthRole, AuthError } from '@/hooks/use-auth';
 import { app, db } from '@/lib/firebase';
 import {
@@ -22,6 +23,8 @@ const RAW_BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || '').replace(/\/$
 
 const buildBackendUrl = (path: string) => `${RAW_BACKEND_URL ? `${RAW_BACKEND_URL}${path}` : path}`;
 
+let hasLoggedLaunchParamsError = false;
+
 function resolveRoleFromPath(pathname: string): AuthRole {
   if (pathname.startsWith('/admin')) return 'admin';
   if (pathname.startsWith('/trader')) return 'trader';
@@ -30,29 +33,21 @@ function resolveRoleFromPath(pathname: string): AuthRole {
 
 function extractInitData(): string | null {
   if (typeof window === 'undefined') return null;
-  const telegram = (window as any)?.Telegram?.WebApp;
+
+  miniApp.ready.ifAvailable();
+
   try {
-    telegram?.ready?.();
-  } catch {
-    // ignore
-  }
-  if (telegram?.initData && telegram.initData.length > 0) {
-    return telegram.initData;
-  }
-  const unsafe = telegram?.initDataUnsafe;
-  if (unsafe && typeof unsafe === 'object') {
-    const query = new URLSearchParams();
-    if (unsafe.query_id) query.set('query_id', unsafe.query_id);
-    if (unsafe.user) query.set('user', JSON.stringify(unsafe.user));
-    if (unsafe.receiver) query.set('receiver', JSON.stringify(unsafe.receiver));
-    if (unsafe.start_param) query.set('start_param', unsafe.start_param);
-    if (unsafe.auth_date) query.set('auth_date', String(unsafe.auth_date));
-    if (unsafe.hash) query.set('hash', unsafe.hash);
-    const built = query.toString();
-    if (built.length > 0) {
-      return built;
+    const initDataRaw = retrieveRawInitData();
+    if (initDataRaw && initDataRaw.length > 0) {
+      return initDataRaw;
+    }
+  } catch (error) {
+    if (!isUnknownEnvError(error) && !hasLoggedLaunchParamsError) {
+      hasLoggedLaunchParamsError = true;
+      console.warn('[auth] Failed to retrieve Telegram init data via SDK.', error);
     }
   }
+
   const params = new URLSearchParams(window.location.search);
   const paramInit = params.get('initData') ?? params.get('tg_init_data');
   if (paramInit) {
@@ -60,13 +55,15 @@ function extractInitData(): string | null {
       const decoded = decodeURIComponent(paramInit);
       if (decoded.length > 0) return decoded;
     } catch {
-      return paramInit;
+      if (paramInit.length > 0) {
+        return paramInit;
+      }
     }
   }
-  const sessionInit = typeof window !== 'undefined'
-    ? window.sessionStorage.getItem('tg:initData')
-    : null;
-  if (sessionInit) return sessionInit;
+
+  const sessionInit = window.sessionStorage.getItem('tg:initData');
+  if (sessionInit && sessionInit.length > 0) return sessionInit;
+
   const fallback = process.env.NEXT_PUBLIC_TG_STATIC_INIT_DATA;
   return fallback && fallback.length > 0 ? fallback : null;
 }
@@ -180,15 +177,15 @@ export function AuthProvider({ children }: Props) {
       setLoading(true);
       setError(null);
       try {
-        const initData = await waitForInitData();
-        if (!initData) {
+        const initDataRaw = await waitForInitData();
+        if (!initDataRaw) {
           throw { code: 'NO_INIT_DATA', message: 'Telegram не передал данные авторизации.' } as AuthError;
         }
         const role = forcedRole ?? expectedRole;
         const response = await fetch(buildBackendUrl('/auth/telegram'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ initData, botName: role }),
+          body: JSON.stringify({ initData: initDataRaw, botName: role }),
         }).catch((err) => {
           console.error('[auth] Network error:', err);
           throw { code: 'NETWORK_ERROR', message: 'Не удалось связаться с сервером.' } as AuthError;
@@ -205,7 +202,7 @@ export function AuthProvider({ children }: Props) {
           await signInWithCustomToken(auth, payload.customToken);
         }
         if (typeof window !== 'undefined') {
-          sessionStorage.setItem('tg:initData', initData);
+          sessionStorage.setItem('tg:initData', initDataRaw);
         }
 
         const payloadRoles = Array.isArray(payload.roles)
@@ -272,9 +269,8 @@ export function AuthProvider({ children }: Props) {
     setError(null);
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem('tg:initData');
-      const telegram = (window as any)?.Telegram?.WebApp;
-      telegram?.close?.();
     }
+    miniApp.close.ifAvailable();
     router.push('/');
   }, [auth, cleanupDoc, router]);
 
