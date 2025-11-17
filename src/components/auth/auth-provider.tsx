@@ -9,6 +9,7 @@ import {
   initData,
   miniApp,
   retrieveLaunchParams,
+  retrieveRawInitData,
   isUnknownEnvError,
 } from '@telegram-apps/sdk';
 import { AuthContext, AuthUser, AuthRole, AuthError, TelegramProfile } from '@/hooks/use-auth';
@@ -30,6 +31,7 @@ const RAW_BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || '').replace(/\/$
 const buildBackendUrl = (path: string) => `${RAW_BACKEND_URL ? `${RAW_BACKEND_URL}${path}` : path}`;
 
 let hasLoggedLaunchParamsError = false;
+let hasLoggedInitDataError = false;
 let sdkInitialized = false;
 
 function ensureSdkInit(): void {
@@ -37,12 +39,25 @@ function ensureSdkInit(): void {
   if (typeof window === 'undefined') return;
   try {
     init();
+    initData.restore();
   } catch (error) {
     if (!isUnknownEnvError(error)) {
       console.warn('[auth] Telegram SDK init failed:', error);
     }
   }
   sdkInitialized = true;
+}
+
+function refreshInitData(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    initData.restore();
+  } catch (error) {
+    if (!isUnknownEnvError(error) && !hasLoggedInitDataError) {
+      hasLoggedInitDataError = true;
+      console.warn('[auth] Unable to refresh Telegram init data.', error);
+    }
+  }
 }
 
 function resolveRoleFromPath(pathname: string): AuthRole {
@@ -63,7 +78,21 @@ function extractInitData(): string | null {
   if (typeof window === 'undefined') return null;
 
   ensureSdkInit();
+  refreshInitData();
   miniApp.ready.ifAvailable();
+
+  try {
+    const directRaw = retrieveRawInitData();
+    if (directRaw && directRaw.length > 0) {
+      rememberInitData(directRaw);
+      return directRaw;
+    }
+  } catch (error) {
+    if (!isUnknownEnvError(error) && !hasLoggedInitDataError) {
+      hasLoggedInitDataError = true;
+      console.warn('[auth] Failed to read raw init data.', error);
+    }
+  }
 
   const rawFromSignal = initData.raw();
   if (rawFromSignal && rawFromSignal.length > 0) {
@@ -108,6 +137,7 @@ function extractInitData(): string | null {
 
 async function waitForInitData(maxAttempts = 50, delayMs = 300): Promise<string | null> {
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    refreshInitData();
     const data = extractInitData();
     if (data) return data;
     if (attempt === Math.floor(maxAttempts / 2)) {
@@ -303,10 +333,12 @@ export function AuthProvider({ children }: Props) {
       try {
         const initDataRaw = await waitForInitData();
         if (!initDataRaw) {
+          console.warn('[auth] initData not available; aborting auth request.');
           throw { code: 'NO_INIT_DATA', message: 'Telegram не передал данные авторизации.' } as AuthError;
         }
         const role = forcedRole ?? expectedRole;
         const backendUrl = buildBackendUrl('/auth/telegram');
+        console.log('[auth] Sending Telegram auth request', { backendUrl, role });
 
         const response = await fetch(backendUrl, {
           method: 'POST',
