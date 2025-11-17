@@ -2,25 +2,19 @@
 'use client';
 
 import { createContext, useContext } from 'react';
+import type { InitData } from '@telegram-apps/types';
 
 export type AuthRole = 'user' | 'admin' | 'trader';
 
 export type PaymentStatus = 'inactive' | 'active';
 
-export type TelegramProfile = {
-  id: number;
-  username: string | null;
-  firstName: string | null;
-  lastName: string | null;
-  languageCode: string | null;
-  isPremium: boolean | null;
-};
+export type TelegramProfile = InitData['user'] | null;
 
 export type AuthUser = {
   uid: string;
   roles: AuthRole[];
   paymentStatus: PaymentStatus;
-  telegram: TelegramProfile | null;
+  telegram: TelegramProfile;
   profile: Record<string, unknown>;
   name?: string;
   role?: AuthRole;

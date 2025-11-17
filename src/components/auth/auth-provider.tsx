@@ -4,8 +4,13 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { miniApp, retrieveRawInitData, isUnknownEnvError } from '@telegram-apps/sdk';
-import { AuthContext, AuthUser, AuthRole, AuthError } from '@/hooks/use-auth';
+import {
+  initData,
+  miniApp,
+  retrieveLaunchParams,
+  isUnknownEnvError,
+} from '@telegram-apps/sdk';
+import { AuthContext, AuthUser, AuthRole, AuthError, TelegramProfile } from '@/hooks/use-auth';
 import { app, db } from '@/lib/firebase';
 import {
   getAuth,
@@ -31,26 +36,46 @@ function resolveRoleFromPath(pathname: string): AuthRole {
   return 'user';
 }
 
+function rememberInitData(raw: string): void {
+  try {
+    window.sessionStorage.setItem('tg:initData', raw);
+  } catch {
+    // ignore quota errors
+  }
+}
+
 function extractInitData(): string | null {
   if (typeof window === 'undefined') return null;
 
   miniApp.ready.ifAvailable();
 
+  const rawFromSignal = initData.raw();
+  if (rawFromSignal && rawFromSignal.length > 0) {
+    rememberInitData(rawFromSignal);
+    return rawFromSignal;
+  }
+
   try {
-    const initDataRaw = retrieveRawInitData();
-    if (initDataRaw && initDataRaw.length > 0) {
-      return initDataRaw;
+    const launchParams = retrieveLaunchParams(true);
+    const rawFromLaunchParams =
+      (launchParams as { initDataRaw?: string | undefined }).initDataRaw ??
+      (launchParams as { tgWebAppData?: string | undefined }).tgWebAppData ??
+      null;
+    if (rawFromLaunchParams && rawFromLaunchParams.length > 0) {
+      rememberInitData(rawFromLaunchParams);
+      return rawFromLaunchParams;
     }
   } catch (error) {
     if (!isUnknownEnvError(error) && !hasLoggedLaunchParamsError) {
       hasLoggedLaunchParamsError = true;
-      console.warn('[auth] Failed to retrieve Telegram init data via SDK.', error);
+      console.warn('[auth] Failed to retrieve Telegram launch params.', error);
     }
   }
 
   const params = new URLSearchParams(window.location.search);
   const paramInit = params.get('initData') ?? params.get('tg_init_data');
   if (paramInit && paramInit.length > 0) {
+    rememberInitData(paramInit);
     return paramInit;
   }
 
@@ -58,7 +83,11 @@ function extractInitData(): string | null {
   if (sessionInit && sessionInit.length > 0) return sessionInit;
 
   const fallback = process.env.NEXT_PUBLIC_TG_STATIC_INIT_DATA;
-  return fallback && fallback.length > 0 ? fallback : null;
+  if (fallback && fallback.length > 0) {
+    rememberInitData(fallback);
+    return fallback;
+  }
+  return null;
 }
 
 async function waitForInitData(maxAttempts = 50, delayMs = 300): Promise<string | null> {
@@ -89,6 +118,92 @@ function mapBackendError(code: string): AuthError {
       return { code: 'AUTH_FAILED', message: 'Ошибка авторизации. Попробуйте позже.' };
   }
 }
+
+type TelegramPayload = Partial<{
+  id: number;
+  username: string;
+  first_name: string;
+  last_name: string;
+  language_code: string;
+  photo_url: string;
+  allows_write_to_pm: boolean;
+  is_premium: boolean;
+  firstName: string;
+  lastName: string;
+  languageCode: string;
+  photoUrl: string;
+  allowsWriteToPm: boolean;
+  isPremium: boolean;
+}>;
+
+function normalizeTelegramProfile(
+  source: unknown,
+  fallback: TelegramProfile = null,
+): TelegramProfile {
+  const payload = (source ?? undefined) as TelegramPayload | undefined;
+  if (!payload) return fallback ?? null;
+
+  const resolvedId = typeof payload.id === 'number' ? payload.id : fallback?.id;
+  const resolvedFirstName =
+    typeof payload.first_name === 'string'
+      ? payload.first_name
+      : typeof payload.firstName === 'string'
+        ? payload.firstName
+        : fallback?.first_name;
+
+  if (typeof resolvedId !== 'number' || typeof resolvedFirstName !== 'string') {
+    return fallback ?? null;
+  }
+
+  const resolveString = (
+    primary?: unknown,
+    secondary?: unknown,
+    fallbackValue?: string,
+  ) => {
+    if (typeof primary === 'string') return primary;
+    if (typeof secondary === 'string') return secondary;
+    return fallbackValue;
+  };
+
+  const resolveBoolean = (
+    primary?: unknown,
+    secondary?: unknown,
+    fallbackValue?: boolean,
+  ) => {
+    if (typeof primary === 'boolean') return primary;
+    if (typeof secondary === 'boolean') return secondary;
+    return fallbackValue;
+  };
+
+  return {
+    id: resolvedId,
+    first_name: resolvedFirstName,
+    last_name: resolveString(payload.last_name, payload.lastName, fallback?.last_name),
+    username: resolveString(payload.username, undefined, fallback?.username),
+    language_code: resolveString(
+      payload.language_code,
+      payload.languageCode,
+      fallback?.language_code,
+    ),
+    photo_url: resolveString(payload.photo_url, payload.photoUrl, fallback?.photo_url),
+    allows_write_to_pm: resolveBoolean(
+      payload.allows_write_to_pm,
+      payload.allowsWriteToPm,
+      fallback?.allows_write_to_pm,
+    ),
+    is_premium: resolveBoolean(
+      payload.is_premium,
+      payload.isPremium,
+      fallback?.is_premium,
+    ),
+  };
+}
+
+// initData подгружается, запрос на бек уходит. Но бек разворачивает по INVALID_SIGNATURE
+// деплой на vercel, там лежит env
+// я хз нужно ли реранить скрипт, может вообще проблема в том что я не ранил
+// посмотри какие данные уходят с фронта на бек и как бек их парсит
+// cors ошибку на беке починил
 
 type Props = { children: React.ReactNode };
 
@@ -210,39 +325,32 @@ export function AuthProvider({ children }: Props) {
           : [];
 
         subscribeToUserDoc(payload.uid, role);
-        setUser((prev) =>
-          prev
-            ? {
-                ...prev,
-                paymentStatus: payload.paymentStatus,
-                roles: payloadRoles.length ? payloadRoles : prev.roles,
-                telegram: {
-                  id: payload.telegram?.id ?? null,
-                  username: payload.telegram?.username ?? null,
-                  firstName: payload.telegram?.firstName ?? null,
-                  lastName: payload.telegram?.lastName ?? null,
-                  languageCode: payload.telegram?.languageCode ?? null,
-                  isPremium: payload.telegram?.isPremium ?? null,
-                },
-                role: (payloadRoles[0] ?? prev.role) as AuthRole | undefined,
-              }
-            : {
-                uid: payload.uid,
-                roles: payloadRoles,
-                paymentStatus: payload.paymentStatus ?? 'inactive',
-                telegram: {
-                  id: payload.telegram?.id ?? null,
-                  username: payload.telegram?.username ?? null,
-                  firstName: payload.telegram?.firstName ?? null,
-                  lastName: payload.telegram?.lastName ?? null,
-                  languageCode: payload.telegram?.languageCode ?? null,
-                  isPremium: payload.telegram?.isPremium ?? null,
-                },
-                profile: {},
-                name: undefined,
-                role: (payloadRoles[0] ?? undefined) as AuthRole | undefined,
-              },
-        );
+        setUser((prev) => {
+          const telegramProfile = normalizeTelegramProfile(
+            payload.telegram,
+            prev?.telegram ?? null,
+          );
+
+          if (prev) {
+            return {
+              ...prev,
+              paymentStatus: payload.paymentStatus,
+              roles: payloadRoles.length ? payloadRoles : prev.roles,
+              telegram: telegramProfile,
+              role: (payloadRoles[0] ?? prev.role) as AuthRole | undefined,
+            };
+          }
+
+          return {
+            uid: payload.uid,
+            roles: payloadRoles,
+            paymentStatus: payload.paymentStatus ?? 'inactive',
+            telegram: telegramProfile,
+            profile: {},
+            name: undefined,
+            role: (payloadRoles[0] ?? undefined) as AuthRole | undefined,
+          };
+        });
       } catch (err) {
         const authError = (err as AuthError).code ? (err as AuthError) : { code: 'AUTH_FAILED', message: 'Ошибка авторизации.' };
         setError(authError as AuthError);
