@@ -5,6 +5,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import {
+  init,
   initData,
   miniApp,
   retrieveLaunchParams,
@@ -29,6 +30,20 @@ const RAW_BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || '').replace(/\/$
 const buildBackendUrl = (path: string) => `${RAW_BACKEND_URL ? `${RAW_BACKEND_URL}${path}` : path}`;
 
 let hasLoggedLaunchParamsError = false;
+let sdkInitialized = false;
+
+function ensureSdkInit(): void {
+  if (sdkInitialized) return;
+  if (typeof window === 'undefined') return;
+  try {
+    init();
+  } catch (error) {
+    if (!isUnknownEnvError(error)) {
+      console.warn('[auth] Telegram SDK init failed:', error);
+    }
+  }
+  sdkInitialized = true;
+}
 
 function resolveRoleFromPath(pathname: string): AuthRole {
   if (pathname.startsWith('/admin')) return 'admin';
@@ -47,6 +62,7 @@ function rememberInitData(raw: string): void {
 function extractInitData(): string | null {
   if (typeof window === 'undefined') return null;
 
+  ensureSdkInit();
   miniApp.ready.ifAvailable();
 
   const rawFromSignal = initData.raw();
@@ -58,8 +74,8 @@ function extractInitData(): string | null {
   try {
     const launchParams = retrieveLaunchParams(true);
     const rawFromLaunchParams =
-      (launchParams as { initDataRaw?: string | undefined }).initDataRaw ??
       (launchParams as { tgWebAppData?: string | undefined }).tgWebAppData ??
+      (launchParams as { initDataRaw?: string | undefined }).initDataRaw ??
       null;
     if (rawFromLaunchParams && rawFromLaunchParams.length > 0) {
       rememberInitData(rawFromLaunchParams);
