@@ -1,6 +1,7 @@
 
 import type { Metadata } from 'next';
 import './globals.css';
+import Script from 'next/script';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { Inter, Space_Grotesk, Source_Code_Pro } from 'next/font/google';
@@ -34,6 +35,7 @@ export default function RootLayout({
   return (
     <html lang="ru" className="dark">
       <body className={cn('font-body antialiased min-h-screen bg-background', inter.variable, spaceGrotesk.variable, sourceCodePro.variable)}>
+        <Script src="https://telegram.org/js/telegram-web-app.js?59" strategy="beforeInteractive" />
         <AuthProvider>
           {children}
         </AuthProvider>

@@ -8,6 +8,11 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(userId)).data.isBanned == false;
     }
 
+    // Helper ensuring the custom claim set by backend allows Firestore access
+    function hasChannelAccess() {
+      return request.auth != null && request.auth.token.channelsOk == true;
+    }
+
     // Default deny all reads and writes
     match /{document=**} {
       allow read, write: if false;
@@ -15,35 +20,35 @@ service cloud.firestore {
     
     // Allow reading categories for anyone who is logged in
     match /categories/{categoryId} {
-      allow read: if request.auth != null;
+      allow read: if hasChannelAccess();
     }
 
     // Allow reading user's own profile
     match /users/{userId} {
       allow read: if request.auth.uid == userId;
       // Allow updates for subscription management (by admin) or reputation (by user)
-      allow write: if request.auth != null; 
+      allow write: if hasChannelAccess(); 
     }
     
     // Allow users to manage their reputation votes
     match /users/{userId}/traderReputation/{traderId} {
-       allow read, write: if request.auth.uid == userId && isNotBanned(request.auth.uid);
+       allow read, write: if request.auth.uid == userId && hasChannelAccess() && isNotBanned(request.auth.uid);
     }
 
     // Allow reading traders for any non-banned user
     match /traders/{traderId} {
-      allow read: if request.auth != null && isNotBanned(request.auth.uid);
-      allow write: if request.auth != null && isNotBanned(request.auth.uid);
+      allow read: if hasChannelAccess() && isNotBanned(request.auth.uid);
+      allow write: if hasChannelAccess() && isNotBanned(request.auth.uid);
     }
 
     // Allow reading/writing alerts for any non-banned user
     match /alerts/{alertId} {
-      allow read, write: if request.auth != null && isNotBanned(request.auth.uid);
+      allow read, write: if hasChannelAccess() && isNotBanned(request.auth.uid);
     }
 
     // Allow creating reports for any non-banned user
     match /reports/{reportId} {
-      allow create: if request.auth != null && isNotBanned(request.auth.uid);
+      allow create: if hasChannelAccess() && isNotBanned(request.auth.uid);
       allow read, update, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
   }

@@ -46,9 +46,20 @@ export default function HomePage() {
 
   useEffect(() => {
     setIsClient(true);
-    const agreed = localStorage.getItem('pulsescalp-legal-agreed') === 'true';
+    const agreed =
+      typeof window !== 'undefined' &&
+      localStorage.getItem('pulsescalp-legal-agreed') === 'true';
     setHasAgreed(agreed);
   }, []);
+
+  useEffect(() => {
+    if (user?.docsAccepted) {
+      setHasAgreed(true);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('pulsescalp-legal-agreed', 'true');
+      }
+    }
+  }, [user?.docsAccepted]);
 
   useEffect(() => {
     if (!user) {
@@ -115,15 +126,22 @@ export default function HomePage() {
   
   const pageCount = Math.ceil(totalAlerts / ALERTS_PER_PAGE);
 
-  if (!isClient || !currentUser) {
-    return <div className="container mx-auto max-w-2xl py-8 space-y-4 px-4">
+  if (!isClient) {
+    return (
+      <div className="container mx-auto max-w-2xl py-8 space-y-4 px-4">
         <Skeleton className="h-10 w-1/3" />
         <Skeleton className="h-96 w-full" />
         <Skeleton className="h-96 w-full" />
-    </div>;
+      </div>
+    );
   }
 
-  const isSubscribed = currentUser?.subscriptionStatus === 'active';
+  const channelStatus = user?.channelStatus ?? null;
+  const subscriptionStatus =
+    currentUser?.subscriptionStatus ??
+    user?.paymentStatus ??
+    'inactive';
+  const isSubscribed = subscriptionStatus === 'active';
 
   const tabContents = [
     {
@@ -171,12 +189,25 @@ export default function HomePage() {
     <div className="container mx-auto max-w-3xl py-8 px-4">
       <LegalModal isOpen={!hasAgreed} onAccept={handleAgree} />
       {hasAgreed && (
-        <SubscriptionGate isSubscribed={isSubscribed}>
-           <ResponsiveTabs
-            defaultValue="alerts"
-            triggers={tabTriggers}
-            contents={tabContents}
-          />
+        <SubscriptionGate
+          isSubscribed={isSubscribed}
+          channelStatus={channelStatus}
+          channelListUpdated={currentUser?.channelListUpdated}
+          channelList={currentUser?.channels}
+        >
+          {currentUser ? (
+            <ResponsiveTabs
+              defaultValue="alerts"
+              triggers={tabTriggers}
+              contents={tabContents}
+            />
+          ) : (
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-1/3" />
+              <Skeleton className="h-96 w-full" />
+              <Skeleton className="h-96 w-full" />
+            </div>
+          )}
         </SubscriptionGate>
       )}
     </div>

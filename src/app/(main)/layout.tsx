@@ -3,7 +3,7 @@
 import { Logo } from "@/components/common/logo";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { User, LogOut, RefreshCw } from "lucide-react";
+import { User, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function MainLayout({
@@ -11,7 +11,7 @@ export default function MainLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, logout, loading, error, refresh } = useAuth();
+  const { user, logout, loading, error } = useAuth();
 
   if (loading) {
     return (
@@ -29,10 +29,6 @@ export default function MainLayout({
           <p className="text-sm text-muted-foreground">
             {error?.message ?? 'Не удалось подтвердить учетную запись Telegram.'}
           </p>
-          <Button onClick={refresh} variant="outline" className="mx-auto">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Повторить попытку
-          </Button>
         </div>
       </div>
     );

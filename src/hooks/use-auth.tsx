@@ -10,14 +10,37 @@ export type PaymentStatus = 'inactive' | 'active';
 
 export type TelegramProfile = InitData['user'] | null;
 
+export type ChannelSummary = {
+  id: string;
+  title?: string;
+  inviteLink?: string;
+  description?: string;
+};
+
 export type AuthUser = {
   uid: string;
   roles: AuthRole[];
   paymentStatus: PaymentStatus;
+  subscriptionStatus?: 'inactive' | 'active';
+  subscriptionEndDate?: number | null | Record<string, unknown>;
   telegram: TelegramProfile;
   profile: Record<string, unknown>;
   name?: string;
   role?: AuthRole;
+  docsAccepted?: boolean;
+  docsAcceptedAt?: number;
+  channelStatus?: {
+    ok: boolean;
+    missingChannelIds?: string[];
+    missingChannels?: {
+      id: string;
+      title?: string;
+      inviteLink?: string;
+    }[];
+    checkedAt?: number;
+  } | null;
+  channelListUpdated?: boolean;
+  channels?: ChannelSummary[] | null;
 };
 
 export type AuthErrorCode =
@@ -31,7 +54,8 @@ export type AuthErrorCode =
   | 'USER_MISSING'
   | 'NETWORK_ERROR'
   | 'USER_DOC_MISSING'
-  | 'FIRESTORE_ERROR';
+  | 'FIRESTORE_ERROR'
+  | 'CHANNEL_ACCESS_REQUIRED';
 
 export type AuthError = {
   code: AuthErrorCode;

@@ -14,6 +14,7 @@ import {
 } from '@telegram-apps/sdk';
 import { AuthContext, AuthUser, AuthRole, AuthError, TelegramProfile } from '@/hooks/use-auth';
 import { app, db } from '@/lib/firebase';
+import { setupTelegramMock } from '@/lib/telegram-mock';
 import {
   getAuth,
   signInWithCustomToken,
@@ -148,7 +149,32 @@ async function waitForInitData(maxAttempts = 50, delayMs = 300): Promise<string 
   return extractInitData();
 }
 
-function mapBackendError(code: string): AuthError {
+function mapBackendError(code: string, payload?: unknown): AuthError {
+  if (code === 'CHANNEL_ACCESS_REQUIRED') {
+    const missingChannels = Array.isArray(
+      (payload as { missingChannels?: unknown[] } | undefined)?.missingChannels,
+    )
+      ? ((payload as { missingChannels?: unknown[] } | undefined)?.missingChannels ?? [])
+          .map((entry) => {
+            if (entry && typeof entry === 'object') {
+              const record = entry as { title?: unknown; id?: unknown };
+              if (typeof record.title === 'string') return record.title;
+              if (typeof record.id === 'string') return record.id;
+            }
+            return null;
+          })
+          .filter((value): value is string => typeof value === 'string' && value.length > 0)
+      : [];
+    const list =
+      missingChannels.length > 0
+        ? ` (${missingChannels.join(', ')})`
+        : '';
+    return {
+      code: 'CHANNEL_ACCESS_REQUIRED',
+      message: `Подпишитесь на все обязательные каналы${list} и перезагрузите мини-приложение.`,
+    };
+  }
+
   switch (code) {
     case 'AUTH_EXPIRED':
       return { code: 'AUTH_EXPIRED', message: 'Сессия Telegram устарела. Повторите попытку.' };
@@ -180,6 +206,17 @@ type TelegramPayload = Partial<{
   photoUrl: string;
   allowsWriteToPm: boolean;
   isPremium: boolean;
+}>;
+
+type ChannelStatusPayload = Partial<{
+  ok: boolean;
+  missingChannelIds: unknown[];
+  missingChannels: Array<{
+    id?: unknown;
+    title?: unknown;
+    inviteLink?: unknown;
+  }>;
+  checkedAt: number;
 }>;
 
 function normalizeTelegramProfile(
@@ -245,11 +282,70 @@ function normalizeTelegramProfile(
   };
 }
 
-// initData подгружается, запрос на бек уходит. Но бек разворачивает по INVALID_SIGNATURE
-// деплой на vercel, там лежит env
-// я хз нужно ли реранить скрипт, может вообще проблема в том что я не ранил
-// посмотри какие данные уходят с фронта на бек и как бек их парсит
-// cors ошибку на беке починил
+function normalizeChannelStatus(
+  source: unknown,
+  fallback: AuthUser['channelStatus'] = null,
+): AuthUser['channelStatus'] {
+  const payload = (source ?? undefined) as ChannelStatusPayload | undefined;
+  if (!payload || typeof payload !== 'object') {
+    return fallback ?? null;
+  }
+
+  const ok =
+    typeof payload.ok === 'boolean'
+      ? payload.ok
+      : typeof fallback?.ok === 'boolean'
+        ? fallback.ok
+        : undefined;
+
+  if (typeof ok !== 'boolean') {
+    return fallback ?? null;
+  }
+
+  const missingChannelIds = Array.isArray(payload.missingChannelIds)
+    ? payload.missingChannelIds.filter((value): value is string => typeof value === 'string')
+    : fallback?.missingChannelIds;
+
+  const missingChannels = Array.isArray(payload.missingChannels)
+    ? payload.missingChannels
+        .map((entry) => {
+          if (!entry || typeof entry !== 'object') return null;
+          const record = entry as {
+            id?: unknown;
+            title?: unknown;
+            inviteLink?: unknown;
+          };
+          const id =
+            typeof record.id === 'string'
+              ? record.id
+              : typeof record.id === 'number'
+                ? record.id.toString()
+                : undefined;
+          const title =
+            typeof record.title === 'string' ? record.title : undefined;
+          const inviteLink =
+            typeof record.inviteLink === 'string' ? record.inviteLink : undefined;
+          if (!id && !title) return null;
+          return { id: id ?? title!, title: title ?? id ?? '', inviteLink };
+        })
+        .filter(
+          (value): value is { id: string; title: string; inviteLink?: string } =>
+            value !== null,
+        )
+    : fallback?.missingChannels;
+
+  const checkedAt =
+    typeof payload.checkedAt === 'number' && Number.isFinite(payload.checkedAt)
+      ? payload.checkedAt
+      : fallback?.checkedAt;
+
+  return {
+    ok,
+    missingChannelIds,
+    missingChannels,
+    checkedAt,
+  };
+}
 
 type Props = { children: React.ReactNode };
 
@@ -300,20 +396,51 @@ export function AuthProvider({ children }: Props) {
             setError(null);
           }
 
-          setUser((prev) => ({
-            uid,
-            roles: normalizedRoles,
-            paymentStatus: (data.paymentStatus as any) ?? 'inactive',
-            telegram: prev?.telegram ?? null,
-            profile: data,
-            name: (data.name as string) ?? prev?.name ?? undefined,
-            role:
-              normalizedRoles[0] ??
-              ((typeof data.role === 'string' &&
-                (data.role === 'user' || data.role === 'admin' || data.role === 'trader')
-                  ? data.role
-                  : undefined) as AuthRole | undefined),
-          }));
+          setUser((prev) => {
+            const channelStatus = normalizeChannelStatus(
+              data.channelStatus,
+              prev?.channelStatus ?? null,
+            );
+            const docsAcceptedValue =
+              typeof data.docsAccepted === 'boolean'
+                ? data.docsAccepted
+                : prev?.docsAccepted;
+            const docsAcceptedAtValue =
+              typeof data.docsAcceptedAt === 'number'
+                ? data.docsAcceptedAt
+                : prev?.docsAcceptedAt;
+
+            return {
+              uid,
+              roles: normalizedRoles,
+              paymentStatus: (data.paymentStatus as any) ?? 'inactive',
+              subscriptionStatus:
+                typeof data.subscriptionStatus === 'string'
+                  ? (data.subscriptionStatus as AuthUser['subscriptionStatus'])
+                  : prev?.subscriptionStatus,
+              subscriptionEndDate:
+                data.subscriptionEndDate ?? prev?.subscriptionEndDate ?? null,
+              telegram: prev?.telegram ?? null,
+              profile: data,
+              name: (data.name as string) ?? prev?.name ?? undefined,
+              role:
+                normalizedRoles[0] ??
+                ((typeof data.role === 'string' &&
+                  (data.role === 'user' || data.role === 'admin' || data.role === 'trader')
+                    ? data.role
+                    : undefined) as AuthRole | undefined),
+              docsAccepted: docsAcceptedValue,
+              docsAcceptedAt: docsAcceptedAtValue,
+              channelStatus,
+              channelListUpdated:
+                typeof data.channelListUpdated === 'boolean'
+                  ? data.channelListUpdated
+                  : prev?.channelListUpdated,
+              channels: Array.isArray(data.channels)
+                ? (data.channels as AuthUser['channels'])
+                : prev?.channels ?? null,
+            };
+          });
         },
         (err) => {
           console.error('[auth] Firestore listener failed:', err);
@@ -356,7 +483,7 @@ export function AuthProvider({ children }: Props) {
 
         if (!response.ok || !payload?.ok) {
           const backendCode = payload?.error ?? 'AUTH_FAILED';
-          throw mapBackendError(backendCode);
+          throw mapBackendError(backendCode, payload);
         }
 
         if (payload.customToken) {
@@ -374,6 +501,10 @@ export function AuthProvider({ children }: Props) {
 
         subscribeToUserDoc(payload.uid, role);
         setUser((prev) => {
+          const normalizedChannelStatus = normalizeChannelStatus(
+            payload.channelStatus,
+            prev?.channelStatus ?? null,
+          );
           const telegramProfile = normalizeTelegramProfile(
             payload.telegram,
             prev?.telegram ?? null,
@@ -386,6 +517,30 @@ export function AuthProvider({ children }: Props) {
               roles: payloadRoles.length ? payloadRoles : prev.roles,
               telegram: telegramProfile,
               role: (payloadRoles[0] ?? prev.role) as AuthRole | undefined,
+              docsAccepted:
+                typeof payload.docsAccepted === 'boolean'
+                  ? payload.docsAccepted
+                  : prev.docsAccepted,
+              docsAcceptedAt:
+                typeof payload.docsAcceptedAt === 'number'
+                  ? payload.docsAcceptedAt
+                  : prev.docsAcceptedAt,
+              channelStatus: normalizedChannelStatus,
+              channelListUpdated:
+                typeof payload.channelListUpdated === 'boolean'
+                  ? payload.channelListUpdated
+                  : prev.channelListUpdated,
+              subscriptionStatus:
+                typeof payload.subscriptionStatus === 'string'
+                  ? payload.subscriptionStatus
+                  : prev.subscriptionStatus,
+              subscriptionEndDate:
+                typeof payload.subscriptionEndDate === 'number'
+                  ? payload.subscriptionEndDate
+                  : prev.subscriptionEndDate ?? null,
+              channels: Array.isArray(payload.channels)
+                ? (payload.channels as AuthUser['channels'])
+                : prev.channels ?? null,
             };
           }
 
@@ -393,10 +548,30 @@ export function AuthProvider({ children }: Props) {
             uid: payload.uid,
             roles: payloadRoles,
             paymentStatus: payload.paymentStatus ?? 'inactive',
+            subscriptionStatus:
+              typeof payload.subscriptionStatus === 'string'
+                ? payload.subscriptionStatus
+                : undefined,
+            subscriptionEndDate:
+              typeof payload.subscriptionEndDate === 'number'
+                ? payload.subscriptionEndDate
+                : undefined,
             telegram: telegramProfile,
             profile: {},
             name: undefined,
             role: (payloadRoles[0] ?? undefined) as AuthRole | undefined,
+            docsAccepted:
+              typeof payload.docsAccepted === 'boolean' ? payload.docsAccepted : undefined,
+            docsAcceptedAt:
+              typeof payload.docsAcceptedAt === 'number' ? payload.docsAcceptedAt : undefined,
+            channelStatus: normalizedChannelStatus,
+            channelListUpdated:
+              typeof payload.channelListUpdated === 'boolean'
+                ? payload.channelListUpdated
+                : undefined,
+            channels: Array.isArray(payload.channels)
+              ? (payload.channels as AuthUser['channels'])
+              : undefined,
           };
         });
       } catch (err) {
@@ -427,6 +602,10 @@ export function AuthProvider({ children }: Props) {
     miniApp.close.ifAvailable();
     router.push('/');
   }, [auth, cleanupDoc, router]);
+
+  useEffect(() => {
+    setupTelegramMock();
+  }, []);
 
   useEffect(() => {
     setLoading(true);

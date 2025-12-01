@@ -6,7 +6,7 @@ import { UserManagement } from "@/components/admin/user-management";
 import { TraderManagement } from "@/components/admin/trader-management";
 import { ComplaintManagement } from "@/components/admin/complaint-management";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, GanttChartSquare, ShieldAlert, LineChart, FolderKanban, Newspaper } from "lucide-react";
+import { Users, GanttChartSquare, ShieldAlert, LineChart, FolderKanban, Newspaper, Bot } from "lucide-react";
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Select,
@@ -18,6 +18,7 @@ import {
 import { MetricsManagement } from './metrics-management';
 import { CategoryManagement } from './category-management';
 import { AllAlertsManagement } from './all-alerts-management';
+import { BotManagement } from './bot-management';
 
 
 const TABS = [
@@ -25,6 +26,7 @@ const TABS = [
     { value: "traders", label: "Трейдеры", icon: GanttChartSquare },
     { value: "categories", label: "Категории", icon: FolderKanban },
     { value: "all-alerts", label: "Все алерты", icon: Newspaper },
+    { value: "bot", label: "Бот", icon: Bot },
     { value: "complaints", label: "Жалобы", icon: ShieldAlert },
     { value: "metrics", label: "Метрики", icon: LineChart },
 ];
@@ -58,6 +60,7 @@ export function AdminTabs() {
                     {activeTab === 'traders' && <TraderManagement />}
                     {activeTab === 'categories' && <CategoryManagement />}
                     {activeTab === 'all-alerts' && <AllAlertsManagement />}
+                    {activeTab === 'bot' && <BotManagement />}
                     {activeTab === 'complaints' && <ComplaintManagement />}
                     {activeTab === 'metrics' && <MetricsManagement />}
                 </div>
@@ -86,6 +89,9 @@ export function AdminTabs() {
             </TabsContent>
              <TabsContent value="all-alerts" className="mt-6">
                 <AllAlertsManagement />
+            </TabsContent>
+            <TabsContent value="bot" className="mt-6">
+                <BotManagement />
             </TabsContent>
             <TabsContent value="complaints" className="mt-6">
                 <ComplaintManagement />
